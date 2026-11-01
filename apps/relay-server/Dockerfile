@@ -1,7 +1,7 @@
 # ==========================================
 # STAGE 1: Builder
 # ==========================================
-FROM rust:1.82-slim-bookworm AS builder
+FROM rust:1.85-slim-bookworm AS builder
 WORKDIR /app
 
 # Install system dependencies required for compilation
