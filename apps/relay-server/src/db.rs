@@ -34,28 +34,60 @@ pub struct ShareRow {
 
 impl Db {
     pub fn open(database_url: &str) -> Result<Self> {
-        let path = database_url
-            .trim_start_matches("sqlite://")
-            .trim_start_matches("sqlite:");
+        let path = if database_url.starts_with("postgres://") || database_url.starts_with("postgresql://") {
+            eprintln!("Warning: PostgreSQL URL passed in DATABASE_URL, falling back to SQLite at /tmp/arca_relay.db");
+            "/tmp/arca_relay.db"
+        } else {
+            let p = database_url
+                .strip_prefix("sqlite://")
+                .or_else(|| database_url.strip_prefix("sqlite:"))
+                .unwrap_or(database_url);
+            if p.is_empty() {
+                "/tmp/arca_relay.db"
+            } else {
+                p
+            }
+        };
+
+        if path != ":memory:" {
+            if let Some(parent) = std::path::Path::new(path).parent() {
+                if !parent.as_os_str().is_empty() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+            }
+        }
         
-        let conn = if path == ":memory:" || path.is_empty() {
+        eprintln!("Connecting to SQLite database at: {}", path);
+        let conn = if path == ":memory:" {
             Connection::open_in_memory()?
         } else {
-            Connection::open(path)?
+            match Connection::open(path) {
+                Ok(c) => c,
+                Err(e) => {
+                    eprintln!("FATAL: Failed to open SQLite connection at {}: {:?}", path, e);
+                    return Err(e);
+                }
+            }
         };
 
         // Enforce SQLite security and integrity pragmas
-        conn.execute_batch(
+        if let Err(e) = conn.execute_batch(
             r#"
             PRAGMA journal_mode = WAL;
             PRAGMA secure_delete = ON;
             PRAGMA foreign_keys = ON;
             "#,
-        )?;
+        ) {
+            eprintln!("Warning: could not set SQLite pragmas: {:?}", e);
+        }
 
         // Run initial migrations
         let migration_sql = include_str!("../migrations/0001_initial.sql");
-        conn.execute_batch(migration_sql)?;
+        if let Err(e) = conn.execute_batch(migration_sql) {
+            eprintln!("FATAL: Failed to execute SQLite migrations: {:?}", e);
+            return Err(e);
+        }
+        eprintln!("SQLite migrations applied successfully.");
 
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
