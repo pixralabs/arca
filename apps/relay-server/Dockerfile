@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config libsqlite3-dev ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Cargo files from the monorepo path (Notice the apps/relay-server/ prefix)
+# Copy Cargo files from the monorepo path (Notice the apps/relay-server/ prefix).
 COPY apps/relay-server/Cargo.toml ./
 COPY apps/relay-server/Cargo.lock* ./
 
