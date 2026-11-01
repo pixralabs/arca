@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VaultGuard (Arca by Pixra) — Own Your Passwords. Zero Knowledge. Zero Compromise.</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #09090b;
+      color: #fafafa;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .bg-grid-pattern {
+      background-image: radial-gradient(rgba(16, 185, 129, 0.12) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    .glow-emerald {
+      box-shadow: 0 0 60px -12px rgba(16, 185, 129, 0.35);
+    }
+  </style>
+</head>
+<body class="bg-[#09090b] text-zinc-50 antialiased selection:bg-emerald-500 selection:text-zinc-950 min-h-screen flex flex-col overflow-x-hidden">
+
+  <!-- Ambient Charcoal + Emerald/Amber/Rose Keyring Glow -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[780px] h-[420px] bg-emerald-500/10 blur-[135px] rounded-full"></div>
+    <div class="absolute top-[40%] -right-32 w-[460px] h-[460px] bg-amber-500/10 blur-[140px] rounded-full"></div>
+    <div class="absolute bottom-10 -left-32 w-[420px] h-[420px] bg-rose-500/10 blur-[140px] rounded-full"></div>
+    <div class="absolute inset-0 bg-grid-pattern opacity-60"></div>
+  </div>
+
+  <!-- Navigation Header -->
+  <header class="sticky top-0 z-40 border-b border-zinc-800 bg-[#09090b]/85 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      <a href="#top" class="flex items-center gap-3 focus:outline-none">
+        <div class="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-700/50 flex items-center justify-center shadow-inner">
+          <svg class="w-5 h-5 text-emerald-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-extrabold tracking-tight text-zinc-50">VaultGuard</span>
+          <span class="text-xs text-zinc-400 font-medium">Arca by Pixra</span>
+          <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">v0.4.1</span>
+        </div>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-7 text-sm font-medium text-zinc-300">
+        <a href="#features" class="hover:text-zinc-50 transition-colors">Features</a>
+        <a href="#how-it-works" class="hover:text-zinc-50 transition-colors">How It Works</a>
+        <a href="#specs" class="hover:text-zinc-50 transition-colors">Security Specs</a>
+      </nav>
+
+      <div class="flex items-center gap-2.5">
+        <a
+          href="https://github.com/pixra/arca"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-zinc-200 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 transition-colors"
+        >
+          <span>View on GitHub</span>
+        </a>
+        <button
+          id="nav-download-btn"
+          type="button"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-zinc-950 bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/25 transition-all"
+        >
+          <span>Download Extension</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top" class="flex-1">
+    <!-- HERO SECTION -->
+    <section class="relative pt-16 pb-20 sm:pt-24 sm:pb-28 px-4 sm:px-6">
+      <div class="max-w-5xl mx-auto text-center space-y-7">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-900/80 border border-zinc-800 text-xs font-medium text-zinc-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>100% Offline-First · Argon2id + XChaCha20-Poly1305 · AGPL-3.0 Open Source</span>
+        </div>
+
+        <div class="space-y-4 max-w-3xl mx-auto">
+          <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-zinc-50 leading-[1.1]">
+            Own Your Passwords. <br class="hidden sm:inline" />
+            <span class="bg-gradient-to-r from-emerald-400 via-emerald-300 to-amber-400 bg-clip-text text-transparent">Zero Knowledge. Zero Compromise.</span>
+          </h1>
+          <p class="text-base sm:text-lg text-zinc-400 leading-relaxed max-w-2xl mx-auto">
+            The only offline-first password manager with built-in 2FA and zero cloud dependency.
+          </p>
+        </div>
+
+        <!-- Call to Action Buttons -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
+          <button
+            id="hero-download-btn"
+            type="button"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl text-sm sm:text-base font-bold text-zinc-950 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 shadow-xl shadow-emerald-500/25 transition-all cursor-pointer"
+          >
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" x2="12" y1="15" y2="3"/>
+            </svg>
+            <span>Download Extension</span>
+          </button>
+
+          <a
+            href="https://github.com/pixra/arca"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm sm:text-base font-semibold text-zinc-200 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 transition-all"
+          >
+            <svg class="w-5 h-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
+              <path d="M9 18c-4.51 2-5-2-7-2"/>
+            </svg>
+            <span>View on GitHub</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES GRID (4 CARDS) -->
+    <section id="features" class="py-16 sm:py-20 px-4 sm:px-6 border-t border-zinc-900">
+      <div class="max-w-6xl mx-auto space-y-12">
+        <div class="text-center space-y-3 max-w-2xl mx-auto">
+          <p class="text-xs font-mono uppercase tracking-widest text-emerald-500 font-semibold">Core Security Pillars</p>
+          <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-zinc-50">Engineered From First Principles</h2>
+          <p class="text-sm sm:text-base text-zinc-400">
+            No Google login, no telemetry beacons, and zero host-page DOM injection.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Card 1: Zero-Knowledge Sync -->
+          <article class="p-6 sm:p-7 rounded-2xl border border-zinc-800 bg-zinc-900/80 backdrop-blur-md shadow-2xl space-y-3 hover:border-emerald-500/50 transition-colors">
+            <div class="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                <path d="M8 16H3v5"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-zinc-50">Zero-Knowledge Sync</h3>
+            <p class="text-sm text-zinc-300 leading-relaxed">
+              100% offline by default. When you opt into cross-device sync, our self-hostable Rust Blind Relay stores only 256-byte padded <code class="font-mono text-emerald-400">XChaCha20-Poly1305</code> blobs and merges updates via Hybrid Logical Clock (<code class="font-mono text-zinc-200">HLC</code>) CRDTs.
+            </p>
+          </article>
+
+          <!-- Card 2: Built-in 2FA -->
+          <article class="p-6 sm:p-7 rounded-2xl border border-zinc-800 bg-zinc-900/80 backdrop-blur-md shadow-2xl space-y-3 hover:border-amber-500/50 transition-colors">
+            <div class="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-zinc-50">Built-in 2FA</h3>
+            <p class="text-sm text-zinc-300 leading-relaxed">
+              Generate RFC 6238 6-digit and 8-digit TOTP codes with a live 30-second countdown ring (<span class="font-mono text-amber-400">Amber-500</span> transitioning to <span class="font-mono text-rose-400">Rose-500</span> under 5s) and enroll 2FA QR codes offline straight from your active tab.
+            </p>
+          </article>
+
+          <!-- Card 3: WebAuthn Biometrics -->
+          <article class="p-6 sm:p-7 rounded-2xl border border-zinc-800 bg-zinc-900/80 backdrop-blur-md shadow-2xl space-y-3 hover:border-emerald-500/50 transition-colors">
+            <div class="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-500">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+                <path d="M2 12a10 10 0 0 1 18-6"/>
+                <path d="M2 16h.01"/>
+                <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
+                <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+                <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-zinc-50">WebAuthn Biometrics</h3>
+            <p class="text-sm text-zinc-300 leading-relaxed">
+              Unlock your vault in milliseconds using hardware-backed WebAuthn <code class="font-mono text-zinc-200">PRF</code> (<code class="font-mono text-zinc-200">hmac-secret</code>) on desktop or Secure Enclave / StrongBox on mobile, protected by a strict 3-strike fallback and Shamir 2-of-3 recovery.
+            </p>
+          </article>
+
+          <!-- Card 4: 100% Open Source -->
+          <article class="p-6 sm:p-7 rounded-2xl border border-zinc-800 bg-zinc-900/80 backdrop-blur-md shadow-2xl space-y-3 hover:border-rose-500/50 transition-colors">
+            <div class="w-11 h-11 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-500">
+              <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="16 18 22 12 16 6"/>
+                <polyline points="8 6 2 12 8 18"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-zinc-50">100% Open Source</h3>
+            <p class="text-sm text-zinc-300 leading-relaxed">
+              Licensed under <code class="font-mono text-rose-400">AGPL-3.0</code> with deterministic reproducible builds (<code class="font-mono text-zinc-200">SOURCE_DATE_EPOCH</code>) and a published white-box penetration test report so you never have to take our word for it.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS SECTION (3 STEPS) -->
+    <section id="how-it-works" class="py-16 sm:py-20 px-4 sm:px-6 border-t border-zinc-900">
+      <div class="max-w-6xl mx-auto space-y-12">
+        <div class="text-center space-y-3 max-w-2xl mx-auto">
+          <p class="text-xs font-mono uppercase tracking-widest text-amber-500 font-semibold">Simple 3-Step Workflow</p>
+          <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-zinc-50">How It Works</h2>
+          <p class="text-sm sm:text-base text-zinc-400">
+            Zero cloud signups. Up and running in under 30 seconds.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Step 1: Create Vault -->
+          <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900/80 space-y-3 relative">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500 text-zinc-950 font-mono font-bold text-sm">1</span>
+            <h3 class="text-lg font-bold text-zinc-50">Create Vault</h3>
+            <p class="text-sm text-zinc-300 leading-relaxed">
+              Set your Master Password offline. VaultGuard stretches it via <code class="font-mono text-emerald-400">Argon2id (64 MiB)</code> to wrap your 256-bit Data Encryption Key and generates your 24-word recovery phrase.
+            </p>
+          </div>
+
+          <!-- Step 2: Add Passwords -->
+          <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900/80 space-y-3 relative">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500 text-zinc-950 font-mono font-bold text-sm">2</span>
+            <h3 class="text-lg font-bold text-zinc-50">Add Passwords</h3>
+            <p class="text-sm text-zinc-300 leading-relaxed">
+              Save logins, scan 2FA QR codes from your active tab, and autofill safely with our 5-Point Anti-Clickjacking Guard and 100% offline domain avatars.
+            </p>
+          </div>
+
+          <!-- Step 3: Sync via Blind Relay -->
+          <div class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900/80 space-y-3 relative">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-500 text-zinc-50 font-mono font-bold text-sm">3</span>
+            <h3 class="text-lg font-bold text-zinc-50">Sync via Blind Relay</h3>
+            <p class="text-sm text-zinc-300 leading-relaxed">
+              Optionally enable Blind Relay Sync in Settings to synchronize 256-byte padded ciphertexts across desktop and Android/iOS using <code class="font-mono text-rose-400">Ed25519</code> challenge-response auth.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECURITY SPECS SUMMARY -->
+    <section id="specs" class="py-12 sm:py-16 px-4 sm:px-6 border-t border-zinc-900">
+      <div class="max-w-4xl mx-auto p-6 sm:p-8 rounded-2xl border border-zinc-800 bg-zinc-900/80 glow-emerald flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="space-y-2 text-center sm:text-start">
+          <h3 class="text-xl font-bold text-zinc-50">Ready to take back control of your credentials?</h3>
+          <p class="text-sm text-zinc-400">Load <code class="font-mono text-emerald-400">arca-extension-ready.zip</code> in Chrome or deploy your own Rust Blind Relay in 1 click.</p>
+        </div>
+        <button
+          id="bottom-download-btn"
+          type="button"
+          class="shrink-0 px-6 py-3 rounded-xl text-sm font-bold text-zinc-950 bg-emerald-500 hover:bg-emerald-400 transition-colors cursor-pointer"
+        >
+          Download Extension
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- INSTALLATION MODAL -->
+  <div
+    id="install-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="install-modal-title"
+    class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-zinc-950/85 backdrop-blur-sm"
+  >
+    <div class="w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 id="install-modal-title" class="text-base font-bold text-zinc-50">Install VaultGuard (Arca v0.4.1)</h3>
+        <button id="close-install-modal" type="button" class="px-2.5 py-1 rounded-lg text-xs font-mono text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800">ESC</button>
+      </div>
+      <div class="space-y-3 text-xs sm:text-sm text-zinc-300">
+        <p>Unzip <code class="font-mono text-emerald-400">arca-extension-ready.zip</code> and load it in Chrome:</p>
+        <pre class="p-3 rounded-xl bg-zinc-950 border border-zinc-800 font-mono text-xs text-amber-400 overflow-x-auto">unzip -o arca-extension-ready.zip -d ~/Downloads/arca-extension-ready</pre>
+        <p class="text-xs text-zinc-400">Then open <code class="font-mono text-zinc-200">chrome://extensions</code>, enable <strong>Developer mode</strong>, click <strong>Load unpacked</strong>, and select <code class="font-mono text-zinc-200">~/Downloads/arca-extension-ready</code>.</p>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <a href="https://github.com/pixra/arca" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl text-xs font-bold text-zinc-950 bg-emerald-500 hover:bg-emerald-400">View on GitHub</a>
+        <button id="done-install-modal" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-zinc-900 bg-[#09090b] py-10 px-4 sm:px-6">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-zinc-400">
+      <div>
+        <span>&copy; 2026 Pixra · VaultGuard (Arca v0.4.1). Licensed under GNU AGPL-3.0.</span>
+      </div>
+      <div class="flex items-center gap-6 font-medium">
+        <a href="https://github.com/pixra/arca" target="_blank" rel="noopener noreferrer" class="hover:text-zinc-50 transition-colors">GitHub Repository</a>
+        <a href="https://github.com/pixra/arca/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer" class="hover:text-zinc-50 transition-colors">Security Policy</a>
+        <a href="https://github.com/pixra/arca/blob/main/docs/DEPLOYMENT.md" target="_blank" rel="noopener noreferrer" class="hover:text-zinc-50 transition-colors">Deployment Guide</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var modal = document.getElementById('install-modal');
+      var openBtns = [
+        document.getElementById('nav-download-btn'),
+        document.getElementById('hero-download-btn'),
+        document.getElementById('bottom-download-btn')
+      ];
+      var closeBtns = [
+        document.getElementById('close-install-modal'),
+        document.getElementById('done-install-modal')
+      ];
+      function openModal() {
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+      function closeModal() {
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      openBtns.forEach(function (btn) {
+        if (btn) btn.addEventListener('click', openModal);
+      });
+      closeBtns.forEach(function (btn) {
+        if (btn) btn.addEventListener('click', closeModal);
+      });
+      if (modal) {
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) closeModal();
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

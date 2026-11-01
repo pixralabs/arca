@@ -1,0 +1,43 @@
+/* Arca by Pixra — Premium Charcoal Theme (Zinc 900/950, Emerald-500, Amber-500, Rose-500, Glassmorphism & JetBrains Mono) */
+:root {
+  color-scheme: dark;
+  --arca-bg-base: #09090b;
+  --arca-bg-card: #18181b;
+  --arca-border: #27272a;
+  --arca-text-heading: #fafafa;
+  --arca-text-body: #d4d4d8;
+  --arca-text-muted: #a1a1aa;
+  --arca-emerald: #10b981;
+  --arca-amber: #f59e0b;
+  --arca-rose: #f43f5e;
+}
+
+body {
+  margin: 0;
+  background-color: var(--arca-bg-base);
+  color: var(--arca-text-heading);
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.font-mono {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.vg-btn-primary,
+.vg-btn-emerald {
+  background-color: var(--arca-emerald);
+  color: #09090b;
+  font-weight: 600;
+}
+
+.vg-btn-danger {
+  background-color: var(--arca-rose);
+  color: #fafafa;
+  font-weight: 600;
+}
+
+.vg-btn-secondary {
+  background-color: rgba(24, 24, 27, 0.8);
+  color: #fafafa;
+  border: 1px solid rgba(63, 63, 70, 0.5);
+}
