@@ -3,8 +3,8 @@
 
 use axum::{
     body::Bytes,
-    extract::{HeaderMap, Query, State},
-    http::StatusCode,
+    extract::{Query, State},
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     Json,
 };

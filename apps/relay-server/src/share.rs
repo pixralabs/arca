@@ -2,8 +2,8 @@
 //! Bot-Crawler-Safe One-Time Ephemeral Sharing API (Patch VG-04 & Patch VG-02 Rate Limiter).
 
 use axum::{
-    extract::{ConnectInfo, HeaderMap, Path, State},
-    http::StatusCode,
+    extract::{ConnectInfo, Path, State},
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     Json,
 };
