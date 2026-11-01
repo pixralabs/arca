@@ -1,0 +1,31 @@
+# Node / PNPM
+node_modules/
+dist/
+build/
+.pnpm-debug.log*
+
+# Rust / Cargo
+target/
+Cargo.lock
+
+# React Native / Android / iOS
+.gradle/
+android/app/build/
+android/.gradle/
+ios/Pods/
+ios/build/
+.bundle/
+
+# Environment and IDE
+.env
+.env.*
+!.env.example
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Archives
+*.zip
+*.tar.gz

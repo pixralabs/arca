@@ -1,0 +1,26 @@
+{
+  "name": "arca-monorepo",
+  "version": "0.4.1",
+  "private": true,
+  "description": "Arca by Pixra — Zero-Knowledge Offline-First Password Manager Monorepo",
+  "scripts": {
+    "build": "pnpm -r --filter=!@vaultguard/mobile run build",
+    "build:extension": "pnpm --filter @vaultguard/extension build",
+    "build:relay": "cd apps/relay-server && cargo build --release",
+    "test": "pnpm -r run test",
+    "test:relay": "cd apps/relay-server && cargo test",
+    "dev:extension": "pnpm --filter @vaultguard/extension dev",
+    "dev:mobile": "pnpm --filter @vaultguard/mobile start",
+    "dev:relay": "cd apps/relay-server && cargo run",
+    "lint": "pnpm -r run lint"
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.7",
+    "typescript": "^5.6.3"
+  },
+  "packageManager": "pnpm@9.12.3",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

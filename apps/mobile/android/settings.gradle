@@ -1,0 +1,5 @@
+rootProject.name = 'ArcaMobile'
+apply from: new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
+useAutolinking()
+
+include ':app'

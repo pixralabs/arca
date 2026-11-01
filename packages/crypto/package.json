@@ -1,0 +1,28 @@
+{
+  "name": "@vaultguard/crypto",
+  "version": "0.4.1",
+  "description": "Zero-knowledge cryptography, envelope encryption, Argon2id KDF, Shamir, and TOTP for VaultGuard",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@scure/bip39": "^1.5.4",
+    "@vaultguard/shared": "workspace:*",
+    "hash-wasm": "^4.12.0",
+    "libsodium-wrappers-sumo": "^0.7.15",
+    "otpauth": "^9.3.4",
+    "shamir-secret-sharing": "^0.0.4"
+  },
+  "devDependencies": {
+    "@types/libsodium-wrappers-sumo": "^0.7.8",
+    "vitest": "^2.1.4"
+  },
+  "license": "AGPL-3.0"
+}

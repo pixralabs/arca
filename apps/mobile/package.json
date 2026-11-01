@@ -1,0 +1,37 @@
+{
+  "name": "@vaultguard/mobile",
+  "version": "0.4.1",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@op-engineering/op-sqlite": "^8.2.0",
+    "@react-native-async-storage/async-storage": "^2.1.0",
+    "@vaultguard/crypto": "workspace:*",
+    "@vaultguard/shared": "workspace:*",
+    "lucide-react-native": "^0.468.0",
+    "react": "18.3.1",
+    "react-native": "0.76.5",
+    "react-native-biometrics": "^3.0.1",
+    "react-native-keychain": "^8.2.0",
+    "react-native-safe-area-context": "^4.14.0",
+    "react-native-screens": "^3.35.0",
+    "react-native-svg": "^15.10.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.4",
+    "@babel/runtime": "^7.25.6",
+    "@react-native/babel-preset": "0.76.5",
+    "@react-native/eslint-config": "0.76.5",
+    "@react-native/metro-config": "0.76.5",
+    "@react-native/typescript-config": "0.76.5",
+    "@types/react": "^18.3.12",
+    "typescript": "^5.6.3"
+  }
+}
