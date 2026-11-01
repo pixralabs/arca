@@ -5,6 +5,7 @@ import { resolve } from 'path';
 export default defineConfig({
   plugins: [react()],
   build: {
+    target: 'es2022',
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
@@ -40,6 +41,9 @@ export default defineConfig({
       '@vaultguard/shared': resolve(__dirname, '../../packages/shared/src'),
       '@vaultguard/crypto': resolve(__dirname, '../../packages/crypto/src'),
       '@vaultguard/ui': resolve(__dirname, '../../packages/ui/src'),
+      'libsodium-wrappers-sumo': resolve(__dirname, '../../node_modules/.pnpm/libsodium-wrappers-sumo@0.7.16/node_modules/libsodium-wrappers-sumo/dist/modules-sumo-esm/libsodium-wrappers.mjs'),
+      './libsodium-sumo.mjs': resolve(__dirname, '../../node_modules/.pnpm/libsodium-sumo@0.7.16/node_modules/libsodium-sumo/dist/modules-sumo-esm/libsodium-sumo.mjs'),
+      'libsodium-sumo': resolve(__dirname, '../../node_modules/.pnpm/libsodium-sumo@0.7.16/node_modules/libsodium-sumo/dist/modules-sumo-esm/libsodium-sumo.mjs'),
     },
   },
 });
