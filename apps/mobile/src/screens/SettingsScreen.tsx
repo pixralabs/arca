@@ -118,7 +118,7 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
           </View>
           <View style={styles.divider} />
           <Text style={styles.cardLabel}>Blind Relay Server (Supabase PostgreSQL)</Text>
-          <Text style={styles.cardValue}>https://arca-relay.onrender.com</Text>
+          <Text style={styles.cardValue}>https://arca-rc8v.onrender.com</Text>
           <Text style={styles.cardStatus}>{syncStatus}</Text>
         </View>
       </View>

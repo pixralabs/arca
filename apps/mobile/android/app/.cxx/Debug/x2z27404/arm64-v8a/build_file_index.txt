@@ -1,5 +1,6 @@
 /home/radhe/Development/arca/apps/mobile/node_modules/@op-engineering/op-sqlite/android/build/generated/source/codegen/jni/CMakeLists.txt
 /home/radhe/Development/arca/apps/mobile/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt
+/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/CMakeLists.txt
 /home/radhe/Development/arca/apps/mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt
 /home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt
 /home/radhe/Development/arca/apps/mobile/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt

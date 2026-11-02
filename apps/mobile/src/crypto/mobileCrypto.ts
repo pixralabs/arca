@@ -113,7 +113,7 @@ export async function mobileUnlockVault(password: string): Promise<MobileSession
     throw new VaultGuardError(ERR_VAULT_CORRUPTED);
   }
   const header: VaultHeader = JSON.parse(headerRaw);
-  console.log('[mobileCrypto] header parsed, kdf params:', JSON.stringify(header.kdfParams));
+  console.log('[mobileCrypto] masterSlot.kdfParams:', JSON.stringify(header.masterSlot?.kdfParams));
   const pwBytes = new TextEncoder().encode(password);
   console.log('[mobileCrypto] running unlockWithMaster...');
   const dek = await unlockWithMaster(header, pwBytes);

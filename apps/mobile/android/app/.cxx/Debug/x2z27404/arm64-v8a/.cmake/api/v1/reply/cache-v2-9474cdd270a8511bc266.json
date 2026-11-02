@@ -11,7 +11,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "armeabi-v7a"
+			"value" : "arm64-v8a"
 		},
 		{
 			"name" : "ANDROID_NDK",
@@ -99,7 +99,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "armeabi-v7a"
+			"value" : "arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_ANDROID_NDK",
@@ -187,7 +187,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/armeabi-v7a"
+			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -659,7 +659,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/prefab/armeabi-v7a/prefab"
+			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/prefab/arm64-v8a/prefab"
 		},
 		{
 			"name" : "CMAKE_GENERATOR",
@@ -755,7 +755,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/build/intermediates/cxx/Debug/x2z27404/obj/armeabi-v7a"
+			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/build/intermediates/cxx/Debug/x2z27404/obj/arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_LINKER",
@@ -1027,7 +1027,7 @@
 				}
 			],
 			"type" : "UNINITIALIZED",
-			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/build/intermediates/cxx/Debug/x2z27404/obj/armeabi-v7a"
+			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/build/intermediates/cxx/Debug/x2z27404/obj/arm64-v8a"
 		},
 		{
 			"name" : "CMAKE_SHARED_LINKER_FLAGS",
@@ -1267,10 +1267,10 @@
 			[
 				{
 					"name" : "HELPSTRING",
-					"value" : "The CMake toolchain file"
+					"value" : "No help, variable specified on the command line."
 				}
 			],
-			"type" : "FILEPATH",
+			"type" : "UNINITIALIZED",
 			"value" : "/home/radhe/Android/Sdk/ndk/27.1.12297006/build/cmake/android.toolchain.cmake"
 		},
 		{
@@ -1335,7 +1335,7 @@
 				}
 			],
 			"type" : "PATH",
-			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/prefab/armeabi-v7a/prefab/lib/arm-linux-androideabi/cmake/ReactAndroid"
+			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/ReactAndroid"
 		},
 		{
 			"name" : "appmodules_BINARY_DIR",
@@ -1347,7 +1347,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/armeabi-v7a"
+			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/arm64-v8a"
 		},
 		{
 			"name" : "appmodules_IS_TOP_LEVEL",
@@ -1383,7 +1383,7 @@
 				}
 			],
 			"type" : "PATH",
-			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/prefab/armeabi-v7a/prefab/lib/arm-linux-androideabi/cmake/fbjni"
+			"value" : "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/prefab/arm64-v8a/prefab/lib/aarch64-linux-android/cmake/fbjni"
 		}
 	],
 	"kind" : "cache",

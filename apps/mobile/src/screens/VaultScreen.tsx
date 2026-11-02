@@ -65,10 +65,10 @@ export function VaultScreen({
 
   // Cross-platform Add Item Modal state (works on both Android & iOS)
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newTotpSecret, setNewTotpSecret] = useState('');
+  const [newTitle, setNewTitle] = useState(__DEV__ ? 'GitHub' : '');
+  const [newUsername, setNewUsername] = useState(__DEV__ ? 'octocat@github.com' : '');
+  const [newPassword, setNewPassword] = useState(__DEV__ ? 'Secret123!' : '');
+  const [newTotpSecret, setNewTotpSecret] = useState(__DEV__ ? 'JBSWY3DPEHPK3PXP' : '');
 
   const loadItems = async () => {
     setLoading(true);

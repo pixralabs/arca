@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <!-- Studio Radial Charcoal Background (Top-Left Lit, Matching Reference) -->
+    <radialGradient id="bg-radial" cx="104" cy="88" r="490" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3d404d" />
+      <stop offset="45%" stop-color="#20222a" />
+      <stop offset="80%" stop-color="#111217" />
+      <stop offset="100%" stop-color="#09090b" />
+    </radialGradient>
+
+    <!-- Subtle Ambient Emerald Halo Behind Lock for Dark-Mode Edge Separation -->
+    <radialGradient id="emerald-halo" cx="256" cy="276" r="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.22" />
+      <stop offset="65%" stop-color="#10b981" stop-opacity="0.06" />
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Brushed Platinum-Silver Shackle Gradient (High Contrast in Dark & Light Mode) -->
+    <linearGradient id="shackle-metal" x1="186" y1="108" x2="326" y2="236" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#e4e4e7" />
+      <stop offset="50%" stop-color="#a1a1aa" />
+      <stop offset="100%" stop-color="#71717a" />
+    </linearGradient>
+
+    <!-- Silky Jewel-Tone Emerald Body Gradient -->
+    <linearGradient id="emerald-body" x1="168" y1="204" x2="348" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="42%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <!-- Recessed Keyhole Rim Bevel -->
+    <linearGradient id="keyhole-bevel" x1="234" y1="264" x2="278" y2="344" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="100%" stop-color="#6ee7b7" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Rounded Squircle Studio Background -->
+  <rect width="512" height="512" rx="114" fill="url(#bg-radial)" />
+
+  <!-- Subtle Outer Squircle Rim so the icon frame is visible on pitch-black OLED screens -->
+  <rect
+    x="2"
+    y="2"
+    width="508"
+    height="508"
+    rx="112"
+    stroke="#ffffff"
+    stroke-opacity="0.08"
+    stroke-width="4"
+  />
+
+  <!-- 2. Soft Ambient Halo for Universal Contrast -->
+  <circle cx="256" cy="276" r="185" fill="url(#emerald-halo)" />
+
+  <!-- 3. Floating Elliptical Ground Shadow -->
+  <ellipse cx="256" cy="404" rx="124" ry="15" fill="#050507" fill-opacity="0.78" />
+  <ellipse cx="256" cy="404" rx="90" ry="9" fill="#000000" fill-opacity="0.88" />
+
+  <!-- 4. Rounded U-Shackle (With Collar Shading & Bright Specular Arc) -->
+  <!-- Outer Dark Vector Outline -->
+  <path
+    d="M188 232 V174 C188 134.235 218.445 102 256 102 C293.555 102 324 134.235 324 174 V232"
+    stroke="#121318"
+    stroke-width="48"
+    stroke-linecap="round"
+  />
+  <!-- Brushed Platinum Inner Fill -->
+  <path
+    d="M188 232 V174 C188 134.235 218.445 102 256 102 C293.555 102 324 134.235 324 174 V232"
+    stroke="url(#shackle-metal)"
+    stroke-width="32"
+    stroke-linecap="round"
+  />
+  <!-- Shackle Inner Shadow Band along Right Curve -->
+  <path
+    d="M256 102 C293.555 102 324 134.235 324 174 V224"
+    stroke="#52525b"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-opacity="0.55"
+  />
+  <!-- Shackle Base Collar Shadow -->
+  <path d="M172 214 H204" stroke="#52525b" stroke-width="14" stroke-linecap="butt" stroke-opacity="0.6" />
+  <path d="M308 214 H340" stroke="#52525b" stroke-width="14" stroke-linecap="butt" stroke-opacity="0.6" />
+  <!-- Shackle Top-Left Glossy Highlight Arc -->
+  <path
+    d="M180 186 V172 C180 138 206 111 242 108"
+    stroke="#f4f4f5"
+    stroke-width="7.5"
+    stroke-linecap="round"
+    stroke-opacity="0.92"
+  />
+
+  <!-- 5. Chubby Pill-Shaped Emerald Padlock Body -->
+  <rect
+    x="130"
+    y="208"
+    width="252"
+    height="186"
+    rx="93"
+    fill="url(#emerald-body)"
+    stroke="#121318"
+    stroke-width="10"
+  />
+
+  <!-- Crescent Inner Bottom-Right Shading for 3D Tactile Volume -->
+  <path
+    d="M352 246 C366 266 372 292 366 318 C356 358 318 384 274 384 H202 C180 384 160 375 146 360 C164 371 186 376 212 376 H266 C312 376 348 344 354 298 C356 280 355 262 352 246 Z"
+    fill="#047857"
+    fill-opacity="0.68"
+  />
+
+  <!-- Subtle Inner Top-Left Emerald Rim Light -->
+  <rect
+    x="135"
+    y="213"
+    width="242"
+    height="176"
+    rx="88"
+    stroke="#a7f3d0"
+    stroke-opacity="0.32"
+    stroke-width="3"
+  />
+
+  <!-- 6. Signature Curved Glossy White Highlight Arc (Upper-Left Shoulder) -->
+  <path
+    d="M153 278 C161 247 184 228 214 223"
+    stroke="#ffffff"
+    stroke-width="11"
+    stroke-linecap="round"
+    stroke-opacity="0.92"
+  />
+
+  <!-- 7. Recessed Beveled Central Keyhole -->
+  <!-- Keyhole Bevel Rim -->
+  <g transform="translate(0, 2)">
+    <circle cx="256" cy="288" r="21" fill="url(#keyhole-bevel)" />
+    <path
+      d="M245 298 L240 332 C239 338 243.5 343 249.5 343 H262.5 C268.5 343 273 338 272 332 L267 298 Z"
+      fill="url(#keyhole-bevel)"
+    />
+  </g>
+  <!-- Keyhole Core Cutout -->
+  <circle cx="256" cy="288" r="17.5" fill="#121318" />
+  <path
+    d="M247.5 297 L243 329 C242.2 334.2 246 338.5 251.2 338.5 H260.8 C266 338.5 269.8 334.2 269 329 L264.5 297 Z"
+    fill="#121318"
+  />
+</svg>

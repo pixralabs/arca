@@ -39,7 +39,7 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
         payload: { text: secretText },
         maxViews: 1,
         expiresInSeconds: parseInt(expiryHours, 10) * 3600 || 86400,
-        relayServerUrl: 'https://arca-relay.onrender.com',
+        relayServerUrl: 'https://arca-rc8v.onrender.com',
       });
       setShareUrl(res.url);
     } catch (err: any) {
