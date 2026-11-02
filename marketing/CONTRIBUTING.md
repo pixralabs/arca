@@ -13,7 +13,7 @@ Thank you for contributing to **VaultGuard (Arca by Pixra)**! Because this proje
 ### Installation & Local Build
 ```bash
 # 1. Clone the repository
-git clone https://github.com/pixra/arca.git
+git clone https://github.com/pixralabs/arca.git
 cd arca
 
 # 2. Install all workspace dependencies
