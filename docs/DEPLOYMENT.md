@@ -36,7 +36,7 @@ CMD ["/usr/local/bin/vaultguard-relay-server"]
 ```
 
 ### Step 2 — Create the Web Service on Render.com
-1. Push your repository to GitHub (`https://github.com/pixra/arca`).
+1. Push your repository to GitHub (`https://github.com/pixralabs/arca`).
 2. Sign in to [Render.com](https://render.com) and click **New +** → **Web Service**.
 3. Connect your GitHub repository and configure the service settings:
    * **Name:** `arca-blind-relay`
