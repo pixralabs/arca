@@ -2,4 +2,4 @@ packages:
   - 'packages/*'
   - 'apps/extension'
   - 'apps/relay-server'
-  # - 'apps/mobile'  <-- Abhi ke liye ignore
+  - 'apps/mobile'

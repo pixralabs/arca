@@ -10,7 +10,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@op-engineering/op-sqlite": "^8.2.0",
+    "@op-engineering/op-sqlite": "8.0.3",
     "@react-native-async-storage/async-storage": "^2.1.0",
     "@vaultguard/crypto": "workspace:*",
     "@vaultguard/shared": "workspace:*",
