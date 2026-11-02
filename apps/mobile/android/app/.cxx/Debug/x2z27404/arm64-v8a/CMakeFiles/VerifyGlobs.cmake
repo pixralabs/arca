@@ -62,6 +62,31 @@ if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   file(TOUCH_NOCREATE "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/arm64-v8a/CMakeFiles/cmake.verify_globs")
 endif()
 
+# react_codegen_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/*.cpp")
+set(OLD_GLOB
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/RNGetRandomValuesSpec-generated.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/arm64-v8a/CMakeFiles/cmake.verify_globs")
+endif()
+
+# react_codegen_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/react/renderer/components/RNGetRandomValuesSpec/*.cpp")
+set(OLD_GLOB
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/react/renderer/components/RNGetRandomValuesSpec/ComponentDescriptors.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/react/renderer/components/RNGetRandomValuesSpec/EventEmitters.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/react/renderer/components/RNGetRandomValuesSpec/Props.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/react/renderer/components/RNGetRandomValuesSpec/RNGetRandomValuesSpecJSI-generated.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/react/renderer/components/RNGetRandomValuesSpec/ShadowNodes.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/react/renderer/components/RNGetRandomValuesSpec/States.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/arm64-v8a/CMakeFiles/cmake.verify_globs")
+endif()
+
 # LIB_CUSTOM_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt:21 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-safe-area-context/android/src/main/jni/*.cpp")
 set(OLD_GLOB

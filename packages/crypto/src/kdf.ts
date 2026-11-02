@@ -4,7 +4,8 @@
  * Enforces OWASP Minimum Floor: 19456 KiB (19 MiB) <= m <= 65536 KiB (64 MiB)
  */
 
-import { argon2id } from 'hash-wasm';
+import { argon2id as wasmArgon2id } from 'hash-wasm';
+import { argon2idAsync as nobleArgon2idAsync } from '@noble/hashes/argon2';
 import sodium from 'libsodium-wrappers-sumo';
 import {
   KDF_MEMORY_MIN_KIB,
@@ -145,15 +146,29 @@ export async function deriveMasterKEK(
   return defaultKdfQueue.enqueue(async () => {
     let masterSeed: Uint8Array | null = null;
     try {
-      masterSeed = await argon2id({
-        password,
-        salt,
-        memorySize: params.m,
-        iterations: params.t,
-        parallelism: params.p,
-        hashLength: DEK_BYTES,
-        outputType: 'binary',
-      });
+      if (typeof WebAssembly !== 'undefined') {
+        try {
+          masterSeed = await wasmArgon2id({
+            password,
+            salt,
+            memorySize: params.m,
+            iterations: params.t,
+            parallelism: params.p,
+            hashLength: DEK_BYTES,
+            outputType: 'binary',
+          });
+        } catch {
+          // If WASM execution fails or is not supported, fallback to noble-hashes
+        }
+      }
+      if (!masterSeed) {
+        masterSeed = await nobleArgon2idAsync(password, salt, {
+          t: params.t,
+          m: params.m,
+          p: params.p,
+          dkLen: DEK_BYTES,
+        });
+      }
       const masterKek = sodium.crypto_kdf_derive_from_key(
         DEK_BYTES,
         KEK_ID,

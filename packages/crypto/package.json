@@ -13,6 +13,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@noble/hashes": "^1.8.0",
     "@scure/bip39": "^1.5.4",
     "@vaultguard/shared": "workspace:*",
     "hash-wasm": "^4.12.0",

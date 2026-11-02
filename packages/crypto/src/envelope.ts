@@ -188,9 +188,15 @@ export async function unlockWithMaster(
     throw new VaultGuardError('ERR_VAULT_CORRUPTED');
   }
   const slot = header.masterSlot;
-  const salt = slot.salt instanceof Uint8Array ? slot.salt : sodium.from_base64(slot.salt as string, sodium.base64_variants.ORIGINAL);
-  const nonce = slot.nonce instanceof Uint8Array ? slot.nonce : sodium.from_base64(slot.nonce as string, sodium.base64_variants.ORIGINAL);
-  const ciphertext = slot.ciphertext instanceof Uint8Array ? slot.ciphertext : sodium.from_base64(slot.ciphertext as string, sodium.base64_variants.ORIGINAL);
+  const toBytes = (val: unknown): Uint8Array => {
+    if (val instanceof Uint8Array) return val;
+    if (typeof val === 'string') return sodium.from_base64(val, sodium.base64_variants.ORIGINAL);
+    if (val && typeof val === 'object') return new Uint8Array(Object.values(val as Record<string, number>));
+    throw new Error('Invalid byte buffer');
+  };
+  const salt = toBytes(slot.salt);
+  const nonce = toBytes(slot.nonce);
+  const ciphertext = toBytes(slot.ciphertext);
 
   assertValidKdfParams(slot.kdfParams);
   let masterKek: Uint8Array | null = null;
@@ -237,8 +243,14 @@ export async function unlockWithRecovery(
     throw new VaultGuardError('ERR_VAULT_CORRUPTED');
   }
   const slot = header.recoverySlot;
-  const nonce = slot.nonce instanceof Uint8Array ? slot.nonce : sodium.from_base64(slot.nonce as string, sodium.base64_variants.ORIGINAL);
-  const ciphertext = slot.ciphertext instanceof Uint8Array ? slot.ciphertext : sodium.from_base64(slot.ciphertext as string, sodium.base64_variants.ORIGINAL);
+  const toBytes = (val: unknown): Uint8Array => {
+    if (val instanceof Uint8Array) return val;
+    if (typeof val === 'string') return sodium.from_base64(val, sodium.base64_variants.ORIGINAL);
+    if (val && typeof val === 'object') return new Uint8Array(Object.values(val as Record<string, number>));
+    throw new Error('Invalid byte buffer');
+  };
+  const nonce = toBytes(slot.nonce);
+  const ciphertext = toBytes(slot.ciphertext);
 
   const normalizedMnemonic = typeof mnemonic === 'string' ? mnemonic.trim().replace(/\s+/g, ' ').normalize('NFKD') : '';
   if (!validateMnemonic(normalizedMnemonic, wordlist)) {

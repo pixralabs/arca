@@ -13,6 +13,7 @@ import {
   generatePassword,
   generatePassphrase,
   generateTotpCode,
+  OWASP_MOBILE_KDF_PARAMS,
 } from '@vaultguard/crypto';
 import {
   VaultHeader,
@@ -60,14 +61,32 @@ export async function computeTotp(
   };
 }
 
+function serializeHeader(header: VaultHeader): string {
+  const cloned: any = {
+    ...header,
+    masterSlot: {
+      ...header.masterSlot,
+      salt: header.masterSlot.salt instanceof Uint8Array ? sodium.to_base64(header.masterSlot.salt, sodium.base64_variants.ORIGINAL) : header.masterSlot.salt,
+      nonce: header.masterSlot.nonce instanceof Uint8Array ? sodium.to_base64(header.masterSlot.nonce, sodium.base64_variants.ORIGINAL) : header.masterSlot.nonce,
+      ciphertext: header.masterSlot.ciphertext instanceof Uint8Array ? sodium.to_base64(header.masterSlot.ciphertext, sodium.base64_variants.ORIGINAL) : header.masterSlot.ciphertext,
+    },
+    recoverySlot: {
+      ...header.recoverySlot,
+      nonce: header.recoverySlot.nonce instanceof Uint8Array ? sodium.to_base64(header.recoverySlot.nonce, sodium.base64_variants.ORIGINAL) : header.recoverySlot.nonce,
+      ciphertext: header.recoverySlot.ciphertext instanceof Uint8Array ? sodium.to_base64(header.recoverySlot.ciphertext, sodium.base64_variants.ORIGINAL) : header.recoverySlot.ciphertext,
+    },
+  };
+  return JSON.stringify(cloned);
+}
+
 export async function mobileSetupVault(password: string): Promise<{
   mnemonic: string;
   session: MobileSession;
 }> {
   await sodium.ready;
   const pwBytes = new TextEncoder().encode(password);
-  const result = await createVault(pwBytes);
-  await saveVaultMeta('header', JSON.stringify(result.header));
+  const result = await createVault(pwBytes, undefined, OWASP_MOBILE_KDF_PARAMS);
+  await saveVaultMeta('header', serializeHeader(result.header));
 
   activeSession = {
     dek: result.dek,

@@ -46,6 +46,7 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/armeabi-v7a/opsqlite_autolinked_build/cmake_install.cmake")
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/armeabi-v7a/rnasyncstorage_autolinked_build/cmake_install.cmake")
+  include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/armeabi-v7a/RNGetRandomValuesSpec_autolinked_build/cmake_install.cmake")
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/armeabi-v7a/safeareacontext_autolinked_build/cmake_install.cmake")
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/armeabi-v7a/rnscreens_autolinked_build/cmake_install.cmake")
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/x2z27404/armeabi-v7a/rnsvg_autolinked_build/cmake_install.cmake")
