@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Arca — Play Store Screenshot Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#09090b;--surface:#18181b;--surface2:#222226;--border:#27272a;--border2:#3f3f46;--text:#f4f4f5;--muted:#a1a1aa;--dim:#71717a;--emerald:#10b981;--emerald2:#34d399;--emerald3:#059669;--amber:#f59e0b;--blue:#0a84ff;--yellow:#eab308;--red:#ef4444;--green:#30d158;--sky:#38bdf8;--gray:#71717a}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text)}
+.slide{width:1080px;height:1920px;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;background:var(--bg);page-break-after:always}
+.slide::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 700px 600px at 50% -80px,rgba(16,185,129,.13) 0%,transparent 70%),radial-gradient(ellipse 500px 400px at 110% 60%,rgba(10,132,255,.08) 0%,transparent 70%),radial-gradient(ellipse 400px 300px at -10% 80%,rgba(245,158,11,.06) 0%,transparent 60%);pointer-events:none;z-index:0}
+.slide::after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+.slide-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:100%;height:100%;padding:80px 60px 60px}
+.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:100px;padding:8px 20px;font-size:22px;font-weight:600;color:var(--emerald2);letter-spacing:.5px;margin-bottom:36px}
+.badge-dot{width:8px;height:8px;border-radius:50%;background:var(--emerald);box-shadow:0 0 8px var(--emerald)}
+.headline{font-size:72px;font-weight:900;line-height:1.05;letter-spacing:-2px;text-align:center;color:var(--text);margin-bottom:20px;max-width:900px}
+.headline em{font-style:normal;background:linear-gradient(135deg,var(--emerald2) 0%,var(--emerald) 50%,var(--emerald3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subline{font-size:28px;font-weight:400;color:var(--muted);text-align:center;margin-bottom:56px;max-width:760px;line-height:1.5}
+.phone-wrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%}
+.phone-frame{width:440px;height:860px;background:#0f0f10;border-radius:52px;border:2px solid #2a2a2e;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 40px 120px rgba(0,0,0,.9),0 0 60px rgba(16,185,129,.08),inset 0 1px 0 rgba(255,255,255,.08);position:relative;overflow:hidden;display:flex;flex-direction:column}
+.phone-notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:120px;height:30px;background:#000;border-radius:20px;z-index:10}
+.phone-frame::before{content:'';position:absolute;left:-3px;top:160px;width:3px;height:50px;background:#2a2a2e;border-radius:2px 0 0 2px;box-shadow:0 70px 0 #2a2a2e,0 140px 0 #2a2a2e}
+.phone-frame::after{content:'';position:absolute;right:-3px;top:200px;width:3px;height:80px;background:#2a2a2e;border-radius:0 2px 2px 0}
+.phone-screen{flex:1;margin:12px;border-radius:42px;overflow:hidden;position:relative;background:#09090b}
+.bottom-brand{display:flex;align-items:center;gap:12px;margin-top:48px;opacity:.7}
+.bottom-brand-icon{width:36px;height:36px;background:var(--emerald);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.bottom-brand-text{font-size:24px;font-weight:700;letter-spacing:-.5px;color:var(--text)}
+.bottom-brand-text span{color:var(--emerald)}
+.status-bar{display:flex;justify-content:space-between;align-items:center;padding:52px 24px 8px;font-size:13px;font-weight:600;color:#f4f4f5}
+.status-icons{display:flex;gap:6px;align-items:center}
+.screen-vault{display:flex;flex-direction:column;height:100%;background:#09090b}
+.vault-header{padding:0 20px 16px;display:flex;justify-content:space-between;align-items:center}
+.vault-title{font-size:32px;font-weight:800;letter-spacing:-.8px;color:#f4f4f5}
+.vault-settings-btn{width:36px;height:36px;border-radius:50%;background:#18181b;border:1px solid #27272a;display:flex;align-items:center;justify-content:center;font-size:16px}
+.grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 16px}
+.cat-tile{background:#18181b;border:1px solid #27272a;border-radius:18px;padding:16px;position:relative;overflow:hidden}
+.cat-count{font-size:22px;font-weight:700;letter-spacing:-.4px;color:#f4f4f5;margin-bottom:2px}
+.cat-label{font-size:13px;font-weight:600;color:#a1a1aa;margin-bottom:12px}
+.cat-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px}
+.vault-list{flex:1;overflow:hidden;padding:0 16px}
+.vault-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(39,39,42,.6)}
+.item-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.item-info{flex:1}
+.item-title{font-size:15px;font-weight:600;color:#f4f4f5}
+.item-sub{font-size:12px;color:#71717a;margin-top:2px}
+.bottom-bar{position:absolute;bottom:16px;left:16px;right:16px;display:flex;gap:10px;align-items:center;padding:12px 16px;background:rgba(34,34,38,.92);border:1px solid #27272a;border-radius:24px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.search-placeholder{flex:1;font-size:15px;color:#71717a}
+.fab{width:40px;height:40px;background:#10b981;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 0 16px rgba(16,185,129,.5)}
+.screen-totp{display:flex;flex-direction:column;height:100%;background:#09090b}
+.totp-header{padding:0 16px 12px;display:flex;align-items:center;gap:10px}
+.back-btn{font-size:15px;color:#10b981;font-weight:500}
+.totp-card{margin:0 16px 16px;background:#18181b;border:1px solid #27272a;border-radius:24px;padding:24px;display:flex;flex-direction:column;align-items:center;gap:16px}
+.totp-site-icon{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#0a84ff,#005ecb);display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 8px 24px rgba(10,132,255,.35)}
+.totp-code-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:200px;height:200px}
+.totp-ring{position:absolute;inset:0}
+.totp-ring circle{fill:none;stroke:#27272a;stroke-width:8}
+.totp-ring .progress{stroke:#10b981;stroke-dasharray:565;stroke-dashoffset:188;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;filter:drop-shadow(0 0 8px rgba(16,185,129,.7))}
+.totp-code-digits{font-size:44px;font-weight:800;letter-spacing:6px;color:#10b981;position:relative;z-index:1}
+.totp-timer{font-size:13px;color:#71717a;text-align:center}
+.totp-list{padding:0 16px}
+.totp-list-item{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#18181b;border:1px solid #27272a;border-radius:16px;margin-bottom:10px}
+.totp-list-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.totp-mini-code{font-size:20px;font-weight:700;letter-spacing:3px;color:#10b981}
+.totp-mini-timer{font-size:11px;color:#71717a;margin-top:2px}
+.screen-add{display:flex;flex-direction:column;height:100%;background:#09090b;position:relative}
+.modal-sheet{position:absolute;bottom:0;left:0;right:0;background:#18181b;border-radius:28px 28px 0 0;border-top:1px solid #27272a;padding:16px 20px 32px;box-shadow:0 -20px 80px rgba(0,0,0,.8)}
+.modal-handle{width:36px;height:4px;background:#3f3f46;border-radius:2px;margin:0 auto 20px}
+.modal-title{font-size:20px;font-weight:800;color:#f4f4f5;margin-bottom:20px;letter-spacing:-.4px}
+.form-field{margin-bottom:12px}
+.form-label{font-size:12px;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.form-input{width:100%;padding:12px 14px;background:#27272a;border:1px solid #3f3f46;border-radius:12px;font-size:15px;color:#f4f4f5;display:flex;align-items:center;justify-content:space-between}
+.form-input.hl{border-color:rgba(16,185,129,.5);background:rgba(16,185,129,.06)}
+.totp-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);color:#eab308;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600}
+.save-btn{width:100%;padding:16px;background:linear-gradient(135deg,#10b981,#059669);border-radius:16px;text-align:center;font-size:16px;font-weight:700;color:#fff;margin-top:16px;box-shadow:0 8px 24px rgba(16,185,129,.35)}
+.blurred-bg{position:absolute;inset:0;background:rgba(9,9,11,.5)}
+.screen-settings{display:flex;flex-direction:column;height:100%;background:#09090b;padding:0 16px}
+.settings-title{font-size:28px;font-weight:800;letter-spacing:-.6px;color:#f4f4f5;padding:8px 0 20px}
+.settings-section{margin-bottom:20px}
+.section-label{font-size:12px;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding-left:4px}
+.settings-card{background:#18181b;border:1px solid #27272a;border-radius:16px;overflow:hidden}
+.settings-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid rgba(39,39,42,.6)}
+.settings-row:last-child{border-bottom:none}
+.settings-row-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.settings-row-info{flex:1}
+.settings-row-title{font-size:15px;font-weight:600;color:#f4f4f5}
+.settings-row-sub{font-size:12px;color:#71717a;margin-top:1px}
+.toggle{width:48px;height:28px;border-radius:14px;position:relative;flex-shrink:0}
+.toggle.on{background:#10b981}
+.toggle.off{background:#27272a}
+.toggle-knob{position:absolute;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.toggle.on .toggle-knob{left:23px}
+.toggle.off .toggle-knob{left:3px}
+.screen-setup{display:flex;flex-direction:column;height:100%;background:#09090b;padding:0 16px}
+.setup-header{padding:8px 0 24px}
+.setup-title{font-size:24px;font-weight:800;letter-spacing:-.5px;color:#f4f4f5;margin-bottom:6px}
+.setup-sub{font-size:14px;color:#71717a;line-height:1.5}
+.warning-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:20px}
+.warning-text{font-size:12px;color:#d97706;line-height:1.5}
+.phrase-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px}
+.phrase-word{background:#18181b;border:1px solid #27272a;border-radius:10px;padding:8px 10px;display:flex;gap:6px;align-items:center}
+.phrase-num{font-size:10px;color:#71717a;font-weight:600;width:16px;flex-shrink:0}
+.phrase-text{font-size:12px;font-weight:600;color:#f4f4f5}
+.continue-btn{width:100%;padding:16px;background:linear-gradient(135deg,#10b981,#059669);border-radius:16px;text-align:center;font-size:16px;font-weight:700;color:#fff;box-shadow:0 8px 24px rgba(16,185,129,.35)}
+.deco-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:100px;font-size:13px;color:var(--muted);font-weight:500}
+.deco-pills-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: VAULT HOME -->
+<div class="slide" id="slide-1">
+<div class="slide-content">
+  <div class="badge"><span class="badge-dot"></span> Zero-Knowledge &middot; End-to-End Encrypted</div>
+  <h1 class="headline">All Your Passwords.<br/><em>One Secure Vault.</em></h1>
+  <p class="subline">Organized by category. Searched in seconds. Protected forever.</p>
+  <div class="phone-wrap">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="screen-vault">
+          <div class="status-bar"><span>9:41</span><div class="status-icons"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1.5 8.5a13 13 0 0 1 21 0M5 12a10 10 0 0 1 14 0M8.5 15.5a6 6 0 0 1 7 0M12 19h.01" stroke="#f4f4f5" stroke-width="2" stroke-linecap="round"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="18" height="11" rx="2" stroke="#f4f4f5" stroke-width="2"/><path d="M22 11v3" stroke="#f4f4f5" stroke-width="2" stroke-linecap="round"/></svg></div></div>
+          <div class="vault-header"><span class="vault-title">Arca</span><div class="vault-settings-btn">&#9881;</div></div>
+          <div class="grid-2col">
+            <div class="cat-tile"><div class="cat-count">24</div><div class="cat-label">All</div><div class="cat-icon" style="background:rgba(10,132,255,.15);color:#0a84ff">&#128273;</div></div>
+            <div class="cat-tile"><div class="cat-count">8</div><div class="cat-label">Codes</div><div class="cat-icon" style="background:rgba(234,179,8,.15);color:#eab308">&#128242;</div></div>
+            <div class="cat-tile"><div class="cat-count" style="color:#ef4444">3</div><div class="cat-label" style="color:#ef4444">Security Alerts</div><div class="cat-icon" style="background:rgba(239,68,68,.15);color:#ef4444">&#128737;</div></div>
+            <div class="cat-tile"><div class="cat-count" style="color:#71717a">2</div><div class="cat-label">Deleted</div><div class="cat-icon" style="background:rgba(113,113,122,.15);color:#71717a">&#128465;</div></div>
+          </div>
+          <div class="vault-list">
+            <div class="vault-item"><div class="item-icon" style="background:rgba(10,132,255,.12)">&#128025;</div><div class="item-info"><div class="item-title">GitHub</div><div class="item-sub">octocat@github.com</div></div><span style="color:#3f3f46">&#8250;</span></div>
+            <div class="vault-item"><div class="item-icon" style="background:rgba(16,185,129,.12)">&#128272;</div><div class="item-info"><div class="item-title">Google Account</div><div class="item-sub">user@gmail.com</div></div><span style="color:#3f3f46">&#8250;</span></div>
+            <div class="vault-item"><div class="item-icon" style="background:rgba(234,179,8,.12)">&#128188;</div><div class="item-info"><div class="item-title">1Password Backup</div><div class="item-sub">work@company.com</div></div><span style="color:#3f3f46">&#8250;</span></div>
+            <div class="vault-item"><div class="item-icon" style="background:rgba(56,189,248,.12)">&#127970;</div><div class="item-info"><div class="item-title">HDFC NetBanking</div><div class="item-sub">&bull;&bull;&bull;@hdfc.com</div></div><span style="color:#3f3f46">&#8250;</span></div>
+          </div>
+          <div style="height:80px"></div>
+          <div class="bottom-bar"><span style="color:#71717a">&#128269;</span><span class="search-placeholder">Search vault&hellip;</span><div class="fab">+</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="deco-pills-row"><span class="deco-pill">&#128273; Passwords</span><span class="deco-pill">&#128242; TOTP 2FA</span><span class="deco-pill">&#128737; Security Alerts</span></div>
+  <div class="bottom-brand"><div class="bottom-brand-icon">&#128274;</div><span class="bottom-brand-text">arc<span>a</span></span></div>
+</div>
+</div>
+
+<!-- SLIDE 2: TOTP -->
+<div class="slide" id="slide-2">
+<div class="slide-content">
+  <div class="badge"><span class="badge-dot"></span> No Separate App Needed</div>
+  <h1 class="headline">Built-in<br/><em>2FA Authenticator.</em></h1>
+  <p class="subline">TOTP codes with live countdown &mdash; right inside your vault.</p>
+  <div class="phone-wrap">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="screen-totp">
+          <div class="status-bar"><span>9:41</span><div class="status-icons"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="18" height="11" rx="2" stroke="#f4f4f5" stroke-width="2"/><path d="M22 11v3" stroke="#f4f4f5" stroke-width="2" stroke-linecap="round"/></svg></div></div>
+          <div class="totp-header"><span class="back-btn">&#8249; Arca</span><span style="font-size:17px;font-weight:700;color:#f4f4f5">Authenticator</span></div>
+          <div class="totp-card">
+            <div class="totp-site-icon">&#128025;</div>
+            <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:#f4f4f5">GitHub</div><div style="font-size:13px;color:#71717a">octocat@github.com</div></div>
+            <div class="totp-code-wrap">
+              <svg class="totp-ring" viewBox="0 0 200 200"><circle cx="100" cy="100" r="90"/><circle class="progress" cx="100" cy="100" r="90"/></svg>
+              <div class="totp-code-digits">482 019</div>
+            </div>
+            <div class="totp-timer">&#9200; 12 seconds remaining</div>
+          </div>
+          <div class="totp-list">
+            <div class="totp-list-item"><div class="totp-list-icon" style="background:rgba(16,185,129,.12)">&#128272;</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Google</div><div class="totp-mini-timer">28s</div></div><div class="totp-mini-code">736 214</div></div>
+            <div class="totp-list-item"><div class="totp-list-icon" style="background:rgba(56,189,248,.12)">&#128038;</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Twitter / X</div><div class="totp-mini-timer">5s</div></div><div class="totp-mini-code" style="color:#f59e0b">109 881</div></div>
+            <div class="totp-list-item"><div class="totp-list-icon" style="background:rgba(245,158,11,.12)">&#9729;</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:#f4f4f5">Cloudflare</div><div class="totp-mini-timer">21s</div></div><div class="totp-mini-code">553 790</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="deco-pills-row"><span class="deco-pill">&#9200; Live Countdown</span><span class="deco-pill">&#128203; One-Tap Copy</span><span class="deco-pill">&#128274; Encrypted at Rest</span></div>
+  <div class="bottom-brand"><div class="bottom-brand-icon">&#128274;</div><span class="bottom-brand-text">arc<span>a</span></span></div>
+</div>
+</div>
+
+<!-- SLIDE 3: ADD ITEM -->
+<div class="slide" id="slide-3">
+<div class="slide-content">
+  <div class="badge"><span class="badge-dot"></span> Client-Side Encryption Only</div>
+  <h1 class="headline"><em>Zero-Knowledge</em><br/>Encryption.</h1>
+  <p class="subline">Your data is encrypted before it ever leaves your device. We never see it.</p>
+  <div class="phone-wrap">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="screen-add">
+          <div class="status-bar" style="position:relative;z-index:10"><span>9:41</span><div class="status-icons"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="18" height="11" rx="2" stroke="#f4f4f5" stroke-width="2"/><path d="M22 11v3" stroke="#f4f4f5" stroke-width="2" stroke-linecap="round"/></svg></div></div>
+          <div style="padding:0 16px;position:relative;z-index:1">
+            <div style="font-size:20px;font-weight:800;color:#f4f4f5;padding:4px 0 16px;opacity:.3">Arca</div>
+            <div style="opacity:.2">
+              <div class="vault-item"><div class="item-icon" style="background:rgba(10,132,255,.12)">&#128025;</div><div class="item-info"><div class="item-title">GitHub</div></div></div>
+              <div class="vault-item"><div class="item-icon" style="background:rgba(16,185,129,.12)">&#128272;</div><div class="item-info"><div class="item-title">Google Account</div></div></div>
+            </div>
+          </div>
+          <div class="blurred-bg"></div>
+          <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-title">Add New Item</div>
+            <div class="form-field"><div class="form-label">Service Name</div><div class="form-input"><span>GitHub</span><span>&#128025;</span></div></div>
+            <div class="form-field"><div class="form-label">Username / Email</div><div class="form-input"><span>octocat@github.com</span></div></div>
+            <div class="form-field"><div class="form-label">Password</div><div class="form-input"><span style="font-size:20px;color:#71717a;letter-spacing:2px">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span><span style="font-size:13px;color:#71717a">&#128065;</span></div></div>
+            <div class="form-field">
+              <div class="form-label" style="display:flex;align-items:center;gap:8px">TOTP Secret (2FA)<span class="totp-badge">&#9889; Optional</span></div>
+              <div class="form-input hl"><span style="font-size:13px;color:#10b981;font-family:monospace">JBSWY3DPEHPK3PXP</span></div>
+            </div>
+            <div class="save-btn">&#128274; Save Encrypted</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="deco-pills-row"><span class="deco-pill">&#128274; AES-256-GCM</span><span class="deco-pill">&#129534; Argon2id KDF</span><span class="deco-pill">&#128683; No Plaintext Storage</span></div>
+  <div class="bottom-brand"><div class="bottom-brand-icon">&#128274;</div><span class="bottom-brand-text">arc<span>a</span></span></div>
+</div>
+</div>
+
+<!-- SLIDE 4: SETTINGS -->
+<div class="slide" id="slide-4">
+<div class="slide-content">
+  <div class="badge"><span class="badge-dot"></span> Encrypted Sync &middot; Open Relay</div>
+  <h1 class="headline">Sync Across<br/><em>All Devices.</em></h1>
+  <p class="subline">Self-hosted or cloud relay &mdash; only you can decrypt. Biometrics included.</p>
+  <div class="phone-wrap">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="screen-settings">
+          <div class="status-bar"><span>9:41</span><div class="status-icons"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="18" height="11" rx="2" stroke="#f4f4f5" stroke-width="2"/><path d="M22 11v3" stroke="#f4f4f5" stroke-width="2" stroke-linecap="round"/></svg></div></div>
+          <div class="settings-title">Settings</div>
+          <div class="settings-section">
+            <div class="section-label">Security</div>
+            <div class="settings-card">
+              <div class="settings-row"><div class="settings-row-icon" style="background:rgba(16,185,129,.12);color:#10b981">&#128274;</div><div class="settings-row-info"><div class="settings-row-title">Biometric Unlock</div><div class="settings-row-sub">Fingerprint / Face ID</div></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
+              <div class="settings-row"><div class="settings-row-icon" style="background:rgba(245,158,11,.12);color:#f59e0b">&#9200;</div><div class="settings-row-info"><div class="settings-row-title">Auto-Lock</div><div class="settings-row-sub">After 30 seconds</div></div><span style="font-size:12px;color:#3f3f46">&#8250;</span></div>
+              <div class="settings-row"><div class="settings-row-icon" style="background:rgba(239,68,68,.12);color:#ef4444">&#128737;</div><div class="settings-row-info"><div class="settings-row-title">Screenshot Protection</div><div class="settings-row-sub">Block screenshots in app</div></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="section-label">Sync</div>
+            <div class="settings-card">
+              <div class="settings-row"><div class="settings-row-icon" style="background:rgba(10,132,255,.12);color:#0a84ff">&#9729;</div><div class="settings-row-info"><div class="settings-row-title">Cloud Sync</div><div class="settings-row-sub" style="color:#10b981">&#11044; Connected &middot; Synced now</div></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
+              <div class="settings-row"><div class="settings-row-icon" style="background:rgba(56,189,248,.12);color:#38bdf8">&#128421;</div><div class="settings-row-info"><div class="settings-row-title">Relay Server</div><div class="settings-row-sub">relay.getarca.pages.dev</div></div><span style="font-size:12px;color:#3f3f46">&#8250;</span></div>
+              <div class="settings-row"><div class="settings-row-icon" style="background:rgba(16,185,129,.12);color:#10b981">&#129513;</div><div class="settings-row-info"><div class="settings-row-title">Browser Extension</div><div class="settings-row-sub">Autofill on Chrome, Firefox</div></div><span style="font-size:12px;color:#3f3f46">&#8250;</span></div>
+            </div>
+          </div>
+          <div class="settings-section">
+            <div class="section-label">Account</div>
+            <div class="settings-card">
+              <div class="settings-row"><div class="settings-row-icon" style="background:rgba(113,113,122,.12);color:#a1a1aa">&#128196;</div><div class="settings-row-info"><div class="settings-row-title">Export Vault</div><div class="settings-row-sub">Encrypted backup</div></div><span style="font-size:12px;color:#3f3f46">&#8250;</span></div>
+              <div class="settings-row"><div class="settings-row-icon" style="background:rgba(239,68,68,.08);color:#ef4444">&#128465;</div><div class="settings-row-info"><div class="settings-row-title" style="color:#ef4444">Delete Account</div><div class="settings-row-sub">Permanently wipe all data</div></div><span style="font-size:12px;color:#3f3f46">&#8250;</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="deco-pills-row"><span class="deco-pill">&#128241; Mobile</span><span class="deco-pill">&#129513; Browser Extension</span><span class="deco-pill">&#9729; Encrypted Relay</span></div>
+  <div class="bottom-brand"><div class="bottom-brand-icon">&#128274;</div><span class="bottom-brand-text">arc<span>a</span></span></div>
+</div>
+</div>
+
+<!-- SLIDE 5: SETUP -->
+<div class="slide" id="slide-5">
+<div class="slide-content">
+  <div class="badge"><span class="badge-dot"></span> BIP-39 Standard &middot; Offline Recovery</div>
+  <h1 class="headline"><em>24-Word</em><br/>Recovery Kit.</h1>
+  <p class="subline">Your vault, fully recoverable anywhere &mdash; no server, no account, no internet.</p>
+  <div class="phone-wrap">
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="screen-setup">
+          <div class="status-bar"><span>9:41</span><div class="status-icons"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="18" height="11" rx="2" stroke="#f4f4f5" stroke-width="2"/><path d="M22 11v3" stroke="#f4f4f5" stroke-width="2" stroke-linecap="round"/></svg></div></div>
+          <div class="setup-header"><div class="setup-title">Recovery Phrase</div><div class="setup-sub">Write these 24 words down in order. Never share them with anyone.</div></div>
+          <div class="warning-box"><span style="font-size:16px;flex-shrink:0">&#9888;&#65039;</span><span class="warning-text">This is the only way to recover your vault. Arca cannot reset or recover your master key.</span></div>
+          <div class="phrase-grid">
+            <div class="phrase-word"><span class="phrase-num">1.</span><span class="phrase-text">abandon</span></div>
+            <div class="phrase-word"><span class="phrase-num">2.</span><span class="phrase-text">ability</span></div>
+            <div class="phrase-word"><span class="phrase-num">3.</span><span class="phrase-text">able</span></div>
+            <div class="phrase-word"><span class="phrase-num">4.</span><span class="phrase-text">about</span></div>
+            <div class="phrase-word"><span class="phrase-num">5.</span><span class="phrase-text">above</span></div>
+            <div class="phrase-word"><span class="phrase-num">6.</span><span class="phrase-text">absent</span></div>
+            <div class="phrase-word"><span class="phrase-num">7.</span><span class="phrase-text">absorb</span></div>
+            <div class="phrase-word"><span class="phrase-num">8.</span><span class="phrase-text">abstract</span></div>
+            <div class="phrase-word"><span class="phrase-num">9.</span><span class="phrase-text">absurd</span></div>
+            <div class="phrase-word"><span class="phrase-num">10.</span><span class="phrase-text">abuse</span></div>
+            <div class="phrase-word"><span class="phrase-num">11.</span><span class="phrase-text">access</span></div>
+            <div class="phrase-word"><span class="phrase-num">12.</span><span class="phrase-text">account</span></div>
+            <div class="phrase-word"><span class="phrase-num">13.</span><span class="phrase-text">accuse</span></div>
+            <div class="phrase-word"><span class="phrase-num">14.</span><span class="phrase-text">achieve</span></div>
+            <div class="phrase-word"><span class="phrase-num">15.</span><span class="phrase-text">acid</span></div>
+            <div class="phrase-word"><span class="phrase-num">16.</span><span class="phrase-text">acoustic</span></div>
+            <div class="phrase-word"><span class="phrase-num">17.</span><span class="phrase-text">acquire</span></div>
+            <div class="phrase-word"><span class="phrase-num">18.</span><span class="phrase-text">across</span></div>
+            <div class="phrase-word"><span class="phrase-num">19.</span><span class="phrase-text">act</span></div>
+            <div class="phrase-word"><span class="phrase-num">20.</span><span class="phrase-text">action</span></div>
+            <div class="phrase-word"><span class="phrase-num">21.</span><span class="phrase-text">actor</span></div>
+            <div class="phrase-word"><span class="phrase-num">22.</span><span class="phrase-text">actress</span></div>
+            <div class="phrase-word"><span class="phrase-num">23.</span><span class="phrase-text">actual</span></div>
+            <div class="phrase-word"><span class="phrase-num">24.</span><span class="phrase-text">adapt</span></div>
+          </div>
+          <div class="continue-btn">&#10003; I've Written These Down</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="deco-pills-row"><span class="deco-pill">&#127760; Works Offline</span><span class="deco-pill">&#128257; Full Recovery</span><span class="deco-pill">&#128683; No Server Needed</span></div>
+  <div class="bottom-brand"><div class="bottom-brand-icon">&#128274;</div><span class="bottom-brand-text">arc<span>a</span></span></div>
+</div>
+</div>
+
+</body>
+</html>

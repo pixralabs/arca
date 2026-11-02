@@ -2,6 +2,7 @@
   "buildFiles": [
     "/home/radhe/Development/arca/apps/mobile/node_modules/@op-engineering/op-sqlite/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/home/radhe/Development/arca/apps/mobile/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
     "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
     "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt",
@@ -59,6 +60,11 @@
         "/home/radhe/.gradle/caches/8.10.2/transforms/a8db2b1fb36faea7aa9b2da8cc7b2e9e/transformed/jetified-react-android-0.76.5-debug/prefab/modules/jsi/libs/android.x86_64/libjsi.so",
         "/home/radhe/.gradle/caches/8.10.2/transforms/a8db2b1fb36faea7aa9b2da8cc7b2e9e/transformed/jetified-react-android-0.76.5-debug/prefab/modules/reactnative/libs/android.x86_64/libreactnative.so"
       ]
+    },
+    "react_codegen_RNGetRandomValuesSpec::@6e1160200c59ddcfca1e": {
+      "artifactName": "react_codegen_RNGetRandomValuesSpec",
+      "abi": "x86_64",
+      "runtimeFiles": []
     },
     "react_codegen_rnsvg::@4f40eb209d0c0b4a3b65": {
       "artifactName": "react_codegen_rnsvg",

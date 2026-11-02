@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Switch, Image } from 'react-native';
 import { colors, spacing, radii } from '../theme/theme';
 import { purgeAllVaultData } from '../storage/db';
 import { clearActiveSession } from '../crypto/mobileCrypto';
@@ -200,6 +200,14 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
           <Text style={styles.dangerButtonText}>Purge All Local Vault Data</Text>
         </TouchableOpacity>
       </View>
+
+      <View style={styles.footerContainer}>
+        <Image
+          source={require('../assets/footer_pixra_white.png')}
+          style={styles.footerImage}
+          resizeMode="contain"
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -311,5 +319,15 @@ const styles = StyleSheet.create({
     color: colors.rose,
     fontSize: 15,
     fontWeight: '600',
+  },
+  footerContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    marginTop: spacing.md,
+  },
+  footerImage: {
+    width: 140,
+    height: 38,
+    opacity: 0.75,
   },
 });

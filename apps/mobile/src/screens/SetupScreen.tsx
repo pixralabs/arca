@@ -13,6 +13,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { colors, spacing, radii } from '../theme/theme';
 import { mobileSetupVault } from '../crypto/mobileCrypto';
@@ -152,6 +153,14 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
           <Text style={styles.linkButtonText}>Already have a vault? Unlock</Text>
         </TouchableOpacity>
       </View>
+
+      <View style={styles.footerContainer}>
+        <Image
+          source={require('../assets/footer_pixra_white.png')}
+          style={styles.footerImage}
+          resizeMode="contain"
+        />
+      </View>
     </View>
   );
 }
@@ -160,7 +169,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     padding: spacing.xl,
   },
   scrollContainer: {
@@ -292,5 +301,14 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     flex: 1,
+  },
+  footerContainer: {
+    alignItems: 'center',
+    paddingBottom: spacing.sm,
+  },
+  footerImage: {
+    width: 140,
+    height: 38,
+    opacity: 0.75,
   },
 });

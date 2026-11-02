@@ -1,9 +1,10 @@
 /**
  * @file apps/mobile/src/screens/UnlockScreen.tsx
- * @description Arca Mobile — Unlock View with Master Password and Biometrics.
+ * @description Arca Mobile — Fast Flash-Speed Unlock View with Master Password,
+ * Biometrics, Snappy Unlock Transition, and Pixra Brand Footer.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +13,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Animated,
+  Image,
 } from 'react-native';
 import { colors, spacing, radii } from '../theme/theme';
 import { mobileUnlockVault, mobileUnlockWithRecovery } from '../crypto/mobileCrypto';
@@ -27,6 +30,27 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const [recoveryPhrase, setRecoveryPhrase] = useState('');
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Fast Snappy Unlock Animation
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const triggerFastUnlock = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1.04,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onUnlocked();
+    });
+  };
 
   const handleUnlock = async () => {
     if (!isRecoveryMode && !password) {
@@ -45,10 +69,9 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
       } else {
         await mobileUnlockVault(password);
       }
-      onUnlocked();
+      triggerFastUnlock();
     } catch (err: any) {
       Alert.alert('Unlock Failed', err?.message || 'Invalid Master Password.');
-    } finally {
       setLoading(false);
     }
   };
@@ -57,93 +80,115 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
     try {
       const storedKey = await retrieveBiometricSlotKey();
       if (storedKey) {
+        setLoading(true);
         await mobileUnlockVault(storedKey);
-        onUnlocked();
+        triggerFastUnlock();
       } else {
         Alert.alert('Biometrics', 'Biometric credential not available.');
       }
     } catch (err: any) {
+      setLoading(false);
       Alert.alert('Biometric Error', err?.message || 'Biometric authentication failed.');
     }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>Arca by Pixra</Text>
-        </View>
-        <Text style={styles.title}>
-          {isRecoveryMode ? 'Account Recovery' : 'Unlock Vault'}
-        </Text>
-        <Text style={styles.subtitle}>
-          {isRecoveryMode
-            ? 'Enter your 24-word recovery phrase to restore access.'
-            : 'Enter your Master Password to decrypt your zero-knowledge vault.'}
-        </Text>
-      </View>
-
-      <View style={styles.form}>
-        {isRecoveryMode ? (
-          <TextInput
-            style={[styles.input, styles.multilineInput]}
-            placeholder="Enter 24-word recovery phrase..."
-            placeholderTextColor={colors.textDim}
-            value={recoveryPhrase}
-            onChangeText={setRecoveryPhrase}
-            autoCapitalize="none"
-            autoCorrect={false}
-            multiline
-          />
-        ) : (
-          <TextInput
-            style={styles.input}
-            placeholder="Master Password"
-            placeholderTextColor={colors.textDim}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
-        )}
-
-        <TouchableOpacity
-          style={[styles.primaryButton, loading && styles.buttonDisabled]}
-          onPress={handleUnlock}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.background} />
-          ) : (
-            <Text style={styles.primaryButtonText}>
-              {isRecoveryMode ? 'Restore Vault' : 'Unlock Vault'}
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {!isRecoveryMode && (
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={handleBiometricUnlock}
-          >
-            <Text style={styles.secondaryButtonText}>Use Biometrics</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => setIsRecoveryMode(!isRecoveryMode)}
-        >
-          <Text style={styles.linkButtonText}>
-            {isRecoveryMode ? 'Back to Master Password' : 'Lost Master Password? Use Recovery Phrase'}
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
+        },
+      ]}
+    >
+      <View style={styles.centerSection}>
+        <View style={styles.header}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>Arca by Pixra</Text>
+          </View>
+          <Text style={styles.title}>
+            {isRecoveryMode ? 'Account Recovery' : 'Unlock Vault'}
           </Text>
-        </TouchableOpacity>
+          <Text style={styles.subtitle}>
+            {isRecoveryMode
+              ? 'Enter your 24-word recovery phrase to restore access.'
+              : 'Enter your Master Password to decrypt your zero-knowledge vault.'}
+          </Text>
+        </View>
 
-        <TouchableOpacity style={styles.linkButton} onPress={onGoToSetup}>
-          <Text style={styles.dimLinkText}>Create New Vault</Text>
-        </TouchableOpacity>
+        <View style={styles.form}>
+          {isRecoveryMode ? (
+            <TextInput
+              style={[styles.input, styles.multilineInput]}
+              placeholder="Enter 24-word recovery phrase..."
+              placeholderTextColor={colors.textDim}
+              value={recoveryPhrase}
+              onChangeText={setRecoveryPhrase}
+              autoCapitalize="none"
+              autoCorrect={false}
+              multiline
+            />
+          ) : (
+            <TextInput
+              style={styles.input}
+              placeholder="Master Password"
+              placeholderTextColor={colors.textDim}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+          )}
+
+          <TouchableOpacity
+            style={[styles.primaryButton, loading && styles.buttonDisabled]}
+            onPress={handleUnlock}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.background} />
+            ) : (
+              <Text style={styles.primaryButtonText}>
+                {isRecoveryMode ? 'Restore Vault' : 'Unlock Vault'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {!isRecoveryMode && (
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleBiometricUnlock}
+              disabled={loading}
+            >
+              <Text style={styles.secondaryButtonText}>Use Biometrics</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.linkButton}
+            onPress={() => setIsRecoveryMode(!isRecoveryMode)}
+          >
+            <Text style={styles.linkButtonText}>
+              {isRecoveryMode ? 'Back to Master Password' : 'Lost Master Password? Use Recovery Phrase'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.linkButton} onPress={onGoToSetup}>
+            <Text style={styles.dimLinkText}>Create New Vault</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+
+      {/* Official Pixra Footer */}
+      <View style={styles.footerContainer}>
+        <Image
+          source={require('../assets/footer_pixra_white.png')}
+          style={styles.footerImage}
+          resizeMode="contain"
+        />
+      </View>
+    </Animated.View>
   );
 }
 
@@ -151,8 +196,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     padding: spacing.xl,
+  },
+  centerSection: {
+    flex: 1,
+    justifyContent: 'center',
+    width: '100%',
   },
   header: {
     alignItems: 'center',
@@ -243,5 +293,14 @@ const styles = StyleSheet.create({
   dimLinkText: {
     color: colors.textDim,
     fontSize: 13,
+  },
+  footerContainer: {
+    alignItems: 'center',
+    paddingBottom: spacing.sm,
+  },
+  footerImage: {
+    width: 140,
+    height: 38,
+    opacity: 0.75,
   },
 });

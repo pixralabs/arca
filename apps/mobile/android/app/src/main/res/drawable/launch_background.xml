@@ -8,4 +8,11 @@
             android:gravity="center"
             android:src="@drawable/splash_logo" />
     </item>
+    <item
+        android:bottom="48dp"
+        android:gravity="bottom|center_horizontal">
+        <bitmap
+            android:gravity="bottom|center_horizontal"
+            android:src="@drawable/splash_footer" />
+    </item>
 </layer-list>
