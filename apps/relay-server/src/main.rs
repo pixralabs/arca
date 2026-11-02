@@ -1,5 +1,5 @@
 //! apps/relay-server/src/main.rs
-//! VaultGuard (Arca by Pixra) Blind Relay Server Entrypoint.
+//! VaultGuard (Arca by Pixra) Blind Relay Server Entrypoint — PostgreSQL Edition.
 
 mod auth;
 mod crdt;
@@ -33,7 +33,7 @@ use crate::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. Explicit Panic Hook so any panic is clearly visible in Render logs
+    // 1. Explicit Panic Hook so any panic is clearly visible in logs
     std::panic::set_hook(Box::new(|info| {
         eprintln!("FATAL PANIC: {}", info);
     }));
@@ -46,32 +46,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .try_init();
 
-    // 3. Database Path & Initialization
+    // 3. Read configuration from environment
     let db_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "sqlite:///tmp/arca_relay.db".to_string());
+        .expect("DATABASE_URL must be set (e.g. postgres://user:password@host:5432/dbname)");
 
     let trusted_proxy = std::env::var("TRUSTED_PROXY")
         .map(|v| v.to_lowercase() == "true" || v == "1")
         .unwrap_or(true);
 
     eprintln!("==================================================");
-    eprintln!("Starting VaultGuard Blind Relay Server v0.4.1");
-    eprintln!("Configured Database URL: {}", db_url);
+    eprintln!("Starting VaultGuard Blind Relay Server v0.5.0");
+    eprintln!("Database backend: PostgreSQL (Supabase)");
     eprintln!("Trusted proxy mode: {}", trusted_proxy);
     eprintln!("==================================================");
 
-    // Ensure /tmp directory exists with write permissions for SQLite
-    if let Err(e) = std::fs::create_dir_all("/tmp") {
-        eprintln!("Warning: Failed to ensure /tmp exists: {:?}", e);
-    }
-
-    let db = match Db::open(&db_url) {
+    // 4. PostgreSQL connection + automatic migrations
+    let db = match Db::connect(&db_url).await {
         Ok(database) => {
-            eprintln!("SQLite Database ready at {}", db_url);
+            info!("PostgreSQL database connected and migrations applied.");
             database
         }
         Err(e) => {
-            eprintln!("FATAL: Failed to open or migrate database at {}: {:?}", db_url, e);
+            eprintln!("FATAL: Failed to connect or migrate PostgreSQL database: {:?}", e);
             return Err(e.into());
         }
     };
@@ -111,7 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Json(json!({
                     "status": "ok",
                     "server": "vaultguard-relay-server",
-                    "version": "0.4.1",
+                    "version": "0.5.0",
                     "service": "Arca by Pixra Blind Relay"
                 }))
             }),
@@ -122,7 +118,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Json(json!({
                     "status": "ok",
                     "server": "vaultguard-relay-server",
-                    "version": "0.4.1"
+                    "version": "0.5.0"
                 }))
             }),
         )
@@ -131,12 +127,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .layer(cors)
         .layer(TraceLayer::new_for_http());
 
-    // 4. Dynamic Port Binding for Render
+    // 5. Dynamic Port Binding
     let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     let addr = format!("0.0.0.0:{}", port);
 
-    // 5. Explicit Panic / Startup Logs
-    eprintln!("Server starting on {}", addr);
     info!("Binding TcpListener on {}", addr);
 
     let listener = match tokio::net::TcpListener::bind(&addr).await {
@@ -147,7 +141,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    eprintln!("Relay Server is actively listening and ready for requests on http://{}", addr);
+    eprintln!("Relay Server listening on http://{}", addr);
 
     if let Err(e) = axum::serve(
         listener,

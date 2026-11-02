@@ -5,8 +5,9 @@ FROM rust:1.85-slim-bookworm AS builder
 WORKDIR /app
 
 # Install system dependencies required for compilation
+# pkg-config + libssl-dev are needed for sqlx / rustls TLS stack
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config libsqlite3-dev ca-certificates \
+    pkg-config libssl-dev ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Cargo files from the monorepo path (Notice the apps/relay-server/ prefix).
@@ -31,22 +32,19 @@ RUN cargo build --release
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
 
-# Install runtime dependencies
+# Only ca-certificates is needed at runtime (rustls handles TLS natively; no libpq required)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsqlite3-0 ca-certificates \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -u 10001 arca
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/target/release/vaultguard-relay-server /usr/local/bin/vaultguard-relay-server
 
-# Ensure the /tmp directory is writable by the non-root user for SQLite
-RUN mkdir -p /tmp && chown arca:arca /tmp
-
 USER arca
 
-# Environment Variables (Defaults, can be overridden in Render)
-ENV DATABASE_URL="sqlite:///tmp/arca_relay.db"
+# Environment Variables (must be overridden in Render / Railway / Fly.io)
+# DATABASE_URL is REQUIRED — no default; the server will refuse to start without it.
 ENV TRUSTED_PROXY="true"
 ENV PORT=8080
 

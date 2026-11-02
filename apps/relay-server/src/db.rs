@@ -1,15 +1,15 @@
 //! apps/relay-server/src/db.rs
-//! SQLite Database Layer enforcing WAL Mode & PRAGMA secure_delete = ON.
+//! PostgreSQL Database Layer using sqlx::PgPool (Supabase / any PostgreSQL backend).
+//! Zero-Knowledge: The server only stores opaque ciphertext blobs — no plaintext ever touches here.
 
-use std::sync::Arc;
-use tokio::sync::Mutex;
-use rusqlite::{params, Connection, Result};
+use sqlx::PgPool;
 
 use crate::crdt::SyncItemRecord;
 
+/// Thin wrapper around a `sqlx::PgPool` — cheaply cloneable.
 #[derive(Clone)]
 pub struct Db {
-    conn: Arc<Mutex<Connection>>,
+    pool: PgPool,
 }
 
 #[derive(Debug, Clone)]
@@ -33,144 +33,123 @@ pub struct ShareRow {
 }
 
 impl Db {
-    pub fn open(database_url: &str) -> Result<Self> {
-        let path = if database_url.starts_with("postgres://") || database_url.starts_with("postgresql://") {
-            eprintln!("Warning: PostgreSQL URL passed in DATABASE_URL, falling back to SQLite at /tmp/arca_relay.db");
-            "/tmp/arca_relay.db"
-        } else {
-            let p = database_url
-                .strip_prefix("sqlite://")
-                .or_else(|| database_url.strip_prefix("sqlite:"))
-                .unwrap_or(database_url);
-            if p.is_empty() {
-                "/tmp/arca_relay.db"
-            } else {
-                p
-            }
-        };
+    /// Connect to PostgreSQL and run embedded migrations.
+    pub async fn connect(database_url: &str) -> Result<Self, sqlx::Error> {
+        tracing::info!("Connecting to PostgreSQL database…");
 
-        if path != ":memory:" {
-            if let Some(parent) = std::path::Path::new(path).parent() {
-                if !parent.as_os_str().is_empty() {
-                    let _ = std::fs::create_dir_all(parent);
-                }
-            }
-        }
-        
-        eprintln!("Connecting to SQLite database at: {}", path);
-        let conn = if path == ":memory:" {
-            Connection::open_in_memory()?
-        } else {
-            match Connection::open(path) {
-                Ok(c) => c,
-                Err(e) => {
-                    eprintln!("FATAL: Failed to open SQLite connection at {}: {:?}", path, e);
-                    return Err(e);
-                }
-            }
-        };
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(10)
+            .connect(database_url)
+            .await?;
 
-        // Enforce SQLite security and integrity pragmas
-        if let Err(e) = conn.execute_batch(
-            r#"
-            PRAGMA journal_mode = WAL;
-            PRAGMA secure_delete = ON;
-            PRAGMA foreign_keys = ON;
-            "#,
-        ) {
-            eprintln!("Warning: could not set SQLite pragmas: {:?}", e);
-        }
+        tracing::info!("Running database migrations…");
+        sqlx::migrate!("./migrations").run(&pool).await?;
+        tracing::info!("Migrations applied successfully.");
 
-        // Run initial migrations
-        let migration_sql = include_str!("../migrations/0001_initial.sql");
-        if let Err(e) = conn.execute_batch(migration_sql) {
-            eprintln!("FATAL: Failed to execute SQLite migrations: {:?}", e);
-            return Err(e);
-        }
-        eprintln!("SQLite migrations applied successfully.");
-
-        Ok(Self {
-            conn: Arc::new(Mutex::new(conn)),
-        })
+        Ok(Self { pool })
     }
 
-    // --- Accounts ---
+    // ── Accounts ────────────────────────────────────────────────────────────
 
+    /// Upsert account registration. Returns the current `vault_seq`.
     pub async fn register_or_update_account(
         &self,
         account_id: &str,
         device_id: &str,
         account_auth_pub_key: &str,
         encrypted_header: &str,
-    ) -> Result<u64> {
-        let conn = self.conn.lock().await;
-        let now = chrono::Utc::now().timestamp_millis();
-
-        let mut stmt = conn.prepare(
-            "SELECT vault_seq FROM accounts WHERE account_id = ?1",
-        )?;
-        let existing = stmt.query_row(params![account_id], |row| row.get::<_, i64>(0));
+    ) -> Result<u64, sqlx::Error> {
+        // Try to read existing seq first
+        let existing: Option<i64> = sqlx::query_scalar(
+            "SELECT vault_seq FROM accounts WHERE account_id = $1",
+        )
+        .bind(account_id)
+        .fetch_optional(&self.pool)
+        .await?;
 
         match existing {
-            Ok(seq) => {
-                conn.execute(
+            Some(seq) => {
+                sqlx::query(
                     r#"
                     UPDATE accounts
-                    SET device_id = ?1, account_auth_pub_key = ?2, encrypted_header = ?3, updated_at = ?4
-                    WHERE account_id = ?5
+                    SET device_id = $1,
+                        account_auth_pub_key = $2,
+                        encrypted_header = $3,
+                        updated_at = NOW()
+                    WHERE account_id = $4
                     "#,
-                    params![device_id, account_auth_pub_key, encrypted_header, now, account_id],
-                )?;
+                )
+                .bind(device_id)
+                .bind(account_auth_pub_key)
+                .bind(encrypted_header)
+                .bind(account_id)
+                .execute(&self.pool)
+                .await?;
                 Ok(seq as u64)
             }
-            Err(_) => {
-                conn.execute(
+            None => {
+                sqlx::query(
                     r#"
-                    INSERT INTO accounts (account_id, device_id, account_auth_pub_key, encrypted_header, encrypted_manifest, vault_seq, created_at, updated_at)
-                    VALUES (?1, ?2, ?3, ?4, NULL, 1, ?5, ?5)
+                    INSERT INTO accounts
+                        (account_id, device_id, account_auth_pub_key, encrypted_header, encrypted_manifest, vault_seq, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, NULL, 1, NOW(), NOW())
                     "#,
-                    params![account_id, device_id, account_auth_pub_key, encrypted_header, now],
-                )?;
+                )
+                .bind(account_id)
+                .bind(device_id)
+                .bind(account_auth_pub_key)
+                .bind(encrypted_header)
+                .execute(&self.pool)
+                .await?;
                 Ok(1)
             }
         }
     }
 
-    pub async fn get_account(&self, account_id: &str) -> Result<Option<AccountRow>> {
-        let conn = self.conn.lock().await;
-        let mut stmt = conn.prepare(
+    pub async fn get_account(&self, account_id: &str) -> Result<Option<AccountRow>, sqlx::Error> {
+        let row: Option<(String, String, String, String, Option<String>, i64)> = sqlx::query_as(
             r#"
             SELECT account_id, device_id, account_auth_pub_key, encrypted_header, encrypted_manifest, vault_seq
             FROM accounts
-            WHERE account_id = ?1
+            WHERE account_id = $1
             "#,
-        )?;
+        )
+        .bind(account_id)
+        .fetch_optional(&self.pool)
+        .await?;
 
-        let mut rows = stmt.query(params![account_id])?;
-        if let Some(row) = rows.next()? {
-            let seq: i64 = row.get(5)?;
-            Ok(Some(AccountRow {
-                account_id: row.get(0)?,
-                device_id: row.get(1)?,
-                account_auth_pub_key: row.get(2)?,
-                encrypted_header: row.get(3)?,
-                encrypted_manifest: row.get(4)?,
-                vault_seq: seq as u64,
-            }))
-        } else {
-            Ok(None)
-        }
+        Ok(row.map(|(account_id, device_id, account_auth_pub_key, encrypted_header, encrypted_manifest, vault_seq)| {
+            AccountRow {
+                account_id,
+                device_id,
+                account_auth_pub_key,
+                encrypted_header,
+                encrypted_manifest,
+                vault_seq: vault_seq as u64,
+            }
+        }))
     }
 
-    pub async fn delete_account(&self, account_id: &str) -> Result<()> {
-        let conn = self.conn.lock().await;
-        conn.execute("DELETE FROM sync_items WHERE account_id = ?1", params![account_id])?;
-        conn.execute("DELETE FROM auth_challenges WHERE account_id = ?1", params![account_id])?;
-        conn.execute("DELETE FROM accounts WHERE account_id = ?1", params![account_id])?;
+    /// Permanently delete an account and all its data.
+    /// Called only by DELETE /v1/account (explicit user action).
+    pub async fn delete_account(&self, account_id: &str) -> Result<(), sqlx::Error> {
+        // Cascade is defined at the DB level; delete items + challenges explicitly for safety.
+        sqlx::query("DELETE FROM sync_items WHERE account_id = $1")
+            .bind(account_id)
+            .execute(&self.pool)
+            .await?;
+        sqlx::query("DELETE FROM auth_challenges WHERE account_id = $1")
+            .bind(account_id)
+            .execute(&self.pool)
+            .await?;
+        sqlx::query("DELETE FROM accounts WHERE account_id = $1")
+            .bind(account_id)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 
-    // --- Challenges ---
+    // ── Auth Challenges ──────────────────────────────────────────────────────
 
     pub async fn save_challenge(
         &self,
@@ -178,103 +157,100 @@ impl Db {
         account_id: &str,
         device_id: &str,
         expires_at: i64,
-    ) -> Result<()> {
-        let conn = self.conn.lock().await;
-        conn.execute(
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
             r#"
             INSERT INTO auth_challenges (challenge_nonce, account_id, device_id, expires_at, consumed)
-            VALUES (?1, ?2, ?3, ?4, 0)
+            VALUES ($1, $2, $3, $4, 0)
             "#,
-            params![challenge_nonce, account_id, device_id, expires_at],
-        )?;
+        )
+        .bind(challenge_nonce)
+        .bind(account_id)
+        .bind(device_id)
+        .bind(expires_at)
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 
+    /// Atomically consume a single-use challenge nonce. Returns `true` if successfully consumed.
     pub async fn consume_challenge(
         &self,
         challenge_nonce: &str,
         account_id: &str,
         device_id: &str,
-    ) -> Result<bool> {
-        let conn = self.conn.lock().await;
+    ) -> Result<bool, sqlx::Error> {
         let now = chrono::Utc::now().timestamp_millis();
 
-        let updated = conn.execute(
+        let result = sqlx::query(
             r#"
             UPDATE auth_challenges
             SET consumed = 1
-            WHERE challenge_nonce = ?1 AND account_id = ?2 AND device_id = ?3 AND consumed = 0 AND expires_at > ?4
+            WHERE challenge_nonce = $1
+              AND account_id      = $2
+              AND device_id       = $3
+              AND consumed        = 0
+              AND expires_at      > $4
             "#,
-            params![challenge_nonce, account_id, device_id, now],
-        )?;
+        )
+        .bind(challenge_nonce)
+        .bind(account_id)
+        .bind(device_id)
+        .bind(now)
+        .execute(&self.pool)
+        .await?;
 
-        Ok(updated > 0)
+        Ok(result.rows_affected() > 0)
     }
 
-    // --- Sync Items ---
+    // ── Sync Items ───────────────────────────────────────────────────────────
 
     pub async fn get_sync_items_since(
         &self,
         account_id: &str,
         since_seq: u64,
-    ) -> Result<Vec<SyncItemRecord>> {
-        let conn = self.conn.lock().await;
-        let mut stmt = conn.prepare(
+    ) -> Result<Vec<SyncItemRecord>, sqlx::Error> {
+        let rows: Vec<(String, i64, String, String, String, Option<i64>, i64)> = sqlx::query_as(
             r#"
             SELECT item_id, revision, nonce_base64, ciphertext_base64, hlc_timestamp, deleted_at, updated_at
             FROM sync_items
-            WHERE account_id = ?1 AND vault_seq > ?2
+            WHERE account_id = $1 AND vault_seq > $2
             ORDER BY vault_seq ASC
             "#,
-        )?;
+        )
+        .bind(account_id)
+        .bind(since_seq as i64)
+        .fetch_all(&self.pool)
+        .await?;
 
-        let rows = stmt.query_map(params![account_id, since_seq as i64], |row| {
-            Ok(SyncItemRecord {
-                item_id: row.get(0)?,
-                revision: row.get(1)?,
-                nonce_base64: row.get(2)?,
-                ciphertext_base64: row.get(3)?,
-                hlc_timestamp: row.get(4)?,
-                deleted_at: row.get(5)?,
-                updated_at: row.get(6)?,
+        Ok(rows
+            .into_iter()
+            .map(|(item_id, revision, nonce_base64, ciphertext_base64, hlc_timestamp, deleted_at, updated_at)| {
+                SyncItemRecord { item_id, revision, nonce_base64, ciphertext_base64, hlc_timestamp, deleted_at, updated_at }
             })
-        })?;
-
-        let mut items = Vec::new();
-        for item in rows {
-            items.push(item?);
-        }
-        Ok(items)
+            .collect())
     }
 
     pub async fn get_existing_item(
         &self,
         account_id: &str,
         item_id: &str,
-    ) -> Result<Option<SyncItemRecord>> {
-        let conn = self.conn.lock().await;
-        let mut stmt = conn.prepare(
+    ) -> Result<Option<SyncItemRecord>, sqlx::Error> {
+        let row: Option<(String, i64, String, String, String, Option<i64>, i64)> = sqlx::query_as(
             r#"
             SELECT item_id, revision, nonce_base64, ciphertext_base64, hlc_timestamp, deleted_at, updated_at
             FROM sync_items
-            WHERE account_id = ?1 AND item_id = ?2
+            WHERE account_id = $1 AND item_id = $2
             "#,
-        )?;
+        )
+        .bind(account_id)
+        .bind(item_id)
+        .fetch_optional(&self.pool)
+        .await?;
 
-        let mut rows = stmt.query(params![account_id, item_id])?;
-        if let Some(row) = rows.next()? {
-            Ok(Some(SyncItemRecord {
-                item_id: row.get(0)?,
-                revision: row.get(1)?,
-                nonce_base64: row.get(2)?,
-                ciphertext_base64: row.get(3)?,
-                hlc_timestamp: row.get(4)?,
-                deleted_at: row.get(5)?,
-                updated_at: row.get(6)?,
-            }))
-        } else {
-            Ok(None)
-        }
+        Ok(row.map(|(item_id, revision, nonce_base64, ciphertext_base64, hlc_timestamp, deleted_at, updated_at)| {
+            SyncItemRecord { item_id, revision, nonce_base64, ciphertext_base64, hlc_timestamp, deleted_at, updated_at }
+        }))
     }
 
     pub async fn upsert_sync_item(
@@ -282,33 +258,33 @@ impl Db {
         account_id: &str,
         item: &SyncItemRecord,
         new_vault_seq: u64,
-    ) -> Result<()> {
-        let conn = self.conn.lock().await;
-        conn.execute(
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
             r#"
-            INSERT INTO sync_items (account_id, item_id, revision, nonce_base64, ciphertext_base64, hlc_timestamp, deleted_at, updated_at, vault_seq)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
-            ON CONFLICT(account_id, item_id) DO UPDATE SET
-                revision = excluded.revision,
-                nonce_base64 = excluded.nonce_base64,
-                ciphertext_base64 = excluded.ciphertext_base64,
-                hlc_timestamp = excluded.hlc_timestamp,
-                deleted_at = excluded.deleted_at,
-                updated_at = excluded.updated_at,
-                vault_seq = excluded.vault_seq
+            INSERT INTO sync_items
+                (account_id, item_id, revision, nonce_base64, ciphertext_base64, hlc_timestamp, deleted_at, updated_at, vault_seq)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT (account_id, item_id) DO UPDATE SET
+                revision          = EXCLUDED.revision,
+                nonce_base64      = EXCLUDED.nonce_base64,
+                ciphertext_base64 = EXCLUDED.ciphertext_base64,
+                hlc_timestamp     = EXCLUDED.hlc_timestamp,
+                deleted_at        = EXCLUDED.deleted_at,
+                updated_at        = EXCLUDED.updated_at,
+                vault_seq         = EXCLUDED.vault_seq
             "#,
-            params![
-                account_id,
-                item.item_id,
-                item.revision,
-                item.nonce_base64,
-                item.ciphertext_base64,
-                item.hlc_timestamp,
-                item.deleted_at,
-                item.updated_at,
-                new_vault_seq as i64,
-            ],
-        )?;
+        )
+        .bind(account_id)
+        .bind(&item.item_id)
+        .bind(item.revision)
+        .bind(&item.nonce_base64)
+        .bind(&item.ciphertext_base64)
+        .bind(&item.hlc_timestamp)
+        .bind(item.deleted_at)
+        .bind(item.updated_at)
+        .bind(new_vault_seq as i64)
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 
@@ -317,21 +293,25 @@ impl Db {
         account_id: &str,
         new_vault_seq: u64,
         manifest: Option<&str>,
-    ) -> Result<()> {
-        let conn = self.conn.lock().await;
-        let now = chrono::Utc::now().timestamp_millis();
-        conn.execute(
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
             r#"
             UPDATE accounts
-            SET vault_seq = ?1, encrypted_manifest = COALESCE(?2, encrypted_manifest), updated_at = ?3
-            WHERE account_id = ?4
+            SET vault_seq          = $1,
+                encrypted_manifest = COALESCE($2, encrypted_manifest),
+                updated_at         = NOW()
+            WHERE account_id = $3
             "#,
-            params![new_vault_seq as i64, manifest, now, account_id],
-        )?;
+        )
+        .bind(new_vault_seq as i64)
+        .bind(manifest)
+        .bind(account_id)
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 
-    // --- Ephemeral Shares ---
+    // ── Ephemeral Shares ─────────────────────────────────────────────────────
 
     pub async fn create_share(
         &self,
@@ -340,59 +320,62 @@ impl Db {
         burn_token: &str,
         expires_at: i64,
         max_views: i32,
-    ) -> Result<()> {
-        let conn = self.conn.lock().await;
+    ) -> Result<(), sqlx::Error> {
         let now = chrono::Utc::now().timestamp_millis();
-        conn.execute(
+        sqlx::query(
             r#"
             INSERT INTO shares (share_id, encrypted_payload, burn_token, expires_at, max_views, view_count, created_at)
-            VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6)
+            VALUES ($1, $2, $3, $4, $5, 0, $6)
             "#,
-            params![share_id, encrypted_payload, burn_token, expires_at, max_views, now],
-        )?;
+        )
+        .bind(share_id)
+        .bind(encrypted_payload)
+        .bind(burn_token)
+        .bind(expires_at)
+        .bind(max_views)
+        .bind(now)
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 
-    pub async fn get_share(&self, share_id: &str) -> Result<Option<ShareRow>> {
-        let conn = self.conn.lock().await;
+    pub async fn get_share(&self, share_id: &str) -> Result<Option<ShareRow>, sqlx::Error> {
         let now = chrono::Utc::now().timestamp_millis();
-        let mut stmt = conn.prepare(
+        let row: Option<(String, String, String, i64, i32, i32)> = sqlx::query_as(
             r#"
             SELECT share_id, encrypted_payload, burn_token, expires_at, max_views, view_count
             FROM shares
-            WHERE share_id = ?1 AND expires_at > ?2 AND view_count < max_views
+            WHERE share_id = $1 AND expires_at > $2 AND view_count < max_views
             "#,
-        )?;
+        )
+        .bind(share_id)
+        .bind(now)
+        .fetch_optional(&self.pool)
+        .await?;
 
-        let mut rows = stmt.query(params![share_id, now])?;
-        if let Some(row) = rows.next()? {
-            Ok(Some(ShareRow {
-                share_id: row.get(0)?,
-                encrypted_payload: row.get(1)?,
-                burn_token: row.get(2)?,
-                expires_at: row.get(3)?,
-                max_views: row.get(4)?,
-                view_count: row.get(5)?,
-            }))
-        } else {
-            Ok(None)
-        }
+        Ok(row.map(|(share_id, encrypted_payload, burn_token, expires_at, max_views, view_count)| {
+            ShareRow { share_id, encrypted_payload, burn_token, expires_at, max_views, view_count }
+        }))
     }
 
-    pub async fn burn_share(&self, share_id: &str, burn_token: &str) -> Result<bool> {
-        let conn = self.conn.lock().await;
-        // Verify burn token matches before deleting
-        let mut stmt = conn.prepare(
-            "SELECT burn_token FROM shares WHERE share_id = ?1",
-        )?;
-        let mut rows = stmt.query(params![share_id])?;
-        if let Some(row) = rows.next()? {
-            let stored_token: String = row.get(0)?;
-            if stored_token == burn_token {
-                conn.execute("DELETE FROM shares WHERE share_id = ?1", params![share_id])?;
-                return Ok(true);
+    pub async fn burn_share(&self, share_id: &str, burn_token: &str) -> Result<bool, sqlx::Error> {
+        // Verify burn_token first, then delete atomically
+        let stored: Option<String> = sqlx::query_scalar(
+            "SELECT burn_token FROM shares WHERE share_id = $1",
+        )
+        .bind(share_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        match stored {
+            Some(t) if t == burn_token => {
+                sqlx::query("DELETE FROM shares WHERE share_id = $1")
+                    .bind(share_id)
+                    .execute(&self.pool)
+                    .await?;
+                Ok(true)
             }
+            _ => Ok(false),
         }
-        Ok(false)
     }
 }
