@@ -83,10 +83,15 @@ export async function mobileSetupVault(password: string): Promise<{
   mnemonic: string;
   session: MobileSession;
 }> {
+  console.log('[mobileSetupVault] starting...');
   await sodium.ready;
+  console.log('[mobileSetupVault] sodium is ready');
   const pwBytes = new TextEncoder().encode(password);
+  console.log('[mobileSetupVault] calling createVault...');
   const result = await createVault(pwBytes, undefined, OWASP_MOBILE_KDF_PARAMS);
+  console.log('[mobileSetupVault] createVault returned! Saving header...');
   await saveVaultMeta('header', serializeHeader(result.header));
+  console.log('[mobileSetupVault] header saved!');
 
   activeSession = {
     dek: result.dek,
@@ -100,14 +105,19 @@ export async function mobileSetupVault(password: string): Promise<{
 }
 
 export async function mobileUnlockVault(password: string): Promise<MobileSession> {
+  console.log('[mobileCrypto] mobileUnlockVault starting...');
   await sodium.ready;
+  console.log('[mobileCrypto] sodium is ready');
   const headerRaw = await getVaultMeta('header');
   if (!headerRaw) {
     throw new VaultGuardError(ERR_VAULT_CORRUPTED);
   }
   const header: VaultHeader = JSON.parse(headerRaw);
+  console.log('[mobileCrypto] header parsed, kdf params:', JSON.stringify(header.kdfParams));
   const pwBytes = new TextEncoder().encode(password);
+  console.log('[mobileCrypto] running unlockWithMaster...');
   const dek = await unlockWithMaster(header, pwBytes);
+  console.log('[mobileCrypto] unlockWithMaster SUCCESS, dek len:', dek.length);
 
   activeSession = {
     dek,

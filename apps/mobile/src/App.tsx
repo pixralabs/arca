@@ -4,7 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, View } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, View, LogBox } from 'react-native';
+
+LogBox.ignoreAllLogs(true);
+
 import { colors } from './theme/theme';
 import { getVaultMeta } from './storage/db';
 import { UnlockScreen } from './screens/UnlockScreen';
