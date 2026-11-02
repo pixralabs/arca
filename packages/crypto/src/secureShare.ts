@@ -1,7 +1,7 @@
 /**
- * @vaultguard/crypto — Milestone 2D (`v0.3.5-share` / Patch VG-04 `v0.4.1`) Bot-Crawler-Safe One-Time Ephemeral Sharing (`secureShare.ts`)
+ * @vaultguard/crypto — One-Time Ephemeral Sharing (`secureShare.ts`)
  *
- * Security Architecture (Patch VG-04):
+ * Security Architecture:
  * - Every async function starts with `await sodium.ready;` on its very first line.
  * - Sender generates a random 256-bit `shareKey = sodium.randombytes_buf(32)`.
  * - Derives a one-way cryptographic `burnToken` from `shareKey` via keyed BLAKE2b-256
@@ -9,14 +9,12 @@
  * - The item payload (`username`, `password`, `url`, optional `title`) is padded to 256 bytes
  *   (`padTo256`) and encrypted with `shareKey` using `XChaCha20-Poly1305-IETF` (`24`-byte nonce,
  *   canonical AAD `"vaultguard:v1:share:<shareId>"`).
- * - The ciphertext and `burnToken` are uploaded to `POST /v1/share/create` (`maxViews = 1`, `expiresAt = now + 1h`).
+ * - The ciphertext and `burnToken` are uploaded to `POST /v1/share/create` (`maxViews = 1`, `expiresAt = now + 5m`).
  *   The server NEVER receives `shareKey`.
- * - Patch VG-04: The share link formats both `shareId` and `shareKeyBase64` inside the URL fragment:
+ * - The share link formats both `shareId` and `shareKeyBase64` inside the URL fragment:
  *   `https://share.vaultguard.dev/#<shareId>:<shareKeyBase64>`
- * - Bot-Crawler & Unauthenticated Burn Protection:
- *   - `GET /v1/share/:id` returns the ciphertext ONLY if `view_count < max_views` without incrementing `view_count`.
- *   - `POST /v1/share/:id/burn` requires `burnToken` (derived from `shareKey`) and verifies it on the server
- *     before incrementing `view_count` and deleting the share row.
+ * - Strict One-Time & 5-Minute Expiration:
+ *   - Share links are deleted (burned) after the first view OR after 5 minutes (300,000 ms), whichever comes first.
  * - All transient key and plaintext buffers (`shareKey`, `padded`, `plaintextBytes`) are wiped
  *   via `sodium.memzero()` inside `finally` blocks.
  */
@@ -27,7 +25,8 @@ import { padTo256, unpadFrom256 } from './padding.js';
 
 export const DEFAULT_SHARE_BASE_URL = 'https://share.vaultguard.dev';
 export const DEFAULT_SHARE_RELAY_URL = 'https://sync.vaultguard.dev';
-export const DEFAULT_SHARE_TTL_MS = 3_600_000; // 1 hour (3,600,000 ms)
+export const DEFAULT_SHARE_TTL_MS = 300_000; // 5 minutes (300,000 ms)
+export const MAX_SHARE_TTL_MS = 300_000; // 5 minutes hard ceiling
 export const AAD_SHARE_PREFIX = 'vaultguard:v1:share:';
 export const SHARE_BURN_TOKEN_CONTEXT = 'VG_SHARE_BURN_TOKEN_V1';
 
@@ -44,7 +43,12 @@ export interface EphemeralShareOptions {
   ttlMs?: number;
   shareBaseUrl?: string;
   relayServerUrl?: string;
-  transport?: (req: { method: string; url: string; headers?: Record<string, string>; body?: string }) => Promise<{ ok: boolean; status: number; bodyText: string }>;
+  transport?: (req: {
+    method: string;
+    url: string;
+    headers?: Record<string, string>;
+    body?: string;
+  }) => Promise<{ ok: boolean; status: number; bodyText: string }>;
 }
 
 export interface CreatedEphemeralShare {
@@ -81,9 +85,8 @@ export function buildShareAad(shareId: string): string {
 }
 
 /**
- * Patch VG-04: Derives a deterministic, one-way 64-hex-character `burnToken` from the 32-byte `shareKey`
+ * Derives a deterministic, one-way 64-hex-character `burnToken` from the 32-byte `shareKey`
  * using keyed BLAKE2b-256 (`sodium.crypto_generichash(32, "VG_SHARE_BURN_TOKEN_V1", shareKey)`).
- * Starts with `await sodium.ready;` on line 1 and wipes `workingKey` in `finally`.
  */
 export async function deriveShareBurnToken(shareKey: Uint8Array): Promise<string> {
   await sodium.ready;
@@ -152,7 +155,6 @@ export function parseShareUrlFragment(urlOrHash: string): ParsedShareUrl {
 /**
  * Encrypts an `EphemeralSharePayload` into a single Base64 blob `(24B nonce || 256B-padded XChaCha20-Poly1305 ciphertext)`
  * under the 32-byte `shareKey`.
- * Starts with `await sodium.ready;` on line 1 and wipes `workingKey`, `plaintextBytes`, and `padded` in `finally`.
  */
 export async function encryptSharePayload(
   itemPayload: EphemeralSharePayload,
@@ -192,7 +194,6 @@ export async function encryptSharePayload(
 
 /**
  * Decrypts and unpads a Base64 `(24B nonce || ciphertext)` ephemeral share blob in RAM.
- * Starts with `await sodium.ready;` on line 1 and wipes `workingKey` and `padded` in `finally`.
  */
 export async function decryptSharePayload(
   encryptedPayloadBase64: string,
@@ -244,11 +245,10 @@ export async function decryptSharePayload(
 }
 
 /**
- * Patch VG-04: Generates a fresh 256-bit `shareKey`, derives `burnToken` from `shareKey`,
+ * Generates a fresh 256-bit `shareKey`, derives `burnToken` from `shareKey`,
  * encrypts `itemPayload` with XChaCha20-Poly1305-IETF, uploads `{ shareId, encryptedPayload, burnToken }`
- * to `POST /v1/share/create` (`maxViews = 1`, `expiresAt = now + 1h`), and formats the URL as:
+ * to `POST /v1/share/create` (`maxViews = 1`, `expiresAt = now + 5m`), and formats the URL as:
  * `https://share.vaultguard.dev/#<shareId>:<shareKeyBase64>`.
- * Starts with `await sodium.ready;` on line 1 and zeroizes `shareKey` via `sodium.memzero()` in `finally`.
  */
 export async function createEphemeralShare(
   itemPayload: EphemeralSharePayload,
@@ -261,7 +261,8 @@ export async function createEphemeralShare(
   const shareKey = sodium.randombytes_buf(DEK_BYTES);
   try {
     const shareId = options.shareId ?? crypto.randomUUID();
-    const ttlMs = options.ttlMs ?? DEFAULT_SHARE_TTL_MS;
+    const rawTtl = options.ttlMs ?? DEFAULT_SHARE_TTL_MS;
+    const ttlMs = Math.min(Math.max(rawTtl, 1_000), MAX_SHARE_TTL_MS);
     const nowMs = Date.now();
     const defaultExpiresAt = nowMs + ttlMs;
     const shareKeyBase64 = sodium.to_base64(shareKey, sodium.base64_variants.URLSAFE_NO_PADDING);
@@ -325,13 +326,17 @@ export interface BurnEphemeralShareOptions {
   burnToken?: string;
   shareKeyBase64?: string;
   relayServerUrl?: string;
-  transport?: (req: { method: string; url: string; headers?: Record<string, string>; body?: string }) => Promise<{ ok: boolean; status: number; bodyText: string }>;
+  transport?: (req: {
+    method: string;
+    url: string;
+    headers?: Record<string, string>;
+    body?: string;
+  }) => Promise<{ ok: boolean; status: number; bodyText: string }>;
 }
 
 /**
- * Patch VG-04: Explicitly increments `view_count` and destroys an ephemeral share on the relay server
- * via `POST /v1/share/:id/burn` authenticated with `burnToken` (derived from `shareKey`).
- * Starts with `await sodium.ready;` on line 1.
+ * Explicitly burns an ephemeral share on the relay server via `POST /v1/share/:id/burn`
+ * authenticated with `burnToken` (derived from `shareKey`).
  */
 export async function burnEphemeralShare(
   shareId: string,
@@ -388,17 +393,20 @@ export interface ConsumeEphemeralShareOptions {
   burnAfterReading?: boolean;
   encryptedPayloadOverride?: string;
   relayServerUrl?: string;
-  transport?: (req: { method: string; url: string; headers?: Record<string, string>; body?: string }) => Promise<{ ok: boolean; status: number; bodyText: string }>;
+  transport?: (req: {
+    method: string;
+    url: string;
+    headers?: Record<string, string>;
+    body?: string;
+  }) => Promise<{ ok: boolean; status: number; bodyText: string }>;
 }
 
 /**
- * Bot-Crawler-Safe Ephemeral Share Consumer (Patch VG-04):
- * 1. Fetches the ciphertext via `GET /v1/share/:id` (which does NOT increment `view_count` on `GET`).
+ * One-Time Ephemeral Share Consumer:
+ * 1. Fetches the ciphertext via `GET /v1/share/:id` (burned after first view or 5 minutes).
  * 2. Decrypts the payload in RAM using `shareKeyBase64` from the URL fragment.
- * 3. Derives `burnToken` from `shareKey` and explicitly calls `POST /v1/share/:id/burn` (`burnEphemeralShare`)
- *    to increment `view_count` and destroy the payload on the server.
+ * 3. Derives `burnToken` from `shareKey` and calls `POST /v1/share/:id/burn` to guarantee server-side deletion.
  * 4. Zeroizes `shareKey` via `sodium.memzero()` in `finally`.
- * Starts with `await sodium.ready;` on line 1.
  */
 export async function consumeEphemeralShare(
   shareId: string,

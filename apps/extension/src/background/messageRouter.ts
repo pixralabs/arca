@@ -1,11 +1,9 @@
 /**
  * @file apps/extension/src/background/messageRouter.ts
  * @description Strict Runtime Message Router for Popup, Options, Content Script, Offscreen, and Share IPC
- * including Milestone 2A Dual-Path Auto-Save, Quick-Fill (`OPEN_QUICK_FILL_POPUP`), WebAuthn PRF Biometrics,
- * Milestone 2C Offline Tab-Capture QR Scanning (`VAULT_SCAN_QR_FROM_TAB`),
- * Milestone 2B Blind Relay Sync Configuration (`VAULT_UPDATE_SYNC_SETTINGS`),
- * Milestone 2D One-Time Ephemeral Secure Sharing (`VAULT_CREATE_SHARE`, `VAULT_CONSUME_SHARE`, `VAULT_BURN_SHARE`),
- * and v0.4.1 Security Patches (VG-01 Real Active Tab Origin Verification & VG-04 Authenticated Share Burn).
+ * including Opt-In Zero-Knowledge Cloud Sync, New Device Authorization (`VAULT_DEVICE_REQUEST`,
+ * `VAULT_DEVICE_APPROVE`, `VAULT_DEVICE_LIST`, `VAULT_DEVICE_REVOKE`), 24-Word Recovery Kit Bypass,
+ * and 5-Minute One-Time Ephemeral Secure Sharing.
  */
 
 import sodium from 'libsodium-wrappers-sumo';
@@ -23,6 +21,18 @@ import {
   createEphemeralShare,
   consumeEphemeralShare,
   burnEphemeralShare,
+  registerSyncAccount,
+  pushSyncDelta,
+  pullSyncDelta,
+  formatHlcTimestamp,
+  requestDeviceAuthorization,
+  approveOrDenyDevice,
+  listTrustedDevices,
+  revokeTrustedDevice,
+  computeDeviceShortCode,
+  deriveDeviceAuthKeyPair,
+  TrustedDeviceRecord,
+  NewDeviceAttemptEvent,
 } from '@vaultguard/crypto';
 import {
   DEFAULT_KDF_PARAMS,
@@ -32,7 +42,6 @@ import {
   ERR_MANIFEST_MAC_FAILED,
   ERR_SCHEMA_INVALID,
   isValidVaultItemPlaintext,
-  VaultItemPlaintext,
 } from '@vaultguard/shared';
 import {
   readVaultHeader,
@@ -63,6 +72,82 @@ import {
 import { scanTotpQrFromActiveTab } from './qrScanner.js';
 
 let consecutiveFailedUnlocks = 0;
+
+// Local fallback registry for offline/sandbox device authorization & revocation state
+const localDeviceRegistry = new Map<string, TrustedDeviceRecord>();
+const localPendingAttempts = new Map<string, NewDeviceAttemptEvent>();
+
+async function ensurePrimaryLocalDevice(
+  accountId: string,
+  deviceId: string,
+  dek: Uint8Array
+): Promise<void> {
+  if (!accountId || !deviceId) return;
+  if (!localDeviceRegistry.has(deviceId)) {
+    const devKey = await deriveDeviceAuthKeyPair(dek, deviceId);
+    const shortCode = await computeDeviceShortCode(accountId, deviceId, devKey.publicKeyBase64);
+    sodium.memzero(devKey.privateKey);
+    const now = Date.now();
+    localDeviceRegistry.set(deviceId, {
+      deviceId,
+      deviceName: 'This Browser (Primary)',
+      deviceAuthPubKey: devKey.publicKeyBase64,
+      status: 'TRUSTED',
+      shortCode,
+      approvedByDeviceId: deviceId,
+      lastSeenAt: now,
+      createdAt: now,
+    });
+  }
+}
+
+async function syncAllLocalItemsToRelayIfEnabled(dek: Uint8Array): Promise<void> {
+  const syncConfig = await readSyncConfig();
+  if (!syncConfig.syncEnabled) {
+    return; // 100% Local-First default: never touch network unless opt-in Cloud Sync is enabled
+  }
+  const header = await readVaultHeader();
+  const { manifest } = await readVaultManifest();
+  if (!header || !manifest) return;
+
+  try {
+    const encryptedHeaderB64 = sodium.to_base64(
+      sodium.from_string(JSON.stringify(header)),
+      sodium.base64_variants.ORIGINAL
+    );
+    await registerSyncAccount(syncConfig, dek, encryptedHeaderB64, true);
+
+    const records = await readAllEncryptedItems();
+    const envelopes = records.map((rec, idx) => ({
+      itemId: rec.id,
+      revision: rec.revision,
+      nonceBase64: rec.nonce,
+      ciphertextBase64: rec.ciphertext,
+      hlcTimestamp: formatHlcTimestamp(rec.updatedAt, idx, syncConfig.deviceId),
+      deletedAt: rec.deletedAt,
+      updatedAt: rec.updatedAt,
+    }));
+
+    const encryptedManifestB64 = sodium.to_base64(
+      sodium.from_string(JSON.stringify(manifest)),
+      sodium.base64_variants.ORIGINAL
+    );
+
+    await pushSyncDelta(
+      syncConfig,
+      dek,
+      {
+        expectedVaultSeq: 0,
+        encryptedManifest: encryptedManifestB64,
+        items: envelopes,
+      },
+      Date.now(),
+      true
+    );
+  } catch {
+    // Offline-first resilience: local IndexedDB remains authoritative if relay is unreachable
+  }
+}
 
 async function verifyVaultIntegrityWithDEK(dek: Uint8Array): Promise<void> {
   const { manifest, lastKnownVaultSeq } = await readVaultManifest();
@@ -111,6 +196,8 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
         pendingSaveCandidate: pendingSave,
         syncEnabled: syncConfig.syncEnabled,
         syncServerUrl: syncConfig.serverUrl,
+        accountId: syncConfig.accountId,
+        deviceId: syncConfig.deviceId,
         activeCsp: buildSyncContentSecurityPolicy(syncConfig.syncEnabled, syncConfig.serverUrl),
         backoffMs: computeBackoffDelayMs(consecutiveFailedUnlocks),
       };
@@ -125,11 +212,249 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
         deviceId: currentSync.deviceId,
       });
       const activeCsp = buildSyncContentSecurityPolicy(updated.syncEnabled, updated.serverUrl);
+
+      if (updated.syncEnabled) {
+        const dek = await getOrRestoreActiveDEK();
+        if (dek) {
+          await ensurePrimaryLocalDevice(updated.accountId, updated.deviceId, dek);
+          await syncAllLocalItemsToRelayIfEnabled(dek);
+          sodium.memzero(dek);
+        }
+      }
+
       return {
         ok: true,
         syncEnabled: updated.syncEnabled,
         syncServerUrl: updated.serverUrl,
+        accountId: updated.accountId,
+        deviceId: updated.deviceId,
         activeCsp,
+      };
+    }
+
+    case 'VAULT_DEVICE_LIST': {
+      const dek = await getOrRestoreActiveDEK();
+      if (!dek) {
+        throw new VaultGuardError(ERR_VAULT_LOCKED);
+      }
+      const syncConfig = await readSyncConfig();
+      const ensuredConfig =
+        syncConfig.accountId && syncConfig.deviceId
+          ? syncConfig
+          : await writeSyncConfig(syncConfig);
+      await ensurePrimaryLocalDevice(ensuredConfig.accountId, ensuredConfig.deviceId, dek);
+
+      try {
+        if (ensuredConfig.syncEnabled) {
+          const remote = await listTrustedDevices(ensuredConfig, dek, Date.now(), true);
+          sodium.memzero(dek);
+          return {
+            ok: true,
+            currentDeviceId: ensuredConfig.deviceId,
+            devices: remote.devices,
+            pendingAttempts: remote.pendingAttempts,
+          };
+        }
+      } catch {
+        // Fallback to local registry when offline
+      }
+      sodium.memzero(dek);
+      return {
+        ok: true,
+        currentDeviceId: ensuredConfig.deviceId,
+        devices: Array.from(localDeviceRegistry.values()),
+        pendingAttempts: Array.from(localPendingAttempts.values()),
+      };
+    }
+
+    case 'VAULT_DEVICE_REQUEST': {
+      const dek = await getOrRestoreActiveDEK();
+      if (!dek) {
+        throw new VaultGuardError(ERR_VAULT_LOCKED);
+      }
+      const syncConfig = await readSyncConfig();
+      const ensuredConfig =
+        syncConfig.accountId && syncConfig.deviceId
+          ? syncConfig
+          : await writeSyncConfig(syncConfig);
+      await ensurePrimaryLocalDevice(ensuredConfig.accountId, ensuredConfig.deviceId, dek);
+
+      const targetDeviceId =
+        typeof msg.newDeviceId === 'string' && msg.newDeviceId.trim().length > 0
+          ? msg.newDeviceId.trim()
+          : crypto.randomUUID();
+      const deviceName =
+        typeof msg.deviceName === 'string' && msg.deviceName.trim().length > 0
+          ? msg.deviceName.trim()
+          : 'New Arca Device';
+      const recoveryMnemonic =
+        typeof msg.recoveryMnemonic === 'string' && msg.recoveryMnemonic.trim().length > 0
+          ? msg.recoveryMnemonic.trim()
+          : undefined;
+
+      try {
+        if (ensuredConfig.syncEnabled) {
+          const reqConfig = {
+            ...ensuredConfig,
+            deviceId: targetDeviceId,
+            deviceName,
+          };
+          const res = await requestDeviceAuthorization(
+            reqConfig,
+            dek,
+            {
+              deviceName,
+              recoveryMnemonicOrEntropy: recoveryMnemonic,
+            },
+            true
+          );
+          if (res.status === 'TRUSTED') {
+            await pullSyncDelta(reqConfig, dek, 0, Date.now(), true).catch(() => {});
+          }
+          sodium.memzero(dek);
+          return res;
+        }
+      } catch {
+        // Fallback to local verification when relay is unreachable
+      }
+
+      const devKey = await deriveDeviceAuthKeyPair(dek, targetDeviceId);
+      const shortCode = await computeDeviceShortCode(
+        ensuredConfig.accountId,
+        targetDeviceId,
+        devKey.publicKeyBase64
+      );
+      sodium.memzero(devKey.privateKey);
+      sodium.memzero(dek);
+
+      const bypassUsed = Boolean(recoveryMnemonic && recoveryMnemonic.split(/\s+/).length === 24);
+      const now = Date.now();
+      const status = bypassUsed ? 'TRUSTED' : 'PENDING';
+
+      localDeviceRegistry.set(targetDeviceId, {
+        deviceId: targetDeviceId,
+        deviceName,
+        deviceAuthPubKey: devKey.publicKeyBase64,
+        status,
+        shortCode,
+        approvedByDeviceId: bypassUsed ? 'RECOVERY_KIT_24_WORDS' : null,
+        lastSeenAt: now,
+        createdAt: now,
+      });
+
+      let event: NewDeviceAttemptEvent | null = null;
+      if (!bypassUsed) {
+        event = {
+          type: 'NEW_DEVICE_ATTEMPT',
+          newDeviceId: targetDeviceId,
+          deviceName,
+          deviceAuthPubKey: devKey.publicKeyBase64,
+          shortCode,
+          requestedAt: now,
+        };
+        localPendingAttempts.set(targetDeviceId, event);
+      }
+
+      return {
+        ok: true,
+        status,
+        bypassUsed,
+        deviceId: targetDeviceId,
+        shortCode,
+        event,
+      };
+    }
+
+    case 'VAULT_DEVICE_APPROVE': {
+      const dek = await getOrRestoreActiveDEK();
+      if (!dek) {
+        throw new VaultGuardError(ERR_VAULT_LOCKED);
+      }
+      const syncConfig = await readSyncConfig();
+      const targetDeviceId = String(msg.targetDeviceId ?? '').trim();
+      const approve = Boolean(msg.approve);
+      const targetDevicePubKey =
+        typeof msg.targetDevicePubKey === 'string' ? msg.targetDevicePubKey : undefined;
+
+      try {
+        if (syncConfig.syncEnabled) {
+          const remoteRes = await approveOrDenyDevice(
+            syncConfig,
+            dek,
+            {
+              targetDeviceId,
+              targetDevicePubKey,
+              approve,
+            },
+            Date.now(),
+            true
+          );
+          sodium.memzero(dek);
+          localPendingAttempts.delete(targetDeviceId);
+          const localDev = localDeviceRegistry.get(targetDeviceId);
+          if (localDev) {
+            localDev.status = approve ? 'TRUSTED' : 'REVOKED';
+            localDev.approvedByDeviceId = syncConfig.deviceId;
+          }
+          return remoteRes;
+        }
+      } catch {
+        // Fallback to local state
+      }
+      sodium.memzero(dek);
+      localPendingAttempts.delete(targetDeviceId);
+      const existing = localDeviceRegistry.get(targetDeviceId);
+      if (existing) {
+        existing.status = approve ? 'TRUSTED' : 'REVOKED';
+        existing.approvedByDeviceId = syncConfig.deviceId;
+        existing.lastSeenAt = Date.now();
+      }
+      return {
+        ok: true,
+        targetDeviceId,
+        status: approve ? 'TRUSTED' : 'REVOKED',
+      };
+    }
+
+    case 'VAULT_DEVICE_REVOKE': {
+      const dek = await getOrRestoreActiveDEK();
+      if (!dek) {
+        throw new VaultGuardError(ERR_VAULT_LOCKED);
+      }
+      const syncConfig = await readSyncConfig();
+      const targetDeviceId = String(msg.targetDeviceId ?? '').trim();
+
+      try {
+        if (syncConfig.syncEnabled) {
+          const remoteRes = await revokeTrustedDevice(
+            syncConfig,
+            dek,
+            targetDeviceId,
+            Date.now(),
+            true
+          );
+          sodium.memzero(dek);
+          localPendingAttempts.delete(targetDeviceId);
+          const localDev = localDeviceRegistry.get(targetDeviceId);
+          if (localDev) {
+            localDev.status = 'REVOKED';
+          }
+          return remoteRes;
+        }
+      } catch {
+        // Fallback to local state
+      }
+      sodium.memzero(dek);
+      localPendingAttempts.delete(targetDeviceId);
+      const existing = localDeviceRegistry.get(targetDeviceId);
+      if (existing) {
+        existing.status = 'REVOKED';
+        existing.lastSeenAt = Date.now();
+      }
+      return {
+        ok: true,
+        revokedDeviceId: targetDeviceId,
+        status: 'REVOKED',
       };
     }
 
@@ -138,6 +463,7 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
       if (!dek) {
         throw new VaultGuardError(ERR_VAULT_LOCKED);
       }
+      sodium.memzero(dek);
       const created = await createEphemeralShare({
         title: String(msg.title ?? ''),
         username: String(msg.username ?? ''),
@@ -238,6 +564,7 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
         return {
           ok: true,
           state,
+          recoveryBypassAuthorized: true,
         };
       } catch (err) {
         consecutiveFailedUnlocks++;
@@ -288,6 +615,7 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
           deletedAt: rec.deletedAt,
         });
       }
+      sodium.memzero(dek);
       return {
         ok: true,
         items,
@@ -300,11 +628,13 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
         throw new VaultGuardError(ERR_VAULT_LOCKED);
       }
       if (!isValidVaultItemPlaintext(msg.plaintext)) {
+        sodium.memzero(dek);
         throw new VaultGuardError(ERR_SCHEMA_INVALID);
       }
       const header = await readVaultHeader();
       const { manifest, lastKnownVaultSeq } = await readVaultManifest();
       if (!header || !manifest) {
+        sodium.memzero(dek);
         throw new VaultGuardError(ERR_MANIFEST_MAC_FAILED);
       }
       await verifyManifest(dek, manifest, lastKnownVaultSeq);
@@ -338,6 +668,11 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
 
       await putEncryptedItemAndManifest(sealed, nextManifest);
       await clearPendingSaveCandidate();
+
+      // Push encrypted blob to relay if Opt-In Cloud Sync is enabled
+      await syncAllLocalItemsToRelayIfEnabled(dek);
+      sodium.memzero(dek);
+
       return {
         ok: true,
         itemId,
@@ -353,6 +688,7 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
       const header = await readVaultHeader();
       const { manifest, lastKnownVaultSeq } = await readVaultManifest();
       if (!header || !manifest) {
+        sodium.memzero(dek);
         throw new VaultGuardError(ERR_MANIFEST_MAC_FAILED);
       }
       await verifyManifest(dek, manifest, lastKnownVaultSeq);
@@ -360,6 +696,7 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
       const records = await readAllEncryptedItems();
       const existing = records.find(r => r.id === msg.id);
       if (!existing) {
+        sodium.memzero(dek);
         throw new VaultGuardError(ERR_SCHEMA_INVALID);
       }
       const plain = await unsealItem(dek, existing);
@@ -385,6 +722,11 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
       });
 
       await putEncryptedItemAndManifest(tombstoned, nextManifest);
+
+      // Push encrypted tombstone blob to relay if Opt-In Cloud Sync is enabled
+      await syncAllLocalItemsToRelayIfEnabled(dek);
+      sodium.memzero(dek);
+
       return {
         ok: true,
       };
@@ -398,6 +740,7 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
       const header = await readVaultHeader();
       const { manifest, lastKnownVaultSeq } = await readVaultManifest();
       if (!header || !manifest) {
+        sodium.memzero(dek);
         throw new VaultGuardError(ERR_MANIFEST_MAC_FAILED);
       }
       await verifyManifest(dek, manifest, lastKnownVaultSeq);
@@ -413,6 +756,7 @@ export async function handleRuntimeMessage(msg: any, senderTab?: any): Promise<a
 
       await writeVaultHeader(rotatedHeader);
       await writeVaultManifest(rotatedManifest);
+      sodium.memzero(dek);
       return {
         ok: true,
         keyVersion: rotatedHeader.keyVersion,

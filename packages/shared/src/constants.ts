@@ -1,6 +1,6 @@
 /**
  * @vaultguard/shared — Cryptographic, KDF, Subkey, Biometric, Shamir & MV3 Constants
- * Locked to ARCHITECTURE.md v4.1 & ENVELOPE_SPEC.md v2 (Milestone 2A v0.2.0-local)
+ * Locked to ARCHITECTURE.md v5.0 & ENVELOPE_SPEC.md v2
  */
 
 // 1. Argon2id KDF Two-Sided Bounds (OWASP Floor + Worker Ceiling)
@@ -30,11 +30,15 @@ export const REC_ID = 2;
 export const MAN_ID = 3;
 export const BIO_ID = 4;
 export const AUT_ID = 5;
+export const RAU_ID = 6;
+export const DEV_ID = 7;
 export const BLAKE2B_CTX_MASTER_KEK = 'VG_KEK_1'; // 8 ASCII bytes
 export const BLAKE2B_CTX_RECOVERY_KEK = 'VG_REC_1'; // 8 ASCII bytes
 export const BLAKE2B_CTX_MANIFEST_SIG = 'VG_MAN_S'; // 8 ASCII bytes
 export const BLAKE2B_CTX_BIOMETRIC_KEK = 'VG_BIO_1'; // 8 ASCII bytes
 export const BLAKE2B_CTX_SYNC_AUTH = 'VG_AUT_1'; // 8 ASCII bytes
+export const BLAKE2B_CTX_RECOVERY_AUTH = 'VG_RAU_1'; // 8 ASCII bytes (24-Word Recovery Authority Key)
+export const BLAKE2B_CTX_DEVICE_AUTH = 'VG_DEV_1'; // 8 ASCII bytes (Per-Device Identity Key)
 
 // 5. Shamir's Secret Sharing Parameters (2-of-3 Threshold over GF(2^8))
 export const SHAMIR_TOTAL_SHARES = 3;

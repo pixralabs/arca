@@ -1,22 +1,24 @@
 /**
- * @vaultguard/crypto — Zero-Knowledge Blind Relay HTTP Client & HLC LWW-Element-Set CRDT (`syncClient.ts`)
- * Locked to SYNC_PROTOCOL.md v1.0, ARCHITECTURE.md v4.4 & Patch VG-03 (v0.4.1):
- * - The extension's manifest allows connection to the sync server (`connect-src 'self' https://sync.vaultguard.dev`)
- *   to comply with MV3 static CSP rules, but the runtime code enforces a strict zero-network guarantee
- *   unless the user explicitly enables Sync (`if (!syncEnabled) { throw new Error('Sync is disabled'); }` on line 1).
- * - Every async function calls `await sodium.ready;` before any `sodium.*` call.
- * - Enforces 256-byte padded DataEnvelope invariant (`(ciphertext.byteLength - 16) % 256 === 0`)
- *   before any item blob is serialized for transmission.
- * - Patch VG-03: `registerSyncAccount` signs `accountId` and `accountAuthPubKey` with the `VG_AUT_1`
- *   Ed25519 private key and includes `registrationSignature` in `POST /v1/auth/register`.
- * - Executes Ed25519 Challenge-Response Authentication (`VG_SYNC_AUTH_V1:`) over
- *   `/v1/auth/challenge`, `/v1/auth/verify`, `/v1/sync/delta`,
- *   `/v1/sync/push` (with optimistic CAS on `expectedVaultSeq`), and `DELETE /v1/account`.
+ * @vaultguard/crypto — Zero-Knowledge Blind Relay HTTP Client, Device Authorization & HLC LWW-Element-Set CRDT (`syncClient.ts`)
+ *
+ * Implements:
+ * - Strict Opt-In Cloud Sync (`if (!syncEnabled) throw new Error('Sync is disabled');`).
+ * - 256-byte padded DataEnvelope invariant (`(ciphertext.byteLength - 16) % 256 === 0`).
+ * - Account Registration (`POST /v1/auth/register`) with `accountAuthPubKey`, `deviceAuthPubKey`, and optional `recoveryAuthPubKey`.
+ * - New Device Authorization (`POST /v1/device/request`), Trusted Device Approval (`POST /v1/device/approve`),
+ *   Active & Pending Device Listing (`GET /v1/device/list`), and Instant Device Revocation (`POST /v1/device/revoke`).
+ * - 24-Word Recovery Kit Cryptographic Bypass (`VG_DEVICE_RECOVERY_V1:`).
  */
 
 import sodium from 'libsodium-wrappers-sumo';
 import { AEAD_NONCE_BYTES, AEAD_TAG_BYTES, PAD_BLOCK_BYTES } from '@vaultguard/shared';
-import { signSyncRegistration, signSyncChallenge, EMPTY_BODY_SHA256 } from './syncAuth.js';
+import {
+  signSyncRegistration,
+  signSyncChallenge,
+  signDeviceAuthorizationRequest,
+  signDeviceApprovalDecision,
+  EMPTY_BODY_SHA256,
+} from './syncAuth.js';
 
 export const DEFAULT_SYNC_SERVER_URL = 'https://sync.vaultguard.dev';
 export const DEFAULT_CSP_EXTENSION_PAGES =
@@ -26,6 +28,7 @@ export interface SyncConfig {
   serverUrl: string;
   accountId: string;
   deviceId: string;
+  deviceName?: string;
   syncEnabled?: boolean;
   transport?: (req: HttpRequest) => Promise<HttpResponse>;
 }
@@ -63,6 +66,44 @@ export interface PushDeltaInput {
   expectedVaultSeq: number;
   encryptedManifest?: string;
   items: SyncItemEnvelope[];
+}
+
+export interface TrustedDeviceRecord {
+  deviceId: string;
+  deviceName: string;
+  deviceAuthPubKey: string;
+  status: 'TRUSTED' | 'PENDING' | 'REVOKED';
+  shortCode: string;
+  approvedByDeviceId: string | null;
+  lastSeenAt: number;
+  createdAt: number;
+}
+
+export interface NewDeviceAttemptEvent {
+  type: 'NEW_DEVICE_ATTEMPT';
+  newDeviceId: string;
+  deviceName: string;
+  deviceAuthPubKey: string;
+  shortCode: string;
+  requestedAt: number;
+}
+
+export interface DeviceAuthRequestResult {
+  ok: boolean;
+  status: 'TRUSTED' | 'PENDING' | 'REVOKED';
+  bypassUsed: boolean;
+  deviceId: string;
+  shortCode: string;
+  encryptedHeader?: string | null;
+  encryptedManifest?: string | null;
+  vaultSeq?: number | null;
+  event?: NewDeviceAttemptEvent | null;
+}
+
+export interface DeviceListResult {
+  ok: boolean;
+  devices: TrustedDeviceRecord[];
+  pendingAttempts: NewDeviceAttemptEvent[];
 }
 
 export function validateSyncServerUrl(rawUrl: string): string {
@@ -251,18 +292,27 @@ export async function registerSyncAccount(
   config: SyncConfig,
   dek: Uint8Array,
   encryptedHeaderBase64: string,
-  syncEnabled: boolean = Boolean(config && config.syncEnabled)
+  syncEnabled: boolean = Boolean(config && config.syncEnabled),
+  recoveryMnemonicOrEntropy?: string | Uint8Array
 ): Promise<any> {
   if (!syncEnabled) {
     throw new Error('Sync is disabled');
   }
   await sodium.ready;
   const origin = validateSyncServerUrl(config.serverUrl);
-  const regProof = await signSyncRegistration(dek, config.accountId);
+  const regProof = await signSyncRegistration(
+    dek,
+    config.accountId,
+    config.deviceId,
+    recoveryMnemonicOrEntropy
+  );
   const payload = {
     accountId: config.accountId,
     deviceId: config.deviceId,
+    deviceName: config.deviceName ?? 'Primary Device',
     accountAuthPubKey: regProof.accountAuthPubKey,
+    deviceAuthPubKey: regProof.deviceAuthPubKey,
+    recoveryAuthPubKey: regProof.recoveryAuthPubKey,
     encryptedHeader: encryptedHeaderBase64,
     registrationSignature: regProof.registrationSignature,
   };
@@ -361,13 +411,239 @@ export async function verifySyncChallenge(
   return JSON.parse(res.bodyText);
 }
 
+// ── New Device Authorization, Approval, Listing & Revocation APIs ────────────
+
+/**
+ * Step 1 & Step 6: Sends `POST /v1/device/request` from a new device with a signed challenge.
+ * If `recoveryMnemonicOrEntropy` (24-Word Recovery Kit) is provided, attaches a cryptographic
+ * `VG_DEVICE_RECOVERY_V1:` signature that immediately marks the device `TRUSTED` and bypasses
+ * interactive approval on existing devices.
+ */
+export async function requestDeviceAuthorization(
+  config: SyncConfig,
+  dek: Uint8Array,
+  options: {
+    deviceName?: string;
+    recoveryMnemonicOrEntropy?: string | Uint8Array;
+    timestampMs?: number;
+  } = {},
+  syncEnabled: boolean = Boolean(config && config.syncEnabled)
+): Promise<DeviceAuthRequestResult> {
+  if (!syncEnabled) {
+    throw new Error('Sync is disabled');
+  }
+  await sodium.ready;
+  const origin = validateSyncServerUrl(config.serverUrl);
+  const challenge = await requestSyncChallenge(config, syncEnabled);
+  const timestampMs = options.timestampMs ?? Date.now();
+  const reqProof = await signDeviceAuthorizationRequest(dek, {
+    challengeNonce: challenge.challengeNonce,
+    accountId: config.accountId,
+    deviceId: config.deviceId,
+    timestamp: timestampMs,
+    recoveryMnemonicOrEntropy: options.recoveryMnemonicOrEntropy,
+  });
+
+  const body = JSON.stringify({
+    accountId: config.accountId,
+    deviceId: config.deviceId,
+    deviceName: options.deviceName ?? config.deviceName ?? 'New Arca Device',
+    deviceAuthPubKey: reqProof.deviceAuthPubKey,
+    challengeNonce: challenge.challengeNonce,
+    timestamp: timestampMs,
+    signature: reqProof.signatureBase64,
+    recoveryAuthPubKey: reqProof.recoveryAuthPubKey,
+    recoverySignature: reqProof.recoverySignatureBase64,
+  });
+
+  const res = await executeHttpRequest(
+    config,
+    {
+      method: 'POST',
+      url: `${origin}/v1/device/request`,
+      headers: {
+        'content-type': 'application/json',
+      },
+      body,
+    },
+    syncEnabled
+  );
+
+  if (!res.ok && res.status !== 202) {
+    throw new Error(`ERR_DEVICE_REQUEST_FAILED_${String(res.status)}`);
+  }
+  return JSON.parse(res.bodyText);
+}
+
+/**
+ * Step 4 & Step 5: Approves or denies a pending device request via `POST /v1/device/approve`.
+ */
+export async function approveOrDenyDevice(
+  config: SyncConfig,
+  dek: Uint8Array,
+  input: {
+    targetDeviceId: string;
+    targetDevicePubKey?: string;
+    approve: boolean;
+  },
+  timestampMs: number = Date.now(),
+  syncEnabled: boolean = Boolean(config && config.syncEnabled)
+): Promise<{ ok: boolean; targetDeviceId: string; status: 'TRUSTED' | 'REVOKED' }> {
+  if (!syncEnabled) {
+    throw new Error('Sync is disabled');
+  }
+  await sodium.ready;
+  const origin = validateSyncServerUrl(config.serverUrl);
+  const challenge = await requestSyncChallenge(config, syncEnabled);
+
+  let approvalSignature: string | undefined;
+  if (input.targetDevicePubKey) {
+    approvalSignature = await signDeviceApprovalDecision(dek, {
+      accountId: config.accountId,
+      approverDeviceId: config.deviceId,
+      targetDeviceId: input.targetDeviceId,
+      targetDevicePubKey: input.targetDevicePubKey,
+      approve: input.approve,
+    });
+  }
+
+  const body = JSON.stringify({
+    targetDeviceId: input.targetDeviceId,
+    approve: input.approve,
+    approvalSignature,
+  });
+
+  const proof = await signSyncChallenge(dek, {
+    challengeNonce: challenge.challengeNonce,
+    accountId: config.accountId,
+    deviceId: config.deviceId,
+    timestamp: timestampMs,
+    body,
+  });
+
+  const res = await executeHttpRequest(
+    config,
+    {
+      method: 'POST',
+      url: `${origin}/v1/device/approve`,
+      headers: {
+        'content-type': 'application/json',
+        ...proof.headers,
+      },
+      body,
+    },
+    syncEnabled
+  );
+
+  if (!res.ok) {
+    throw new Error(`ERR_DEVICE_APPROVE_FAILED_${String(res.status)}`);
+  }
+  return JSON.parse(res.bodyText);
+}
+
+/**
+ * Fetches all devices (`TRUSTED`, `PENDING`, `REVOKED`) and any pending `NEW_DEVICE_ATTEMPT` events
+ * via `GET /v1/device/list`.
+ */
+export async function listTrustedDevices(
+  config: SyncConfig,
+  dek: Uint8Array,
+  timestampMs: number = Date.now(),
+  syncEnabled: boolean = Boolean(config && config.syncEnabled)
+): Promise<DeviceListResult> {
+  if (!syncEnabled) {
+    throw new Error('Sync is disabled');
+  }
+  await sodium.ready;
+  const origin = validateSyncServerUrl(config.serverUrl);
+  const challenge = await requestSyncChallenge(config, syncEnabled);
+  const proof = await signSyncChallenge(dek, {
+    challengeNonce: challenge.challengeNonce,
+    accountId: config.accountId,
+    deviceId: config.deviceId,
+    timestamp: timestampMs,
+    body: '',
+  });
+
+  const res = await executeHttpRequest(
+    config,
+    {
+      method: 'GET',
+      url: `${origin}/v1/device/list`,
+      headers: {
+        ...proof.headers,
+      },
+    },
+    syncEnabled
+  );
+
+  if (!res.ok) {
+    throw new Error(`ERR_DEVICE_LIST_FAILED_${String(res.status)}`);
+  }
+  return JSON.parse(res.bodyText);
+}
+
+/**
+ * Instantly revokes an active device session via `POST /v1/device/revoke`.
+ */
+export async function revokeTrustedDevice(
+  config: SyncConfig,
+  dek: Uint8Array,
+  targetDeviceId: string,
+  timestampMs: number = Date.now(),
+  syncEnabled: boolean = Boolean(config && config.syncEnabled)
+): Promise<{ ok: boolean; revokedDeviceId: string; status: 'REVOKED' }> {
+  if (!syncEnabled) {
+    throw new Error('Sync is disabled');
+  }
+  await sodium.ready;
+  const origin = validateSyncServerUrl(config.serverUrl);
+  const challenge = await requestSyncChallenge(config, syncEnabled);
+  const body = JSON.stringify({
+    targetDeviceId,
+  });
+  const proof = await signSyncChallenge(dek, {
+    challengeNonce: challenge.challengeNonce,
+    accountId: config.accountId,
+    deviceId: config.deviceId,
+    timestamp: timestampMs,
+    body,
+  });
+
+  const res = await executeHttpRequest(
+    config,
+    {
+      method: 'POST',
+      url: `${origin}/v1/device/revoke`,
+      headers: {
+        'content-type': 'application/json',
+        ...proof.headers,
+      },
+      body,
+    },
+    syncEnabled
+  );
+
+  if (!res.ok) {
+    throw new Error(`ERR_DEVICE_REVOKE_FAILED_${String(res.status)}`);
+  }
+  return JSON.parse(res.bodyText);
+}
+
+// ── Delta Pull & Push Sync APIs ──────────────────────────────────────────────
+
 export async function pullSyncDelta(
   config: SyncConfig,
   dek: Uint8Array,
   sinceSeq: number = 0,
   timestampMs: number = Date.now(),
   syncEnabled: boolean = Boolean(config && config.syncEnabled)
-): Promise<{ currentVaultSeq: number; encryptedManifest: string | null; items: SyncItemEnvelope[] }> {
+): Promise<{
+  currentVaultSeq: number;
+  encryptedHeader?: string;
+  encryptedManifest: string | null;
+  items: SyncItemEnvelope[];
+}> {
   if (!syncEnabled) {
     throw new Error('Sync is disabled');
   }
@@ -404,7 +680,12 @@ export async function fetchSyncDelta(
   sinceSeq: number = 0,
   timestampMs: number = Date.now(),
   syncEnabled: boolean = Boolean(config && config.syncEnabled)
-): Promise<{ currentVaultSeq: number; encryptedManifest: string | null; items: SyncItemEnvelope[] }> {
+): Promise<{
+  currentVaultSeq: number;
+  encryptedHeader?: string;
+  encryptedManifest: string | null;
+  items: SyncItemEnvelope[];
+}> {
   return pullSyncDelta(config, dek, sinceSeq, timestampMs, syncEnabled);
 }
 

@@ -15,7 +15,12 @@ export {
   WORKER_MAX_MEMORY_KIB,
 } from './kdf.js';
 export { handleWorkerMessage } from './worker.js';
-export type { WorkerRequest, WorkerResponse, WorkerSuccessResponse, WorkerErrorResponse } from './worker.js';
+export type {
+  WorkerRequest,
+  WorkerResponse,
+  WorkerSuccessResponse,
+  WorkerErrorResponse,
+} from './worker.js';
 export { generatePassword, generatePassphrase, DEFAULT_PASSWORD_OPTIONS } from './generator.js';
 export type { PasswordGeneratorOptions } from './generator.js';
 export { canonicalJSON, signManifest, verifyManifest } from './manifest.js';
@@ -43,18 +48,29 @@ export type { TotpResult } from './totp.js';
 export {
   SYNC_AUTH_DOMAIN_PREFIX,
   SYNC_REGISTER_DOMAIN_PREFIX,
+  DEVICE_REQUEST_DOMAIN_PREFIX,
+  DEVICE_APPROVE_DOMAIN_PREFIX,
+  DEVICE_RECOVERY_DOMAIN_PREFIX,
   ED25519_PUBLIC_KEY_BYTES,
   ED25519_SECRET_KEY_BYTES,
   ED25519_SIGNATURE_BYTES,
   EMPTY_BODY_SHA256,
   buildSyncRegisterPreimage,
   buildSyncAuthPreimage,
+  buildDeviceRequestPreimage,
+  buildDeviceRecoveryPreimage,
+  buildDeviceApprovalPreimage,
+  computeDeviceShortCode,
   computeBodySha256Hex,
   deriveSyncAuthKeyPair,
+  deriveDeviceAuthKeyPair,
+  deriveRecoveryAuthKeyPair,
   signSyncRegistration,
   verifySyncRegistrationSignature,
   signSyncChallenge,
   verifySyncChallengeSignature,
+  signDeviceAuthorizationRequest,
+  signDeviceApprovalDecision,
 } from './syncAuth.js';
 export type {
   SyncAuthPreimageInput,
@@ -62,6 +78,7 @@ export type {
   RegistrationProof,
   ChallengeSignatureInput,
   ChallengeProof,
+  DeviceRequestProof,
 } from './syncAuth.js';
 export {
   DEFAULT_SYNC_SERVER_URL,
@@ -77,6 +94,10 @@ export {
   registerSyncAccount,
   requestSyncChallenge,
   verifySyncChallenge,
+  requestDeviceAuthorization,
+  approveOrDenyDevice,
+  listTrustedDevices,
+  revokeTrustedDevice,
   pullSyncDelta,
   fetchSyncDelta,
   pushSyncDelta,
@@ -89,11 +110,16 @@ export type {
   HlcTimestampComponents,
   SyncItemEnvelope,
   PushDeltaInput,
+  TrustedDeviceRecord,
+  NewDeviceAttemptEvent,
+  DeviceAuthRequestResult,
+  DeviceListResult,
 } from './syncClient.js';
 export {
   DEFAULT_SHARE_BASE_URL,
   DEFAULT_SHARE_RELAY_URL,
   DEFAULT_SHARE_TTL_MS,
+  MAX_SHARE_TTL_MS,
   AAD_SHARE_PREFIX,
   SHARE_BURN_TOKEN_CONTEXT,
   buildShareAad,

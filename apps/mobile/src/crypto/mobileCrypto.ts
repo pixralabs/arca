@@ -17,7 +17,6 @@ import {
   VaultHeader,
   VaultItemPlaintext,
   VaultItemRecord,
-  TOTAL_WORDS_BIP39,
   VaultGuardError,
   ERROR_VAULT_CORRUPT,
 } from '@vaultguard/shared';
@@ -54,7 +53,7 @@ export async function mobileSetupVault(password: string): Promise<{
 }> {
   const result = await createVault(password);
   saveVaultMeta('header', JSON.stringify(result.header));
-  
+
   activeSession = {
     dek: result.dek,
     header: result.header,
@@ -118,12 +117,14 @@ export async function mobileSaveItem(item: VaultItemPlaintext): Promise<StoredMo
   return stored;
 }
 
-export async function mobileGetDecryptedItems(): Promise<VaultItemPlaintext[]> {
+export async function mobileGetDecryptedItems(
+  includeDeleted = true
+): Promise<VaultItemPlaintext[]> {
   if (!activeSession) {
     throw new Error('Vault is locked');
   }
 
-  const records = getAllVaultItems();
+  const records = getAllVaultItems(includeDeleted);
   const results: VaultItemPlaintext[] = [];
 
   for (const rec of records) {
@@ -137,7 +138,12 @@ export async function mobileGetDecryptedItems(): Promise<VaultItemPlaintext[]> {
     };
     try {
       const plain = await unsealItem(sealed, activeSession.dek);
-      results.push(plain);
+      results.push({
+        ...plain,
+        id: rec.id,
+        updatedAt: rec.updated_at,
+        deletedAt: rec.is_deleted === 1 ? rec.updated_at : null,
+      } as VaultItemPlaintext);
     } catch {
       // Skip corrupt individual item without failing the entire vault
     }
@@ -146,4 +152,4 @@ export async function mobileGetDecryptedItems(): Promise<VaultItemPlaintext[]> {
   return results;
 }
 
-export { generatePassword, generatePassphrase, computeTotp };
+export { generatePassword, generatePassphrase, computeTotp, softDeleteVaultItem };

@@ -110,9 +110,12 @@ export function saveVaultItem(item: StoredMobileItem): void {
   );
 }
 
-export function getAllVaultItems(): StoredMobileItem[] {
+export function getAllVaultItems(includeDeleted = false): StoredMobileItem[] {
   const db = getDatabase();
-  const res = db.execute('SELECT * FROM vault_items WHERE is_deleted = 0 ORDER BY updated_at DESC;');
+  const query = includeDeleted
+    ? 'SELECT * FROM vault_items ORDER BY updated_at DESC;'
+    : 'SELECT * FROM vault_items WHERE is_deleted = 0 ORDER BY updated_at DESC;';
+  const res = db.execute(query);
   const items: StoredMobileItem[] = [];
   if (res.rows) {
     for (let i = 0; i < res.rows.length; i++) {
