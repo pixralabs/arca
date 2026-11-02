@@ -24,12 +24,18 @@ export default function App() {
 
   useEffect(() => {
     // Check if vault has been created
-    const header = getVaultMeta('header');
-    if (!header) {
-      setCurrentScreen('SETUP');
-    } else {
-      setCurrentScreen('UNLOCK');
-    }
+    let isMounted = true;
+    getVaultMeta('header').then((header) => {
+      if (!isMounted) return;
+      if (!header) {
+        setCurrentScreen('SETUP');
+      } else {
+        setCurrentScreen('UNLOCK');
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (

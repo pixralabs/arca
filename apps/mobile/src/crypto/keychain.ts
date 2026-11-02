@@ -8,8 +8,8 @@ import * as Keychain from 'react-native-keychain';
 import ReactNativeBiometrics, { BiometryTypes } from 'react-native-biometrics';
 
 const rnBiometrics = new ReactNativeBiometrics();
-const SERVICE_NAME = 'dev.pixra.arca.keystore';
-const BIOMETRIC_SERVICE_NAME = 'dev.pixra.arca.biometrics';
+const SERVICE_NAME = 'com.pixra.arca.keystore';
+const BIOMETRIC_SERVICE_NAME = 'com.pixra.arca.biometrics';
 
 export async function checkBiometricsAvailable(): Promise<{
   available: boolean;

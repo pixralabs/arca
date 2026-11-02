@@ -23,7 +23,8 @@ export type VaultCategoryFilter = 'all' | 'totp' | 'security' | 'deleted';
 export interface MobileVaultItem extends VaultItemPlaintext {
   id: string;
   type?: 'login' | 'totp' | 'note' | 'wifi';
-  totpConfig?: unknown;
+  totpSecret?: string | null;
+  customFields?: Array<{ name: string; value: string }>;
   deletedAt?: number | null;
   updatedAt?: number;
 }

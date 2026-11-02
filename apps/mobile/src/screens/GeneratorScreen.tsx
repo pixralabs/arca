@@ -3,7 +3,7 @@
  * @description Arca Mobile — Cryptographically Strong Password and Passphrase Generator.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Clipboard } from 'react-native';
 import { colors, spacing, radii } from '../theme/theme';
 import { generatePassword, generatePassphrase } from '../crypto/mobileCrypto';
@@ -13,22 +13,38 @@ interface GeneratorScreenProps {
 }
 
 export function GeneratorScreen({ onBack }: GeneratorScreenProps) {
-  const [password, setPassword] = useState(() => generatePassword(20));
+  const [password, setPassword] = useState('');
   const [copied, setCopied] = useState(false);
   const [isPassphrase, setIsPassphrase] = useState(false);
 
-  const handleGenerate = () => {
-    if (isPassphrase) {
-      setPassword(generatePassphrase(5));
-    } else {
-      setPassword(generatePassword(20));
+  const generate = useCallback(async (passphraseMode: boolean) => {
+    try {
+      if (passphraseMode) {
+        const val = await generatePassphrase(5);
+        setPassword(val);
+      } else {
+        const val = await generatePassword({ length: 20 });
+        setPassword(val);
+      }
+    } catch {
+      // fallback
     }
+  }, []);
+
+  useEffect(() => {
+    generate(false);
+  }, [generate]);
+
+  const handleGenerate = () => {
+    generate(isPassphrase);
   };
 
   const handleCopy = () => {
-    Clipboard.setString(password);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (password) {
+      Clipboard.setString(password);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -44,7 +60,7 @@ export function GeneratorScreen({ onBack }: GeneratorScreenProps) {
       <View style={styles.content}>
         <TouchableOpacity style={styles.resultCard} onPress={handleCopy}>
           <Text style={styles.resultText} selectable>
-            {password}
+            {password || 'Generating...'}
           </Text>
         </TouchableOpacity>
 
@@ -53,7 +69,7 @@ export function GeneratorScreen({ onBack }: GeneratorScreenProps) {
             style={[styles.toggleBtn, !isPassphrase && styles.toggleBtnActive]}
             onPress={() => {
               setIsPassphrase(false);
-              setPassword(generatePassword(20));
+              generate(false);
             }}
           >
             <Text style={[styles.toggleText, !isPassphrase && styles.toggleTextActive]}>
@@ -64,7 +80,7 @@ export function GeneratorScreen({ onBack }: GeneratorScreenProps) {
             style={[styles.toggleBtn, isPassphrase && styles.toggleBtnActive]}
             onPress={() => {
               setIsPassphrase(true);
-              setPassword(generatePassphrase(5));
+              generate(true);
             }}
           >
             <Text style={[styles.toggleText, isPassphrase && styles.toggleTextActive]}>

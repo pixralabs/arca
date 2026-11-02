@@ -41,7 +41,7 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
         expiresInSeconds: parseInt(expiryHours, 10) * 3600 || 86400,
         relayServerUrl: 'https://arca-relay.onrender.com',
       });
-      setShareUrl(res.shareUrl);
+      setShareUrl(res.url);
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Failed to create ephemeral share.');
     } finally {

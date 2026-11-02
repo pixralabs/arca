@@ -12,6 +12,7 @@
     "dev:extension": "pnpm --filter @vaultguard/extension dev",
     "dev:mobile": "pnpm --filter @vaultguard/mobile start",
     "dev:relay": "cd apps/relay-server && cargo run",
+    "pages:deploy": "npx wrangler pages deploy marketing --project-name=arca",
     "lint": "pnpm -r run lint"
   },
   "devDependencies": {

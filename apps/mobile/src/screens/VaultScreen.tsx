@@ -209,6 +209,14 @@ export function VaultScreen({
         urls: [],
         notes: '',
         totpSecret: newTotpSecret.trim() ? newTotpSecret.trim() : null,
+        totpConfig: newTotpSecret.trim()
+          ? {
+              secret: newTotpSecret.trim(),
+              period: 30,
+              digits: 6,
+              algorithm: 'SHA1',
+            }
+          : undefined,
         type: newTotpSecret.trim() ? 'totp' : 'login',
         customFields: [],
         updatedAt: Date.now(),

@@ -85,7 +85,7 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
           onPress: async () => {
             clearActiveSession();
             await clearBiometricSlotKey();
-            purgeAllVaultData();
+            await purgeAllVaultData();
             Alert.alert('Vault Purged', 'All local data wiped securely.');
             onPurged();
           },

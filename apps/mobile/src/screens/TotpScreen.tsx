@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Clipboard } from 'react-native';
 import { colors, spacing, radii } from '../theme/theme';
-import { computeTotp } from '../crypto/mobileCrypto';
+import { generateTotpCode } from '@vaultguard/crypto';
 import { VaultItemPlaintext } from '@vaultguard/shared';
 
 interface TotpScreenProps {
@@ -20,22 +20,31 @@ export function TotpScreen({ item, onBack }: TotpScreenProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!item.totpConfig) return;
+    const totpSource = item.totpConfig || (item as any).totpSecret;
+    if (!totpSource) return;
 
-    const update = () => {
+    let isMounted = true;
+    const update = async () => {
       try {
-        const res = computeTotp(item.totpConfig!);
-        setCode(res.code);
-        setSecondsRemaining(res.secondsRemaining);
+        const res = await generateTotpCode(totpSource);
+        if (isMounted) {
+          setCode(res.code);
+          setSecondsRemaining(res.remainingSeconds);
+        }
       } catch {
-        setCode('ERROR');
+        if (isMounted) {
+          setCode('ERROR');
+        }
       }
     };
 
     update();
     const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, [item.totpConfig]);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [item.totpConfig, (item as any).totpSecret]);
 
   const handleCopy = () => {
     Clipboard.setString(code);
