@@ -23,7 +23,7 @@ interface UnlockScreenProps {
 }
 
 export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(__DEV__ ? 'MasterPassword123' : '');
   const [recoveryPhrase, setRecoveryPhrase] = useState('');
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [loading, setLoading] = useState(false);

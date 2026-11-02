@@ -1,0 +1,23 @@
+                        -H/home/radhe/Development/arca/apps/mobile/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup
+-DCMAKE_SYSTEM_NAME=Android
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+-DCMAKE_SYSTEM_VERSION=24
+-DANDROID_PLATFORM=android-24
+-DANDROID_ABI=x86
+-DCMAKE_ANDROID_ARCH_ABI=x86
+-DANDROID_NDK=/home/radhe/Android/Sdk/ndk/27.1.12297006
+-DCMAKE_ANDROID_NDK=/home/radhe/Android/Sdk/ndk/27.1.12297006
+-DCMAKE_TOOLCHAIN_FILE=/home/radhe/Android/Sdk/ndk/27.1.12297006/build/cmake/android.toolchain.cmake
+-DCMAKE_MAKE_PROGRAM=/home/radhe/Android/Sdk/cmake/3.22.1/bin/ninja
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/home/radhe/Development/arca/apps/mobile/android/app/build/intermediates/cxx/RelWithDebInfo/365l4e5f/obj/x86
+-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/home/radhe/Development/arca/apps/mobile/android/app/build/intermediates/cxx/RelWithDebInfo/365l4e5f/obj/x86
+-DCMAKE_BUILD_TYPE=RelWithDebInfo
+-DCMAKE_FIND_ROOT_PATH=/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/365l4e5f/prefab/x86/prefab
+-B/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/365l4e5f/x86
+-GNinja
+-DPROJECT_BUILD_DIR=/home/radhe/Development/arca/apps/mobile/android/app/build
+-DREACT_ANDROID_DIR=/home/radhe/Development/arca/apps/mobile/node_modules/react-native/ReactAndroid
+-DANDROID_STL=c++_shared
+-DANDROID_USE_LEGACY_TOOLCHAIN_FILE=ON
+                        Build command args: []
+                        Version: 2

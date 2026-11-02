@@ -1,0 +1,1 @@
+/home/radhe/Development/arca/apps/mobile/android/app/build/intermediates/cxx/RelWithDebInfo/365l4e5f/obj/armeabi-v7a
