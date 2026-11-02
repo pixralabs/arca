@@ -23,8 +23,8 @@ interface SetupScreenProps {
 }
 
 export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState(__DEV__ ? 'MasterPassword123' : '');
+  const [confirmPassword, setConfirmPassword] = useState(__DEV__ ? 'MasterPassword123' : '');
   const [loading, setLoading] = useState(false);
   const [mnemonic, setMnemonic] = useState<string | null>(null);
   const [confirmedBackup, setConfirmedBackup] = useState(false);
