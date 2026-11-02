@@ -15,6 +15,19 @@ const config = {
       '@vaultguard/shared': path.resolve(monorepoRoot, 'packages/shared/src'),
       '@vaultguard/crypto': path.resolve(monorepoRoot, 'packages/crypto/src'),
     },
+    resolveRequest: (context, moduleName, platform) => {
+      try {
+        return context.resolveRequest(context, moduleName, platform);
+      } catch (e) {
+        if (moduleName.endsWith('.js')) {
+          const stripped = moduleName.slice(0, -3);
+          try {
+            return context.resolveRequest(context, stripped, platform);
+          } catch (_) {}
+        }
+        throw e;
+      }
+    },
   },
 };
 
