@@ -312,14 +312,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  footerContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-    marginTop: spacing.md,
-  },
-  footerImage: {
-    width: 140,
-    height: 38,
-    opacity: 0.75,
-  },
 });
