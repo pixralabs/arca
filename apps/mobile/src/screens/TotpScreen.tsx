@@ -9,9 +9,9 @@ import { colors, spacing, radii } from '../theme/theme';
 import { generateTotpCode } from '@vaultguard/crypto';
 import { VaultItemPlaintext } from '@vaultguard/shared';
 
-interface TotpScreenProps {
+interface TotpScreenProps {-
   item: VaultItemPlaintext;
-  onBack: () => void;
+onBack: () => void;
 }
 
 export function TotpScreen({ item, onBack }: TotpScreenProps) {
