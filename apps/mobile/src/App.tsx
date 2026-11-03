@@ -4,7 +4,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, View, LogBox } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, View, LogBox, NativeModules } from 'react-native';
+
+const { ArcaSplashScreen } = NativeModules;
 
 LogBox.ignoreAllLogs(true);
 
@@ -27,21 +29,27 @@ export default function App() {
 
   useEffect(() => {
     let isMounted = true;
-    getVaultMeta('header').then((header) => {
-      if (!isMounted) return;
-      if (!header) {
-        setCurrentScreen('SETUP');
-      } else {
-        setCurrentScreen('UNLOCK');
-      }
-    });
+    getVaultMeta('header')
+      .then((header) => {
+        if (!isMounted) return;
+        if (!header) {
+          setCurrentScreen('SETUP');
+        } else {
+          setCurrentScreen('UNLOCK');
+        }
+        ArcaSplashScreen?.hide();
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        ArcaSplashScreen?.hide();
+      });
     return () => {
       isMounted = false;
     };
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} onLayout={() => ArcaSplashScreen?.hide()}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <View style={styles.content}>
         {currentScreen === 'SETUP' && (
