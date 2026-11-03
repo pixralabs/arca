@@ -200,14 +200,6 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
           <Text style={styles.dangerButtonText}>Purge All Local Vault Data</Text>
         </TouchableOpacity>
       </View>
-
-      <View style={styles.footerContainer}>
-        <Image
-          source={require('../assets/footer_pixra_white.png')}
-          style={styles.footerImage}
-          resizeMode="contain"
-        />
-      </View>
     </ScrollView>
   );
 }

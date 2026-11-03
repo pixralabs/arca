@@ -104,6 +104,11 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
     >
       <View style={styles.centerSection}>
         <View style={styles.header}>
+          <Image
+            source={require('../assets/icon_transparent.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <View style={styles.badge}>
             <Text style={styles.badgeText}>Arca by Pixra</Text>
           </View>
@@ -179,15 +184,6 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* Official Pixra Footer */}
-      <View style={styles.footerContainer}>
-        <Image
-          source={require('../assets/footer_pixra_white.png')}
-          style={styles.footerImage}
-          resizeMode="contain"
-        />
-      </View>
     </Animated.View>
   );
 }
@@ -196,7 +192,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     padding: spacing.xl,
   },
   centerSection: {
@@ -206,7 +202,12 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xl,
+  },
+  logoImage: {
+    width: 68,
+    height: 68,
+    marginBottom: spacing.md,
   },
   badge: {
     backgroundColor: colors.emeraldSubtle,
@@ -293,14 +294,5 @@ const styles = StyleSheet.create({
   dimLinkText: {
     color: colors.textDim,
     fontSize: 13,
-  },
-  footerContainer: {
-    alignItems: 'center',
-    paddingBottom: spacing.sm,
-  },
-  footerImage: {
-    width: 140,
-    height: 38,
-    opacity: 0.75,
   },
 });

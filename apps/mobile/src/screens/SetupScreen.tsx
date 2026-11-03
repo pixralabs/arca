@@ -106,6 +106,11 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <Image
+          source={require('../assets/icon_transparent.png')}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <View style={styles.badge}>
           <Text style={styles.badgeText}>Zero-Knowledge Setup</Text>
         </View>
@@ -153,14 +158,6 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
           <Text style={styles.linkButtonText}>Already have a vault? Unlock</Text>
         </TouchableOpacity>
       </View>
-
-      <View style={styles.footerContainer}>
-        <Image
-          source={require('../assets/footer_pixra_white.png')}
-          style={styles.footerImage}
-          resizeMode="contain"
-        />
-      </View>
     </View>
   );
 }
@@ -169,7 +166,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     padding: spacing.xl,
   },
   scrollContainer: {
@@ -178,7 +175,12 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xl,
+  },
+  logoImage: {
+    width: 68,
+    height: 68,
+    marginBottom: spacing.md,
   },
   badge: {
     backgroundColor: colors.emeraldSubtle,
@@ -301,14 +303,5 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     flex: 1,
-  },
-  footerContainer: {
-    alignItems: 'center',
-    paddingBottom: spacing.sm,
-  },
-  footerImage: {
-    width: 140,
-    height: 38,
-    opacity: 0.75,
   },
 });
