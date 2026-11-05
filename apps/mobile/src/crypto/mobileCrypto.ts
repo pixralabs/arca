@@ -1,27 +1,15 @@
 /**
  * @file apps/mobile/src/crypto/mobileCrypto.ts
- * @description Mobile Cryptographic Lifecycle and Envelope Coordinator.
+ * @description Mobile Cryptographic Lifecycle and Envelope Coordinator (Lazy-Loaded).
+ * Defers libsodium and @vaultguard/crypto execution until invoked by user actions.
  */
 
-import sodium from 'libsodium-wrappers-sumo';
-import {
-  createVault,
-  unlockWithMaster,
-  unlockWithRecovery,
-  sealItem,
-  unsealItem,
-  generatePassword,
-  generatePassphrase,
-  generateTotpCode,
-  OWASP_MOBILE_KDF_PARAMS,
-} from '@vaultguard/crypto';
-import {
+import type {
   VaultHeader,
   VaultItemPlaintext,
   VaultItemRecord,
-  VaultGuardError,
-  ERR_VAULT_CORRUPTED,
 } from '@vaultguard/shared';
+import { VaultGuardError, ERR_VAULT_CORRUPTED } from '@vaultguard/shared';
 import {
   getVaultMeta,
   saveVaultMeta,
@@ -30,6 +18,23 @@ import {
   softDeleteVaultItem,
   StoredMobileItem,
 } from '../storage/db';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+let _sodium: any = null;
+function getSodium(): any {
+  if (!_sodium) {
+    _sodium = require('libsodium-wrappers-sumo');
+  }
+  return _sodium;
+}
+
+let _crypto: any = null;
+function getCrypto(): any {
+  if (!_crypto) {
+    _crypto = require('@vaultguard/crypto');
+  }
+  return _crypto;
+}
 
 export interface MobileSession {
   dek: Uint8Array;
@@ -52,6 +57,7 @@ export function clearActiveSession(): void {
 export async function computeTotp(
   secretOrUri: string
 ): Promise<{ code: string; formattedCode: string; remainingSeconds: number; period: number }> {
+  const { generateTotpCode } = getCrypto();
   const result = await generateTotpCode(secretOrUri);
   return {
     code: result.code,
@@ -62,6 +68,7 @@ export async function computeTotp(
 }
 
 function serializeHeader(header: VaultHeader): string {
+  const sodium = getSodium();
   const cloned: any = {
     ...header,
     masterSlot: {
@@ -84,13 +91,16 @@ export async function mobileSetupVault(password: string): Promise<{
   session: MobileSession;
 }> {
   console.log('[mobileSetupVault] starting...');
+  const sodium = getSodium();
   await sodium.ready;
   console.log('[mobileSetupVault] sodium is ready');
   const pwBytes = new TextEncoder().encode(password);
   console.log('[mobileSetupVault] calling createVault...');
+  const { createVault, OWASP_MOBILE_KDF_PARAMS } = getCrypto();
   const result = await createVault(pwBytes, undefined, OWASP_MOBILE_KDF_PARAMS);
   console.log('[mobileSetupVault] createVault returned! Saving header...');
   await saveVaultMeta('header', serializeHeader(result.header));
+  await AsyncStorage.setItem('@arca_vault_created', 'true').catch(() => {});
   console.log('[mobileSetupVault] header saved!');
 
   activeSession = {
@@ -106,6 +116,7 @@ export async function mobileSetupVault(password: string): Promise<{
 
 export async function mobileUnlockVault(password: string): Promise<MobileSession> {
   console.log('[mobileCrypto] mobileUnlockVault starting...');
+  const sodium = getSodium();
   await sodium.ready;
   console.log('[mobileCrypto] sodium is ready');
   const headerRaw = await getVaultMeta('header');
@@ -116,6 +127,7 @@ export async function mobileUnlockVault(password: string): Promise<MobileSession
   console.log('[mobileCrypto] masterSlot.kdfParams:', JSON.stringify(header.masterSlot?.kdfParams));
   const pwBytes = new TextEncoder().encode(password);
   console.log('[mobileCrypto] running unlockWithMaster...');
+  const { unlockWithMaster } = getCrypto();
   const dek = await unlockWithMaster(header, pwBytes);
   console.log('[mobileCrypto] unlockWithMaster SUCCESS, dek len:', dek.length);
 
@@ -127,12 +139,14 @@ export async function mobileUnlockVault(password: string): Promise<MobileSession
 }
 
 export async function mobileUnlockWithRecovery(mnemonic: string): Promise<MobileSession> {
+  const sodium = getSodium();
   await sodium.ready;
   const headerRaw = await getVaultMeta('header');
   if (!headerRaw) {
     throw new VaultGuardError(ERR_VAULT_CORRUPTED);
   }
   const header: VaultHeader = JSON.parse(headerRaw);
+  const { unlockWithRecovery } = getCrypto();
   const dek = await unlockWithRecovery(header, mnemonic);
 
   activeSession = {
@@ -148,9 +162,11 @@ export async function mobileSaveItem(
   if (!activeSession) {
     throw new Error('Vault is locked');
   }
+  const sodium = getSodium();
   await sodium.ready;
 
   const itemId = item.id || 'item_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+  const { sealItem } = getCrypto();
   const sealed = await sealItem(activeSession.dek, itemId, 1, item);
 
   const nonceB64 =
@@ -185,10 +201,12 @@ export async function mobileGetDecryptedItems(
   if (!activeSession) {
     throw new Error('Vault is locked');
   }
+  const sodium = getSodium();
   await sodium.ready;
 
   const records = await getAllVaultItems(includeDeleted);
   const results: VaultItemPlaintext[] = [];
+  const { unsealItem } = getCrypto();
 
   for (const rec of records) {
     const recordPayload: VaultItemRecord = {
@@ -217,4 +235,16 @@ export async function mobileGetDecryptedItems(
   return results;
 }
 
-export { generatePassword, generatePassphrase, generateTotpCode, softDeleteVaultItem };
+export async function generatePassword(opts?: any) {
+  return getCrypto().generatePassword(opts);
+}
+
+export async function generatePassphrase(opts?: any) {
+  return getCrypto().generatePassphrase(opts);
+}
+
+export async function generateTotpCode(secretOrUri: string) {
+  return getCrypto().generateTotpCode(secretOrUri);
+}
+
+export { softDeleteVaultItem };

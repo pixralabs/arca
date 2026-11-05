@@ -1,8 +1,8 @@
 /**
  * @file apps/mobile/src/screens/VaultListScreen.tsx
- * @description Apple iOS 18 Passwords-inspired Categorized Drill-Down List Screen (`VaultListScreen`)
- * supporting `all`, `totp` (`type === 'totp'`), `security` (in-RAM weak/common/reused password audit),
- * and `deleted` (`deletedAt !== null` tombstoned items).
+ * @description Categorized Drill-Down List Screen (`VaultListScreen`) with "Apple/Stripe Level"
+ * Monochrome + Electric Indigo Aesthetic, Reanimated Spring Transitions, Pill Buttons (minHeight 52),
+ * 24px Curvy Cards, Soft Focus-Glow Search Input, >=48x48 Touch Targets, and Tactile Haptics.
  */
 
 import React, { useMemo, useState } from 'react';
@@ -14,9 +14,26 @@ import {
   FlatList,
   StyleSheet,
   Alert,
+  Clipboard,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { colors, spacing, radii } from '../theme/theme';
+import {
+  useTheme,
+  spacing,
+  radii,
+  layout,
+  HIT_SLOP,
+  AnimatedScreen,
+  triggerLightHaptic,
+  triggerSuccessHaptic,
+} from '../theme/theme';
 import { VaultItemPlaintext } from '@vaultguard/shared';
+import {
+  calculateVaultSecurityScore,
+  generatePassword,
+} from '@vaultguard/crypto';
+import { mobileSaveItem } from '../crypto/mobileCrypto';
 
 export type VaultCategoryFilter = 'all' | 'totp' | 'security' | 'deleted';
 
@@ -34,80 +51,22 @@ export interface SecurityAuditFinding {
   reasons: string[];
 }
 
-const COMMON_WEAK_PASSWORDS = new Set([
-  'password',
-  'password1',
-  'password123',
-  '123456',
-  '12345678',
-  '123456789',
-  'qwerty',
-  'qwerty123',
-  'admin',
-  'admin123',
-  'welcome',
-  'letmein',
-  'iloveyou',
-  'abc123',
-  'monkey',
-  'dragon',
-  'trustno1',
-  'baseball',
-  'football',
-  'master',
-]);
-
 /**
- * Runs a fast, zero-knowledge in-RAM security audit over decrypted items to detect:
- * 1. Short passwords (`< 8` characters)
- * 2. Common / dictionary passwords (`password`, `123456`, `qwerty`, etc.)
- * 3. Low-entropy passwords (digits-only or single character class)
- * 4. Reused passwords across multiple accounts
+ * Runs a zero-knowledge in-RAM security audit over decrypted items to detect:
+ * 1. Weak passwords (< 12 characters or lacking complexity)
+ * 2. Commonly compromised dictionary passwords
+ * 3. Reused passwords across multiple accounts / URLs
  */
 export function evaluateVaultSecurityInRam(items: MobileVaultItem[]): Map<string, string[]> {
-  const activeItems = items.filter((item) => item.deletedAt === null || item.deletedAt === undefined);
-  const passwordFrequency = new Map<string, number>();
-
-  for (const item of activeItems) {
-    const pwd = (item.password ?? '').trim();
-    if (pwd.length > 0) {
-      passwordFrequency.set(pwd, (passwordFrequency.get(pwd) ?? 0) + 1);
-    }
-  }
-
-  const findings = new Map<string, string[]>();
-
-  for (const item of activeItems) {
-    const pwd = item.password ?? '';
-    if (!pwd) continue;
-
-    const reasons: string[] = [];
-    if (pwd.length < 8) {
-      reasons.push('Weak (< 8 chars)');
-    }
-    if (COMMON_WEAK_PASSWORDS.has(pwd.toLowerCase())) {
-      reasons.push('Commonly compromised password');
-    } else if (/^\d+$/.test(pwd)) {
-      reasons.push('Digits-only password');
-    }
-    if ((passwordFrequency.get(pwd.trim()) ?? 0) > 1) {
-      reasons.push('Reused password');
-    }
-
-    if (reasons.length > 0) {
-      findings.set(item.id, reasons);
-    }
-  }
-
-  return findings;
+  const activeItems = items.filter(
+    (item) => item.deletedAt === null || item.deletedAt === undefined
+  );
+  const auditResult = calculateVaultSecurityScore(activeItems);
+  return auditResult.findings;
 }
 
 export function isTotpItem(item: MobileVaultItem): boolean {
-  return Boolean(
-    item.type === 'totp' ||
-      item.totpSecret ||
-      item.totpConfig
-  );
+  return Boolean(item.type === 'totp' || item.totpSecret || item.totpConfig);
 }
 
 export interface VaultListScreenProps {
@@ -118,33 +77,8 @@ export interface VaultListScreenProps {
   onSelectTotp: (item: MobileVaultItem) => void;
   onSoftDeleteItem?: (itemId: string) => void;
   onRestoreItem?: (itemId: string) => void;
+  onItemUpdated?: () => void;
 }
-
-const CATEGORY_METADATA: Record<
-  VaultCategoryFilter,
-  { title: string; subtitle: string; accentColor: string }
-> = {
-  all: {
-    title: 'All Passwords',
-    subtitle: 'Decrypted in RAM • XChaCha20-Poly1305',
-    accentColor: colors.iosBlue,
-  },
-  totp: {
-    title: 'Verification Codes',
-    subtitle: 'RFC 6238 TOTP 2FA Authenticators',
-    accentColor: colors.iosYellow,
-  },
-  security: {
-    title: 'Security Recommendations',
-    subtitle: 'Local in-RAM audit for weak, short (< 8 chars), or reused passwords',
-    accentColor: colors.iosRed,
-  },
-  deleted: {
-    title: 'Recently Deleted',
-    subtitle: 'Tombstoned items pending permanent erasure',
-    accentColor: colors.iosGray,
-  },
-};
 
 export function VaultListScreen({
   category,
@@ -154,11 +88,89 @@ export function VaultListScreen({
   onSelectTotp,
   onSoftDeleteItem,
   onRestoreItem,
+  onItemUpdated,
 }: VaultListScreenProps) {
+  const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const meta = CATEGORY_METADATA[category];
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
-  const securityFindingsMap = useMemo(() => evaluateVaultSecurityInRam(items), [items]);
+  const categoryMetadata: Record<
+    VaultCategoryFilter,
+    { title: string; subtitle: string; accentColor: string; glowColor: string }
+  > = useMemo(
+    () => ({
+      all: {
+        title: 'All Passwords',
+        subtitle: 'Decrypted in RAM • XChaCha20-Poly1305',
+        accentColor: colors.primary,
+        glowColor: colors.primaryGlow,
+      },
+      totp: {
+        title: 'Verification Codes',
+        subtitle: 'RFC 6238 TOTP 2FA Authenticators',
+        accentColor: colors.accentViolet,
+        glowColor: colors.accentVioletGlow,
+      },
+      security: {
+        title: 'Security Recommendations',
+        subtitle: 'Local in-RAM audit for weak (< 12 chars), lacking complexity, or reused passwords',
+        accentColor: colors.danger,
+        glowColor: colors.dangerGlow,
+      },
+      deleted: {
+        title: 'Recently Deleted',
+        subtitle: 'Tombstoned items pending permanent erasure',
+        accentColor: colors.accentZinc,
+        glowColor: colors.accentZincGlow,
+      },
+    }),
+    [colors]
+  );
+
+  const meta = categoryMetadata[category];
+
+  // In-RAM Security Health Audit
+  const securityScoreResult = useMemo(
+    () => calculateVaultSecurityScore(items),
+    [items]
+  );
+  const securityFindingsMap = securityScoreResult.findings;
+
+  // 1-Click Replace with Arca Generator
+  const handleReplaceWithArcaGenerator = async (item: MobileVaultItem) => {
+    triggerLightHaptic();
+    setUpdatingItemId(item.id);
+    try {
+      const strongPassword = await generatePassword({ length: 20 });
+      const updated: MobileVaultItem = {
+        ...item,
+        password: strongPassword,
+        updatedAt: Date.now(),
+      };
+      await mobileSaveItem(updated);
+      triggerSuccessHaptic();
+      Alert.alert(
+        'Password Replaced',
+        `Replaced password for "${item.title}" with a strong, high-entropy 20-character generator password.`
+      );
+      if (onItemUpdated) {
+        onItemUpdated();
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to update and encrypt password.');
+    } finally {
+      setUpdatingItemId(null);
+    }
+  };
+
+  const handleCopyPassword = (item: MobileVaultItem) => {
+    triggerLightHaptic();
+    if (item.password) {
+      Clipboard.setString(item.password);
+      Alert.alert('Copied', `Password for "${item.title}" copied to clipboard.`);
+    }
+  };
 
   const filteredItems = useMemo(() => {
     const base = items.filter((item) => {
@@ -190,176 +202,395 @@ export function VaultListScreen({
   }, [items, category, searchQuery, securityFindingsMap]);
 
   return (
-    <View style={styles.container}>
-      {/* Navigation Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <Text style={[styles.backButtonText, { color: meta.accentColor }]}>‹ Passwords</Text>
-        </TouchableOpacity>
-        <View style={styles.headerCountPill}>
-          <Text style={styles.headerCountText}>{filteredItems.length}</Text>
+    <AnimatedScreen style={[styles.container, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* Navigation Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => {
+              triggerLightHaptic();
+              onBack();
+            }}
+            style={styles.backButton}
+            hitSlop={HIT_SLOP}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>
+              ‹ Passwords
+            </Text>
+          </TouchableOpacity>
+          <View
+            style={[
+              styles.headerCountPill,
+              { backgroundColor: colors.surfaceSubtle },
+            ]}
+          >
+            <Text style={[styles.headerCountText, { color: colors.textMuted }]}>
+              {category === 'security'
+                ? `Score: ${securityScoreResult.score}%`
+                : filteredItems.length}
+            </Text>
+          </View>
         </View>
-      </View>
 
-      {/* Large iOS 18 Category Title */}
-      <View style={styles.titleSection}>
-        <Text style={styles.largeTitle}>{meta.title}</Text>
-        <Text style={styles.subtitle}>{meta.subtitle}</Text>
-      </View>
-
-      {/* Search Input */}
-      <View style={styles.searchWrapper}>
-        <View style={styles.searchPill}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder={`Search ${meta.title.toLowerCase()}...`}
-            placeholderTextColor={colors.textDim}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Text style={styles.clearIcon}>✕</Text>
-            </TouchableOpacity>
-          )}
+        {/* Category Title */}
+        <View style={styles.titleSection}>
+          <Text style={[styles.largeTitle, { color: colors.textHeading }]}>
+            {meta.title}
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            {meta.subtitle}
+          </Text>
         </View>
-      </View>
 
-      {/* Categorized Item List */}
-      <FlatList
-        data={filteredItems}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => {
-          const securityReasons = securityFindingsMap.get(item.id);
-          const hasTotp = isTotpItem(item);
-          const isDeleted = item.deletedAt !== null && item.deletedAt !== undefined;
-
-          return (
-            <TouchableOpacity
-              style={styles.itemRow}
-              activeOpacity={0.75}
-              onPress={() => {
-                if (hasTotp && !isDeleted) {
-                  onSelectTotp(item);
-                } else {
-                  const detailMsg = [
-                    `Username: ${item.username || 'None'}`,
-                    securityReasons ? `Security Issue: ${securityReasons.join(', ')}` : null,
-                    isDeleted && item.deletedAt
-                      ? `Deleted: ${new Date(item.deletedAt).toLocaleDateString()}`
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join('\n');
-
-                  Alert.alert(item.title, detailMsg, [
-                    ...(isDeleted && onRestoreItem
-                      ? [{ text: 'Restore', onPress: () => onRestoreItem(item.id) }]
-                      : []),
-                    ...(!isDeleted && onSoftDeleteItem
-                      ? [
-                          {
-                            text: 'Move to Deleted',
-                            style: 'destructive' as const,
-                            onPress: () => onSoftDeleteItem(item.id),
-                          },
-                        ]
-                      : []),
-                    { text: 'Close', style: 'cancel' as const },
-                  ]);
-                }
-              }}
-            >
+        {/* Security Health Scorecard Banner */}
+        {category === 'security' && (
+          <View
+            style={[
+              styles.securityScoreCard,
+              {
+                backgroundColor: colors.surface,
+              },
+            ]}
+          >
+            <View style={styles.securityScoreRow}>
+              <View>
+                <Text style={[styles.securityScoreLabel, { color: colors.textMuted }]}>
+                  Overall Vault Security
+                </Text>
+                <Text style={[styles.securityScoreValue, { color: colors.textHeading }]}>
+                  {securityScoreResult.score}% Safe
+                </Text>
+              </View>
               <View
                 style={[
-                  styles.avatar,
+                  styles.securityRatingBadge,
                   {
                     backgroundColor:
-                      category === 'security'
-                        ? colors.iosRedGlow
-                        : category === 'totp'
-                        ? colors.iosYellowGlow
-                        : category === 'deleted'
-                        ? colors.iosGrayGlow
-                        : colors.iosBlueGlow,
+                      securityScoreResult.score >= 80
+                        ? colors.primaryGlow
+                        : securityScoreResult.score >= 50
+                          ? colors.warningGlow
+                          : colors.dangerGlow,
                   },
                 ]}
               >
                 <Text
                   style={[
-                    styles.avatarText,
+                    styles.securityRatingText,
                     {
                       color:
-                        category === 'security'
-                          ? colors.iosRed
-                          : category === 'totp'
-                          ? colors.iosYellow
-                          : category === 'deleted'
-                          ? colors.iosGray
-                          : colors.iosBlue,
+                        securityScoreResult.score >= 80
+                          ? colors.primary
+                          : securityScoreResult.score >= 50
+                            ? colors.warning
+                            : colors.danger,
                     },
                   ]}
                 >
-                  {item.title.slice(0, 1).toUpperCase()}
+                  {securityScoreResult.rating}
                 </Text>
               </View>
+            </View>
 
-              <View style={styles.itemDetails}>
-                <Text style={styles.itemTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={styles.itemUser} numberOfLines={1}>
-                  {item.username || 'No username'}
-                </Text>
-                {securityReasons && securityReasons.length > 0 && (
-                  <View style={styles.securityReasonRow}>
-                    <Text style={styles.securityReasonText}>
-                      ⚠ {securityReasons.join(' • ')}
+            <View
+              style={[
+                styles.progressBarBackground,
+                { backgroundColor: colors.surfaceSubtle },
+              ]}
+            >
+              <View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: `${securityScoreResult.score}%`,
+                    backgroundColor:
+                      securityScoreResult.score >= 80
+                        ? colors.primary
+                        : securityScoreResult.score >= 50
+                          ? colors.warning
+                          : colors.danger,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Soft Grey Search Input with Subtle Indigo Focus Glow */}
+        <View style={styles.searchWrapper}>
+          <View
+            style={[
+              styles.searchPill,
+              {
+                backgroundColor: colors.surfaceSubtle,
+                borderColor: searchFocused ? colors.primary : 'transparent',
+              },
+              searchFocused && {
+                shadowColor: colors.primary,
+                shadowOpacity: 0.25,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 0 },
+              },
+            ]}
+          >
+            <Text style={styles.searchIcon}>🔍</Text>
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder={`Search ${meta.title.toLowerCase()}...`}
+              placeholderTextColor={colors.textDim}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              autoCapitalize="none"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearButton}
+                hitSlop={HIT_SLOP}
+                onPress={() => {
+                  triggerLightHaptic();
+                  setSearchQuery('');
+                }}
+              >
+                <Text style={[styles.clearIcon, { color: colors.textMuted }]}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Categorized Item List */}
+        <FlatList
+          data={filteredItems}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => {
+            const securityReasons = securityFindingsMap.get(item.id);
+            const hasTotp = isTotpItem(item);
+            const isDeleted = item.deletedAt !== null && item.deletedAt !== undefined;
+            const isWeak = securityScoreResult.weakItemIds.has(item.id);
+            const isReused = securityScoreResult.reusedItemIds.has(item.id);
+
+            return (
+              <View
+                style={[
+                  styles.itemWrapper,
+                  {
+                    backgroundColor: colors.surface,
+                  },
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.itemRow}
+                  activeOpacity={0.78}
+                  onPress={() => {
+                    triggerLightHaptic();
+                    if (hasTotp && !isDeleted) {
+                      onSelectTotp(item);
+                    } else {
+                      const detailMsg = [
+                        `Username: ${item.username || 'None'}`,
+                        securityReasons
+                          ? `Security Issue:\n• ${securityReasons.join('\n• ')}`
+                          : null,
+                        isDeleted && item.deletedAt
+                          ? `Deleted: ${new Date(item.deletedAt).toLocaleDateString()}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join('\n\n');
+
+                      Alert.alert(item.title, detailMsg, [
+                        ...(item.password
+                          ? [
+                            {
+                              text: 'Copy Password',
+                              onPress: () => handleCopyPassword(item),
+                            },
+                          ]
+                          : []),
+                        ...(category === 'security'
+                          ? [
+                            {
+                              text: 'Replace with Arca Generator',
+                              onPress: () => void handleReplaceWithArcaGenerator(item),
+                            },
+                          ]
+                          : []),
+                        ...(isDeleted && onRestoreItem
+                          ? [
+                            {
+                              text: 'Restore',
+                              onPress: () => {
+                                triggerLightHaptic();
+                                onRestoreItem(item.id);
+                              },
+                            },
+                          ]
+                          : []),
+                        ...(!isDeleted && onSoftDeleteItem
+                          ? [
+                            {
+                              text: 'Move to Deleted',
+                              style: 'destructive' as const,
+                              onPress: () => {
+                                triggerLightHaptic();
+                                onSoftDeleteItem(item.id);
+                              },
+                            },
+                          ]
+                          : []),
+                        { text: 'Close', style: 'cancel' as const },
+                      ]);
+                    }
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.avatar,
+                      {
+                        backgroundColor: meta.glowColor,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.avatarText,
+                        {
+                          color: meta.accentColor,
+                        },
+                      ]}
+                    >
+                      {item.title.slice(0, 1).toUpperCase()}
                     </Text>
+                  </View>
+
+                  <View style={styles.itemDetails}>
+                    <View style={styles.itemTitleRow}>
+                      <Text
+                        style={[styles.itemTitle, { color: colors.textHeading }]}
+                        numberOfLines={1}
+                      >
+                        {item.title}
+                      </Text>
+                      {isWeak && (
+                        <View
+                          style={[
+                            styles.weakBadge,
+                            {
+                              backgroundColor: colors.dangerGlow,
+                              borderColor: colors.dangerBorder,
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.weakBadgeText, { color: colors.danger }]}>
+                            Weak
+                          </Text>
+                        </View>
+                      )}
+                      {isReused && (
+                        <View
+                          style={[
+                            styles.reusedBadge,
+                            {
+                              backgroundColor: colors.warningGlow,
+                              borderColor: colors.warning,
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.reusedBadgeText, { color: colors.warning }]}>
+                            Reused
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <Text
+                      style={[styles.itemUser, { color: colors.textMuted }]}
+                      numberOfLines={1}
+                    >
+                      {item.username || 'No username'}
+                    </Text>
+                    {securityReasons && securityReasons.length > 0 && (
+                      <View style={styles.securityReasonRow}>
+                        <Text style={[styles.securityReasonText, { color: colors.danger }]}>
+                          ⚠ {securityReasons.join(' • ')}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {hasTotp && !isDeleted && (
+                    <View
+                      style={[
+                        styles.totpBadge,
+                        { backgroundColor: colors.primaryGlow },
+                      ]}
+                    >
+                      <Text style={[styles.totpBadgeText, { color: colors.primary }]}>
+                        2FA
+                      </Text>
+                    </View>
+                  )}
+
+                  <Text style={[styles.chevron, { color: colors.textDim }]}>›</Text>
+                </TouchableOpacity>
+
+                {/* 1-Click Replace with Arca Generator Pill Button */}
+                {category === 'security' && (
+                  <View style={styles.replaceButtonContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.replaceButton,
+                        { backgroundColor: colors.primary },
+                      ]}
+                      activeOpacity={0.85}
+                      disabled={updatingItemId === item.id}
+                      onPress={() => void handleReplaceWithArcaGenerator(item)}
+                    >
+                      <Text style={[styles.replaceButtonText, { color: colors.onPrimary }]}>
+                        {updatingItemId === item.id
+                          ? '⚡ Generating...'
+                          : '⚡ Replace with Arca Generator'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
-
-              {hasTotp && !isDeleted && (
-                <View style={styles.totpBadge}>
-                  <Text style={styles.totpBadgeText}>2FA</Text>
-                </View>
-              )}
-
-              <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-          );
-        }}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>
-              {category === 'security'
-                ? 'No Weak or Reused Passwords'
-                : category === 'deleted'
-                ? 'No Recently Deleted Items'
-                : category === 'totp'
-                ? 'No Verification Codes Yet'
-                : 'No Passwords Found'}
-            </Text>
-            <Text style={styles.emptySubtitle}>
-              {category === 'security'
-                ? 'All decrypted credentials in your vault passed the local security check.'
-                : 'Tap the + button on the main Passwords screen to add a credential.'}
-            </Text>
-          </View>
-        }
-      />
-    </View>
+            );
+          }}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyTitle, { color: colors.textHeading }]}>
+                {category === 'security'
+                  ? 'No Weak or Reused Passwords'
+                  : category === 'deleted'
+                    ? 'No Recently Deleted Items'
+                    : category === 'totp'
+                      ? 'No Verification Codes Yet'
+                      : 'No Passwords Found'}
+              </Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+                {category === 'security'
+                  ? 'All decrypted credentials in your vault meet high-entropy security standards.'
+                  : 'Tap the + button on the main Passwords screen to add a credential.'}
+              </Text>
+            </View>
+          }
+        />
+      </KeyboardAvoidingView>
+    </AnimatedScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -370,23 +601,26 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
   },
   backButton: {
-    paddingVertical: spacing.xs,
+    minWidth: layout.minTouchTarget,
+    minHeight: layout.minTouchTarget,
+    justifyContent: 'center',
     paddingRight: spacing.md,
   },
   backButtonText: {
+    fontFamily: 'Inter',
     fontSize: 17,
     fontWeight: '600',
+    letterSpacing: -0.3,
   },
   headerCountPill: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
   },
   headerCountText: {
-    color: colors.textMuted,
+    fontFamily: 'Inter',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   titleSection: {
     paddingHorizontal: spacing.lg,
@@ -394,15 +628,61 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   largeTitle: {
-    color: colors.text,
-    fontSize: 30,
+    fontFamily: 'Inter',
+    fontSize: 34,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   subtitle: {
-    color: colors.textMuted,
+    fontFamily: 'Inter',
     fontSize: 13,
     marginTop: 4,
+    lineHeight: 18,
+  },
+  securityScoreCard: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radii.card, // 24px curvy surface
+  },
+  securityScoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  securityScoreLabel: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  securityScoreValue: {
+    fontFamily: 'Inter',
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginTop: 2,
+  },
+  securityRatingBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
+  },
+  securityRatingText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  progressBarBackground: {
+    height: 6,
+    borderRadius: radii.pill,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: radii.pill,
   },
   searchWrapper: {
     paddingHorizontal: spacing.lg,
@@ -411,105 +691,160 @@ const styles = StyleSheet.create({
   searchPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    paddingHorizontal: spacing.md,
-    height: 40,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.lg,
+    minHeight: 48,
+    borderWidth: 1.5,
   },
   searchIcon: {
     fontSize: 14,
     marginRight: spacing.sm,
-    opacity: 0.7,
   },
   searchInput: {
     flex: 1,
-    color: colors.text,
+    fontFamily: 'Inter',
     fontSize: 15,
-    paddingVertical: 0,
+    paddingVertical: 10,
+  },
+  clearButton: {
+    minWidth: layout.minTouchTarget,
+    minHeight: layout.minTouchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   clearIcon: {
-    color: colors.textMuted,
     fontSize: 14,
-    paddingLeft: spacing.sm,
   },
   listContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: 40,
+    paddingBottom: spacing.xxl,
+  },
+  itemWrapper: {
+    marginBottom: spacing.md,
+    borderRadius: radii.card, // 24px curvy card
+    overflow: 'hidden',
+    padding: spacing.xs,
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
     padding: spacing.md,
-    marginBottom: spacing.sm,
+    minHeight: 68,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+    width: 48,
+    height: 48,
+    borderRadius: radii.pill,
     alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing.md,
   },
   avatarText: {
-    fontSize: 16,
+    fontFamily: 'Inter',
+    fontSize: 18,
     fontWeight: '700',
   },
   itemDetails: {
     flex: 1,
+    marginRight: spacing.sm,
+  },
+  itemTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   itemTitle: {
-    color: colors.text,
+    fontFamily: 'Inter',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    flexShrink: 1,
+  },
+  weakBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+  },
+  weakBadgeText: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  reusedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+  },
+  reusedBadgeText: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    fontWeight: '700',
   },
   itemUser: {
-    color: colors.textMuted,
     fontSize: 13,
-    marginTop: 2,
+    fontFamily: 'monospace',
+    marginTop: 3,
   },
   securityReasonRow: {
     marginTop: 4,
   },
   securityReasonText: {
-    color: colors.iosRed,
-    fontSize: 11,
+    fontFamily: 'Inter',
+    fontSize: 12,
     fontWeight: '600',
   },
   totpBadge: {
-    backgroundColor: colors.iosYellowGlow,
-    borderRadius: radii.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginRight: spacing.sm,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
+    marginRight: spacing.xs,
   },
   totpBadgeText: {
-    color: colors.iosYellow,
+    fontFamily: 'Inter',
     fontSize: 11,
     fontWeight: '700',
   },
   chevron: {
-    color: colors.textDim,
     fontSize: 20,
-    fontWeight: '500',
     marginLeft: 4,
   },
-  emptyContainer: {
+  replaceButtonContainer: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  replaceButton: {
+    borderRadius: radii.pill, // 9999 pill-shaped
+    minHeight: layout.minButtonHeight, // >= 52px
     alignItems: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: spacing.xl,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  replaceButtonText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  emptyContainer: {
+    paddingVertical: spacing.xxl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
   },
   emptyTitle: {
-    color: colors.text,
-    fontSize: 17,
+    fontFamily: 'Inter',
+    fontSize: 18,
     fontWeight: '700',
-    marginBottom: 6,
+    letterSpacing: -0.5,
+    textAlign: 'center',
   },
   emptySubtitle: {
-    color: colors.textDim,
-    fontSize: 13,
+    fontFamily: 'Inter',
+    fontSize: 14,
     textAlign: 'center',
-    lineHeight: 19,
+    marginTop: spacing.xs,
+    lineHeight: 20,
   },
 });

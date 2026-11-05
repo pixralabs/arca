@@ -1,0 +1,1 @@
+/home/radhe/Development/arca/apps/mobile/android/app/build/intermediates/cxx/RelWithDebInfo/6h3po3u2/obj/x86_64

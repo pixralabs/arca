@@ -1,23 +1,40 @@
 /**
  * @file apps/mobile/src/screens/TotpScreen.tsx
- * @description Arca Mobile — RFC 6238 TOTP Authenticator Code Display with Progress Ring.
+ * @description Arca Mobile — RFC 6238 TOTP Authenticator Code Display with Reanimated Progress Bar,
+ * Monochrome + Electric Indigo Palette, 24px Curvy Cards, Pill Buttons (minHeight 52), and Haptics.
  */
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Clipboard } from 'react-native';
-import { colors, spacing, radii } from '../theme/theme';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
+import {
+  useTheme,
+  spacing,
+  radii,
+  layout,
+  HIT_SLOP,
+  AnimatedScreen,
+  triggerLightHaptic,
+} from '../theme/theme';
 import { generateTotpCode } from '@vaultguard/crypto';
 import { VaultItemPlaintext } from '@vaultguard/shared';
 
-interface TotpScreenProps {-
+interface TotpScreenProps {
   item: VaultItemPlaintext;
-onBack: () => void;
+  onBack: () => void;
 }
 
 export function TotpScreen({ item, onBack }: TotpScreenProps) {
+  const { colors } = useTheme();
   const [code, setCode] = useState('000000');
   const [secondsRemaining, setSecondsRemaining] = useState(30);
   const [copied, setCopied] = useState(false);
+
+  const progressWidth = useSharedValue(100);
 
   useEffect(() => {
     const totpSource = item.totpConfig || (item as any).totpSecret;
@@ -30,6 +47,9 @@ export function TotpScreen({ item, onBack }: TotpScreenProps) {
         if (isMounted) {
           setCode(res.code);
           setSecondsRemaining(res.remainingSeconds);
+          progressWidth.value = withTiming((res.remainingSeconds / 30) * 100, {
+            duration: 300,
+          });
         }
       } catch {
         if (isMounted) {
@@ -38,82 +58,160 @@ export function TotpScreen({ item, onBack }: TotpScreenProps) {
       }
     };
 
-    update();
-    const interval = setInterval(update, 1000);
+    void update();
+    const interval = setInterval(() => void update(), 1000);
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [item.totpConfig, (item as any).totpSecret]);
+  }, [item.totpConfig, (item as any).totpSecret, progressWidth]);
+
+  const progressAnimatedStyle = useAnimatedStyle(() => ({
+    width: `${progressWidth.value}%`,
+  }));
 
   const handleCopy = () => {
+    triggerLightHaptic();
     Clipboard.setString(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+    <AnimatedScreen style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          onPress={() => {
+            triggerLightHaptic();
+            onBack();
+          }}
+          style={styles.backButton}
+          hitSlop={HIT_SLOP}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.backButtonText, { color: colors.primary }]}>
+            ‹ Back
+          </Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{item.title}</Text>
-        <View style={{ width: 40 }} />
+        <Text style={[styles.title, { color: colors.textHeading }]}>
+          {item.title}
+        </Text>
+        <View style={{ width: layout.minTouchTarget }} />
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.userLabel}>{item.username || 'Authenticator Code'}</Text>
+        <Text style={[styles.userLabel, { color: colors.textMuted }]}>
+          {item.username || 'Authenticator Code'}
+        </Text>
 
-        <TouchableOpacity style={styles.codeCard} onPress={handleCopy}>
-          <Text style={styles.codeText}>
-            {code.slice(0, 3)} {code.slice(3)}
-          </Text>
-          <Text style={styles.timerText}>{secondsRemaining}s remaining</Text>
+        <TouchableOpacity
+          style={[
+            styles.codeCard,
+            {
+              backgroundColor: colors.surface,
+            },
+          ]}
+          onPress={handleCopy}
+          activeOpacity={0.85}
+        >
           <View
             style={[
-              styles.progressBar,
-              { width: `${(secondsRemaining / 30) * 100}%` },
+              styles.badgePill,
+              { backgroundColor: colors.primaryGlow },
             ]}
-          />
+          >
+            <Text style={[styles.badgePillText, { color: colors.primary }]}>
+              RFC 6238 TOTP
+            </Text>
+          </View>
+          <Text style={[styles.codeText, { color: colors.primary }]}>
+            {code.slice(0, 3)} {code.slice(3)}
+          </Text>
+          <Text
+            style={[
+              styles.timerText,
+              {
+                color:
+                  secondsRemaining <= 5 ? colors.danger : colors.textMuted,
+              },
+            ]}
+          >
+            {secondsRemaining}s remaining
+          </Text>
+          <View
+            style={[
+              styles.progressTrack,
+              { backgroundColor: colors.surfaceSubtle },
+            ]}
+          >
+            <Animated.View
+              style={[
+                styles.progressBar,
+                {
+                  backgroundColor:
+                    secondsRemaining <= 5 ? colors.danger : colors.primary,
+                },
+                progressAnimatedStyle,
+              ]}
+            />
+          </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.copyButton} onPress={handleCopy}>
-          <Text style={styles.copyButtonText}>
+        <TouchableOpacity
+          style={[
+            styles.copyButton,
+            {
+              backgroundColor: copied ? colors.primaryGlow : colors.primary,
+            },
+          ]}
+          onPress={handleCopy}
+          activeOpacity={0.85}
+        >
+          <Text
+            style={[
+              styles.copyButtonText,
+              {
+                color: copied ? colors.primary : colors.onPrimary,
+              },
+            ]}
+          >
             {copied ? '✓ Copied to Clipboard' : 'Copy TOTP Code'}
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </AnimatedScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   backButton: {
-    padding: spacing.xs,
+    minWidth: layout.minTouchTarget,
+    minHeight: layout.minTouchTarget,
+    justifyContent: 'center',
+    paddingRight: spacing.sm,
   },
   backButtonText: {
-    color: colors.emerald,
+    fontFamily: 'Inter',
     fontSize: 16,
+    fontWeight: '600',
   },
   title: {
-    color: colors.text,
+    fontFamily: 'Inter',
     fontSize: 18,
     fontWeight: '700',
+    letterSpacing: -0.5,
   },
   content: {
     flex: 1,
@@ -122,51 +220,67 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   userLabel: {
-    color: colors.textMuted,
+    fontFamily: 'Inter',
     fontSize: 14,
     marginBottom: spacing.xl,
   },
   codeCard: {
     width: '100%',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
+    borderRadius: radii.card, // 24px curvy card
     padding: spacing.xl,
     alignItems: 'center',
     marginBottom: spacing.xl,
     overflow: 'hidden',
   },
-  codeText: {
-    color: colors.emerald,
-    fontSize: 40,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: 2,
+  badgePill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
     marginBottom: spacing.md,
   },
+  badgePillText: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  codeText: {
+    fontFamily: 'Inter',
+    fontSize: 42,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 3,
+    marginBottom: spacing.sm,
+  },
   timerText: {
-    color: colors.textDim,
+    fontFamily: 'Inter',
     fontSize: 13,
+    fontWeight: '600',
+    marginBottom: spacing.lg,
+  },
+  progressTrack: {
+    width: '100%',
+    height: 6,
+    borderRadius: radii.pill,
+    overflow: 'hidden',
   },
   progressBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    height: 3,
-    backgroundColor: colors.emerald,
+    height: '100%',
+    borderRadius: radii.pill,
   },
   copyButton: {
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    borderRadius: radii.md,
+    width: '100%',
+    borderRadius: radii.pill, // 9999 pill-shaped
+    minHeight: layout.minButtonHeight, // >= 52px
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   copyButtonText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
 });

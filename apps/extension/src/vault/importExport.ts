@@ -5,7 +5,8 @@
  */
 
 import sodium from 'libsodium-wrappers-sumo';
-import { verifyManifest } from '@vaultguard/crypto';
+import { verifyManifest, importCsvBytesWithZeroization } from '@vaultguard/crypto';
+export { importCsvBytesWithZeroization } from '@vaultguard/crypto';
 import {
   isValidVaultHeader,
   isValidVaultItemRecord,

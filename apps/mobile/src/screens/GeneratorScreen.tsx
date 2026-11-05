@@ -1,11 +1,34 @@
 /**
  * @file apps/mobile/src/screens/GeneratorScreen.tsx
- * @description Arca Mobile — Cryptographically Strong Password and Passphrase Generator.
+ * @description Arca Mobile — Cryptographically Strong Password and Passphrase Generator
+ * with Monochrome + Electric Indigo Aesthetic, Pill Buttons (minHeight 52), 24px Curvy Cards,
+ * Reanimated Spring Feedback, >=48x48 Touch Targets, and Tactile Haptics.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Clipboard } from 'react-native';
-import { colors, spacing, radii } from '../theme/theme';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Clipboard,
+  ScrollView,
+} from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+} from 'react-native-reanimated';
+import {
+  useTheme,
+  spacing,
+  radii,
+  layout,
+  HIT_SLOP,
+  AnimatedScreen,
+  triggerLightHaptic,
+} from '../theme/theme';
 import { generatePassword, generatePassphrase } from '../crypto/mobileCrypto';
 
 interface GeneratorScreenProps {
@@ -13,193 +36,316 @@ interface GeneratorScreenProps {
 }
 
 export function GeneratorScreen({ onBack }: GeneratorScreenProps) {
+  const { colors } = useTheme();
   const [password, setPassword] = useState('');
   const [copied, setCopied] = useState(false);
   const [isPassphrase, setIsPassphrase] = useState(false);
 
-  const generate = useCallback(async (passphraseMode: boolean) => {
-    try {
-      if (passphraseMode) {
-        const val = await generatePassphrase(5);
-        setPassword(val);
-      } else {
-        const val = await generatePassword({ length: 20 });
-        setPassword(val);
+  const cardScale = useSharedValue(1);
+
+  const pulseCard = useCallback(() => {
+    cardScale.value = withSequence(
+      withSpring(0.97, { damping: 16, stiffness: 300 }),
+      withSpring(1, { damping: 14, stiffness: 220 })
+    );
+  }, [cardScale]);
+
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cardScale.value }],
+  }));
+
+  const generate = useCallback(
+    async (passphraseMode: boolean) => {
+      try {
+        if (passphraseMode) {
+          const val = await generatePassphrase(5);
+          setPassword(val);
+        } else {
+          const val = await generatePassword({ length: 20 });
+          setPassword(val);
+        }
+        pulseCard();
+      } catch {
+        // fallback
       }
-    } catch {
-      // fallback
-    }
-  }, []);
+    },
+    [pulseCard]
+  );
 
   useEffect(() => {
-    generate(false);
+    void generate(false);
   }, [generate]);
 
   const handleGenerate = () => {
-    generate(isPassphrase);
+    triggerLightHaptic();
+    void generate(isPassphrase);
   };
 
   const handleCopy = () => {
+    triggerLightHaptic();
     if (password) {
       Clipboard.setString(password);
       setCopied(true);
+      pulseCard();
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Password Generator</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <View style={styles.content}>
-        <TouchableOpacity style={styles.resultCard} onPress={handleCopy}>
-          <Text style={styles.resultText} selectable>
-            {password || 'Generating...'}
+    <AnimatedScreen style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          onPress={() => {
+            triggerLightHaptic();
+            onBack();
+          }}
+          style={styles.backButton}
+          hitSlop={HIT_SLOP}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.backButtonText, { color: colors.primary }]}>
+            ‹ Back
           </Text>
         </TouchableOpacity>
+        <Text style={[styles.title, { color: colors.textHeading }]}>
+          Password Generator
+        </Text>
+        <View style={{ width: layout.minTouchTarget }} />
+      </View>
 
-        <View style={styles.toggleRow}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View style={animatedCardStyle}>
           <TouchableOpacity
-            style={[styles.toggleBtn, !isPassphrase && styles.toggleBtnActive]}
-            onPress={() => {
-              setIsPassphrase(false);
-              generate(false);
-            }}
+            style={[
+              styles.resultCard,
+              {
+                backgroundColor: colors.surface,
+              },
+            ]}
+            onPress={handleCopy}
+            activeOpacity={0.82}
           >
-            <Text style={[styles.toggleText, !isPassphrase && styles.toggleTextActive]}>
+            <View
+              style={[
+                styles.entropyBadge,
+                { backgroundColor: colors.primaryGlow },
+              ]}
+            >
+              <Text style={[styles.entropyBadgeText, { color: colors.primary }]}>
+                {isPassphrase ? '5-WORD PASSPHRASE' : '256-BIT ENTROPY'}
+              </Text>
+            </View>
+            <Text
+              style={[styles.resultText, { color: colors.textHeading }]}
+              selectable
+            >
+              {password || 'Generating...'}
+            </Text>
+            <Text style={[styles.tapToCopyHint, { color: colors.textMuted }]}>
+              Tap card to copy to clipboard
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <View
+          style={[
+            styles.toggleRow,
+            {
+              backgroundColor: colors.surface,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={[
+              styles.toggleBtn,
+              !isPassphrase && { backgroundColor: colors.primary },
+            ]}
+            hitSlop={HIT_SLOP}
+            onPress={() => {
+              triggerLightHaptic();
+              setIsPassphrase(false);
+              void generate(false);
+            }}
+            activeOpacity={0.85}
+          >
+            <Text
+              style={[
+                styles.toggleText,
+                { color: !isPassphrase ? colors.onPrimary : colors.textMuted },
+              ]}
+            >
               Password
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.toggleBtn, isPassphrase && styles.toggleBtnActive]}
+            style={[
+              styles.toggleBtn,
+              isPassphrase && { backgroundColor: colors.primary },
+            ]}
+            hitSlop={HIT_SLOP}
             onPress={() => {
+              triggerLightHaptic();
               setIsPassphrase(true);
-              generate(true);
+              void generate(true);
             }}
+            activeOpacity={0.85}
           >
-            <Text style={[styles.toggleText, isPassphrase && styles.toggleTextActive]}>
+            <Text
+              style={[
+                styles.toggleText,
+                { color: isPassphrase ? colors.onPrimary : colors.textMuted },
+              ]}
+            >
               Passphrase
             </Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.primaryButton} onPress={handleGenerate}>
-          <Text style={styles.primaryButtonText}>Regenerate</Text>
+        <TouchableOpacity
+          style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+          onPress={handleGenerate}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.primaryButtonText, { color: colors.onPrimary }]}>
+            Regenerate
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.secondaryButton} onPress={handleCopy}>
-          <Text style={styles.secondaryButtonText}>
+        <TouchableOpacity
+          style={[
+            styles.secondaryButton,
+            { backgroundColor: colors.surfaceSubtle },
+          ]}
+          onPress={handleCopy}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={[
+              styles.secondaryButtonText,
+              { color: copied ? colors.primary : colors.text },
+            ]}
+          >
             {copied ? '✓ Copied to Clipboard' : 'Copy Password'}
           </Text>
         </TouchableOpacity>
-      </View>
-    </View>
+      </ScrollView>
+    </AnimatedScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   backButton: {
-    padding: spacing.xs,
+    minWidth: layout.minTouchTarget,
+    minHeight: layout.minTouchTarget,
+    justifyContent: 'center',
+    paddingRight: spacing.sm,
   },
   backButtonText: {
-    color: colors.emerald,
+    fontFamily: 'Inter',
     fontSize: 16,
+    fontWeight: '600',
   },
   title: {
-    color: colors.text,
+    fontFamily: 'Inter',
     fontSize: 18,
     fontWeight: '700',
+    letterSpacing: -0.5,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     padding: spacing.xl,
     justifyContent: 'center',
   },
   resultCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
+    borderRadius: radii.card, // 24px curvy card
     padding: spacing.xl,
     alignItems: 'center',
     marginBottom: spacing.xl,
   },
+  entropyBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
+    marginBottom: spacing.md,
+  },
+  entropyBadgeText: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+  },
   resultText: {
-    color: colors.emerald,
-    fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'Inter',
+    fontSize: 20,
+    fontWeight: '700',
     textAlign: 'center',
     fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
+    marginBottom: spacing.sm,
+  },
+  tapToCopyHint: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '500',
   },
   toggleRow: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radii.pill, // Pill-shaped segmented control
+    padding: 4,
     marginBottom: spacing.xl,
-    overflow: 'hidden',
   },
   toggleBtn: {
     flex: 1,
-    paddingVertical: spacing.md,
+    minHeight: layout.minTouchTarget, // >= 48px touch target
+    borderRadius: radii.pill,
     alignItems: 'center',
-  },
-  toggleBtnActive: {
-    backgroundColor: colors.emeraldSubtle,
+    justifyContent: 'center',
   },
   toggleText: {
-    color: colors.textDim,
+    fontFamily: 'Inter',
     fontSize: 14,
-    fontWeight: '500',
-  },
-  toggleTextActive: {
-    color: colors.emerald,
     fontWeight: '600',
   },
   primaryButton: {
-    backgroundColor: colors.emerald,
-    borderRadius: radii.md,
+    borderRadius: radii.pill, // 9999 pill-shaped
+    minHeight: layout.minButtonHeight, // >= 52px
     paddingVertical: spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.md,
   },
   primaryButtonText: {
-    color: colors.background,
+    fontFamily: 'Inter',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   secondaryButton: {
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    borderRadius: radii.md,
+    borderRadius: radii.pill, // 9999 pill-shaped
+    minHeight: layout.minButtonHeight, // >= 52px
     paddingVertical: spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: colors.text,
+    fontFamily: 'Inter',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
 });

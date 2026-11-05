@@ -69,17 +69,6 @@ class MainActivity : ReactActivity() {
                 hideSplashScreen()
             }
         }, 5000L)
-
-        // Automatic content detection: When real UI components (TextView/EditText) render, dismiss splash
-        val content: View = findViewById(android.R.id.content)
-        content.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                if (hasRenderedContent(content)) {
-                    content.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                    hideSplashScreen()
-                }
-            }
-        })
     }
 
     private fun dismissSplashScreen() {
@@ -92,7 +81,7 @@ class MainActivity : ReactActivity() {
                 1f,
                 0f
             )
-            fadeOut.duration = 250L
+            fadeOut.duration = 200L
             fadeOut.interpolator = AccelerateInterpolator()
             fadeOut.addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
@@ -101,24 +90,6 @@ class MainActivity : ReactActivity() {
             })
             fadeOut.start()
         }
-    }
-
-    private fun hasRenderedContent(view: View?): Boolean {
-        if (view == null) return false
-        if (view is TextView && view.text.isNotEmpty()) {
-            return true
-        }
-        if (view is EditText) {
-            return true
-        }
-        if (view is ViewGroup) {
-            for (i in 0 until view.childCount) {
-                if (hasRenderedContent(view.getChildAt(i))) {
-                    return true
-                }
-            }
-        }
-        return false
     }
 
     override fun onDestroy() {

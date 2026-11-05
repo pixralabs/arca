@@ -1,104 +1,173 @@
 /**
  * @file apps/mobile/src/App.tsx
- * @description Arca Mobile — Root Application Container with Screen Router and Lifecycle State.
+ * @description Arca Mobile — Root Application Container with Dynamic Dark/Light Theme,
+ * Spring-Based Screen Transitions (`react-native-reanimated`), Tactile Haptics,
+ * and Shimmering Skeleton Loaders during initialization.
  */
 
-import React, { useState, useEffect } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, View, LogBox, NativeModules } from 'react-native';
-
-const { ArcaSplashScreen } = NativeModules;
-
-LogBox.ignoreAllLogs(true);
-
-import { colors } from './theme/theme';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  View,
+  LogBox,
+  NativeModules,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  useTheme,
+  AnimatedScreen,
+  VaultSkeletonLoader,
+  triggerLightHaptic,
+} from './theme/theme';
+import type { VaultItemPlaintext } from '@vaultguard/shared';
 import { getVaultMeta } from './storage/db';
-import { UnlockScreen } from './screens/UnlockScreen';
 import { SetupScreen } from './screens/SetupScreen';
+import { UnlockScreen } from './screens/UnlockScreen';
 import { VaultScreen } from './screens/VaultScreen';
 import { TotpScreen } from './screens/TotpScreen';
 import { GeneratorScreen } from './screens/GeneratorScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { ShareScreen } from './screens/ShareScreen';
-import { VaultItemPlaintext } from '@vaultguard/shared';
+
+const { ArcaSplashScreen } = NativeModules;
+
+LogBox.ignoreAllLogs(true);
 
 type Screen = 'UNLOCK' | 'SETUP' | 'VAULT' | 'TOTP' | 'GENERATOR' | 'SETTINGS' | 'SHARE';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('UNLOCK');
+  const { colors, isDark } = useTheme();
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('SETUP');
   const [activeTotpItem, setActiveTotpItem] = useState<VaultItemPlaintext | null>(null);
+
+  const navigateTo = useCallback((nextScreen: Screen) => {
+    triggerLightHaptic();
+    setCurrentScreen(nextScreen);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
-    getVaultMeta('header')
-      .then((header) => {
+
+    AsyncStorage.getItem('@arca_vault_created')
+      .then((created: string | null) => {
         if (!isMounted) return;
-        if (!header) {
-          setCurrentScreen('SETUP');
-        } else {
+        if (created === 'true') {
           setCurrentScreen('UNLOCK');
+        } else {
+          setCurrentScreen('SETUP');
         }
+        setIsInitializing(false);
         ArcaSplashScreen?.hide();
       })
       .catch(() => {
         if (!isMounted) return;
+        setIsInitializing(false);
         ArcaSplashScreen?.hide();
       });
+
+    const timer = setTimeout(async () => {
+      try {
+        const header = await getVaultMeta('header');
+        if (!isMounted) return;
+        if (header) {
+          await AsyncStorage.setItem('@arca_vault_created', 'true');
+        } else {
+          await AsyncStorage.setItem('@arca_vault_created', 'false');
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    }, 500);
+
     return () => {
       isMounted = false;
+      clearTimeout(timer);
     };
   }, []);
 
-  return (
-    <SafeAreaView style={styles.container} onLayout={() => ArcaSplashScreen?.hide()}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-      <View style={styles.content}>
-        {currentScreen === 'SETUP' && (
+  // Show smooth shimmering skeleton loader while checking initial vault state
+  if (isInitializing) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.background}
+          translucent
+        />
+        <VaultSkeletonLoader />
+      </SafeAreaView>
+    );
+  }
+
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'SETUP':
+        return (
           <SetupScreen
-            onVaultCreated={() => setCurrentScreen('VAULT')}
-            onGoToUnlock={() => setCurrentScreen('UNLOCK')}
-          />
-        )}
-
-        {currentScreen === 'UNLOCK' && (
-          <UnlockScreen
-            onUnlocked={() => setCurrentScreen('VAULT')}
-            onGoToSetup={() => setCurrentScreen('SETUP')}
-          />
-        )}
-
-        {currentScreen === 'VAULT' && (
-          <VaultScreen
-            onLock={() => setCurrentScreen('UNLOCK')}
-            onGoToGenerator={() => setCurrentScreen('GENERATOR')}
-            onGoToTotp={(item) => {
-              setActiveTotpItem(item);
-              setCurrentScreen('TOTP');
+            onVaultCreated={() => {
+              AsyncStorage.setItem('@arca_vault_created', 'true').catch(() => {});
+              navigateTo('VAULT');
             }}
-            onGoToSettings={() => setCurrentScreen('SETTINGS')}
+            onGoToUnlock={() => navigateTo('UNLOCK')}
           />
-        )}
-
-        {currentScreen === 'TOTP' && activeTotpItem && (
+        );
+      case 'UNLOCK':
+        return (
+          <UnlockScreen
+            onUnlocked={() => navigateTo('VAULT')}
+            onGoToSetup={() => navigateTo('SETUP')}
+          />
+        );
+      case 'VAULT':
+        return (
+          <VaultScreen
+            onLock={() => navigateTo('UNLOCK')}
+            onGoToGenerator={() => navigateTo('GENERATOR')}
+            onGoToTotp={(item: VaultItemPlaintext) => {
+              setActiveTotpItem(item);
+              navigateTo('TOTP');
+            }}
+            onGoToSettings={() => navigateTo('SETTINGS')}
+          />
+        );
+      case 'TOTP':
+        if (!activeTotpItem) return null;
+        return (
           <TotpScreen
             item={activeTotpItem}
-            onBack={() => setCurrentScreen('VAULT')}
+            onBack={() => navigateTo('VAULT')}
           />
-        )}
-
-        {currentScreen === 'GENERATOR' && (
-          <GeneratorScreen onBack={() => setCurrentScreen('VAULT')} />
-        )}
-
-        {currentScreen === 'SETTINGS' && (
+        );
+      case 'GENERATOR':
+        return <GeneratorScreen onBack={() => navigateTo('VAULT')} />;
+      case 'SETTINGS':
+        return (
           <SettingsScreen
-            onBack={() => setCurrentScreen('VAULT')}
-            onPurged={() => setCurrentScreen('SETUP')}
+            onBack={() => navigateTo('VAULT')}
+            onPurged={() => {
+              AsyncStorage.removeItem('@arca_vault_created').catch(() => {});
+              navigateTo('SETUP');
+            }}
           />
-        )}
+        );
+      case 'SHARE':
+        return <ShareScreen onBack={() => navigateTo('VAULT')} />;
+      default:
+        return null;
+    }
+  };
 
-        {currentScreen === 'SHARE' && (
-          <ShareScreen onBack={() => setCurrentScreen('VAULT')} />
-        )}
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
+      <View style={[styles.content, { backgroundColor: colors.background }]}>
+        <AnimatedScreen key={currentScreen}>{renderScreen()}</AnimatedScreen>
       </View>
     </SafeAreaView>
   );
@@ -107,7 +176,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   content: {
     flex: 1,

@@ -9,7 +9,7 @@
 
 import { create } from 'zustand';
 import { BIOMETRIC_MAX_STRIKES } from '@vaultguard/shared';
-import { DEFAULT_SYNC_SERVER_URL } from '@vaultguard/crypto';
+import { DEFAULT_SYNC_SERVER_URL, importCsvBytesWithZeroization } from '@vaultguard/crypto';
 import { handleRuntimeMessage } from '../background/messageRouter.js';
 import { unlockVaultWithBiometrics } from '../options/biometrics.js';
 
@@ -395,5 +395,18 @@ export const usePopupStore = create<any>((set, get) => ({
       text,
     });
     set({ toastMessageKey: 'vault.copied.toast' });
+  },
+
+  importCsv: async (csvBytes: Uint8Array) => {
+    try {
+      const result = await importCsvBytesWithZeroization(csvBytes);
+      for (const item of result.plaintexts) {
+        await get().saveItem(item);
+      }
+      await get().loadItems();
+      return result;
+    } finally {
+      // Memory zeroization is guaranteed inside importCsvBytesWithZeroization
+    }
   },
 }));

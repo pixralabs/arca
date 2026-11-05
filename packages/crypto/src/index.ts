@@ -139,3 +139,23 @@ export type {
   BurnEphemeralShareOptions,
   ConsumeEphemeralShareOptions,
 } from './secureShare.js';
+export {
+  auditPasswordStrength,
+  detectReusedPasswords,
+  checkPasswordForSavePrompt,
+  calculateVaultSecurityScore,
+  COMMON_WEAK_PASSWORDS,
+} from './audit.js';
+export type {
+  PasswordStrengthResult,
+  ReusedPasswordGroup,
+  ReusedPasswordResult,
+  ItemForAudit,
+  VaultSecurityScoreResult,
+} from './audit.js';
+export {
+  parseCsvRows,
+  importCsvBytesWithZeroization,
+} from './csvImport.js';
+export type { CsvImportResult } from './csvImport.js';
+

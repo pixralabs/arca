@@ -6,7 +6,7 @@ react {
     autolinkLibrariesWithApp()
 }
 
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -18,8 +18,8 @@ android {
         applicationId "com.pixra.arca"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "0.4.1"
+        versionCode 2
+        versionName "0.4.2"
     }
 
     signingConfigs {
@@ -30,13 +30,17 @@ android {
             keyPassword 'android'
         }
         release {
-            if (project.hasProperty('ARCA_UPLOAD_STORE_FILE')) {
-                storeFile file(ARCA_UPLOAD_STORE_FILE)
-                storePassword ARCA_UPLOAD_STORE_PASSWORD
-                keyAlias ARCA_UPLOAD_KEY_ALIAS
-                keyPassword ARCA_UPLOAD_KEY_PASSWORD
-            } else {
-                signingConfig signingConfigs.debug
+            def keyPropertiesFile = file("key.properties")
+            if (!keyPropertiesFile.exists()) {
+                keyPropertiesFile = rootProject.file("app/key.properties")
+            }
+            if (keyPropertiesFile.exists()) {
+                def keystoreProperties = new Properties()
+                keystoreProperties.load(new FileInputStream(keyPropertiesFile))
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
             }
         }
     }
@@ -47,7 +51,8 @@ android {
         }
         release {
             signingConfig signingConfigs.release
-            minifyEnabled enableProguardInReleaseBuilds
+            
+            minifyEnabled true
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }

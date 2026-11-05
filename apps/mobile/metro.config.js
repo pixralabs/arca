@@ -16,6 +16,21 @@ const config = {
       '@vaultguard/crypto': path.resolve(monorepoRoot, 'packages/crypto/src'),
     },
     resolveRequest: (context, moduleName, platform) => {
+      if (['url', 'path', 'fs', 'crypto', 'stream', 'os', 'http', 'https', 'zlib'].includes(moduleName)) {
+        return { type: 'empty' };
+      }
+      if (moduleName === 'libsodium-wrappers-sumo') {
+        return {
+          type: 'sourceFile',
+          filePath: path.resolve(monorepoRoot, 'node_modules/libsodium-wrappers-sumo/dist/modules-sumo/libsodium-wrappers.js'),
+        };
+      }
+      if (moduleName === 'libsodium-sumo') {
+        return {
+          type: 'sourceFile',
+          filePath: path.resolve(monorepoRoot, 'node_modules/libsodium-sumo/dist/modules-sumo/libsodium-sumo.js'),
+        };
+      }
       try {
         return context.resolveRequest(context, moduleName, platform);
       } catch (e) {

@@ -13,7 +13,8 @@
     "dev:mobile": "pnpm --filter @vaultguard/mobile start",
     "dev:relay": "cd apps/relay-server && cargo run",
     "pages:deploy": "npx wrangler pages deploy marketing --project-name=getarca",
-    "lint": "pnpm -r run lint"
+    "lint": "pnpm -r run lint",
+    "postinstall": "node scripts/patch-screens.js"
   },
   "devDependencies": {
     "@types/node": "^22.8.7",

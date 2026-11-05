@@ -1,6 +1,8 @@
 /**
  * @file apps/mobile/src/screens/ShareScreen.tsx
- * @description Arca Mobile — Ephemeral One-Time Secure Share Creation Screen.
+ * @description Arca Mobile — Ephemeral One-Time Secure Share Creation Screen
+ * with Monochrome + Electric Indigo Aesthetic, Pill Buttons (minHeight 52), 24px Curvy Cards,
+ * Soft Focus-Glow Inputs, Keyboard Awareness, Shimmering Skeleton State, and Tactile Haptics.
  */
 
 import React, { useState } from 'react';
@@ -10,11 +12,23 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   Clipboard,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
-import { colors, spacing, radii } from '../theme/theme';
+import {
+  useTheme,
+  spacing,
+  radii,
+  layout,
+  HIT_SLOP,
+  AnimatedScreen,
+  ShimmerSkeleton,
+  triggerLightHaptic,
+  triggerSuccessHaptic,
+} from '../theme/theme';
 import { createEphemeralShare } from '@vaultguard/crypto';
 
 interface ShareScreenProps {
@@ -22,12 +36,15 @@ interface ShareScreenProps {
 }
 
 export function ShareScreen({ onBack }: ShareScreenProps) {
+  const { colors } = useTheme();
   const [secretText, setSecretText] = useState('');
-  const [expiryHours, setExpiryHours] = useState('24');
+  const [expiryHours] = useState('24');
   const [loading, setLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [focused, setFocused] = useState(false);
 
   const handleCreateShare = async () => {
+    triggerLightHaptic();
     if (!secretText.trim()) {
       Alert.alert('Required', 'Please enter text or secret to share.');
       return;
@@ -41,6 +58,7 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
         expiresInSeconds: parseInt(expiryHours, 10) * 3600 || 86400,
         relayServerUrl: 'https://arca-rc8v.onrender.com',
       });
+      triggerSuccessHaptic();
       setShareUrl(res.url);
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Failed to create ephemeral share.');
@@ -50,6 +68,7 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
   };
 
   const handleCopy = () => {
+    triggerLightHaptic();
     if (shareUrl) {
       Clipboard.setString(shareUrl);
       Alert.alert('Copied', 'One-time secure link copied to clipboard.');
@@ -57,153 +76,264 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>One-Time Share</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
-      <View style={styles.content}>
-        {shareUrl ? (
-          <View style={styles.resultContainer}>
-            <Text style={styles.successTitle}>Ephemeral Link Created!</Text>
-            <Text style={styles.successSubtitle}>
-              This link self-destructs after 1 view or when the expiration window closes.
+    <AnimatedScreen style={[styles.container, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity
+            onPress={() => {
+              triggerLightHaptic();
+              onBack();
+            }}
+            style={styles.backButton}
+            hitSlop={HIT_SLOP}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>
+              ‹ Back
             </Text>
-            <TouchableOpacity style={styles.urlCard} onPress={handleCopy}>
-              <Text style={styles.urlText} numberOfLines={3}>
-                {shareUrl}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleCopy}>
-              <Text style={styles.primaryButtonText}>Copy Secure Link</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View>
-            <Text style={styles.label}>Secret Message or Password</Text>
-            <TextInput
-              style={[styles.input, styles.multilineInput]}
-              placeholder="Paste password or secret here..."
-              placeholderTextColor={colors.textDim}
-              value={secretText}
-              onChangeText={setSecretText}
-              multiline
-            />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: colors.textHeading }]}>
+            One-Time Share
+          </Text>
+          <View style={{ width: layout.minTouchTarget }} />
+        </View>
 
-            <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.buttonDisabled]}
-              onPress={handleCreateShare}
-              disabled={loading}
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {loading ? (
+            <View style={styles.skeletonCard}>
+              <ShimmerSkeleton
+                width="60%"
+                height={24}
+                borderRadius={radii.md}
+                style={{ marginBottom: spacing.md }}
+              />
+              <ShimmerSkeleton
+                width="100%"
+                height={120}
+                borderRadius={radii.card}
+                style={{ marginBottom: spacing.lg }}
+              />
+              <ShimmerSkeleton
+                width="100%"
+                height={layout.minButtonHeight}
+                borderRadius={radii.pill}
+              />
+            </View>
+          ) : shareUrl ? (
+            <View
+              style={[
+                styles.resultCard,
+                { backgroundColor: colors.surface },
+              ]}
             >
-              {loading ? (
-                <ActivityIndicator color={colors.background} />
-              ) : (
-                <Text style={styles.primaryButtonText}>Generate One-Time Link</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-    </View>
+              <Text style={[styles.successTitle, { color: colors.textHeading }]}>
+                Ephemeral Link Created
+              </Text>
+              <Text style={[styles.successSubtitle, { color: colors.textMuted }]}>
+                This link self-destructs after 1 view or when the expiration window closes.
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.urlBox,
+                  { backgroundColor: colors.surfaceSubtle },
+                ]}
+                onPress={handleCopy}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[styles.urlText, { color: colors.primary }]}
+                  numberOfLines={3}
+                >
+                  {shareUrl}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={handleCopy}
+                activeOpacity={0.85}
+              >
+                <Text
+                  style={[
+                    styles.primaryButtonText,
+                    { color: colors.onPrimary },
+                  ]}
+                >
+                  Copy Secure Link
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View
+              style={[
+                styles.formCard,
+                { backgroundColor: colors.surface },
+              ]}
+            >
+              <Text style={[styles.label, { color: colors.textMuted }]}>
+                Secret Message or Password
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.multilineInput,
+                  {
+                    backgroundColor: colors.surfaceSubtle,
+                    color: colors.text,
+                    borderColor: focused ? colors.primary : 'transparent',
+                  },
+                  focused && {
+                    shadowColor: colors.primary,
+                    shadowOpacity: 0.28,
+                    shadowRadius: 10,
+                    shadowOffset: { width: 0, height: 0 },
+                  },
+                ]}
+                placeholder="Paste password or secret here..."
+                placeholderTextColor={colors.textDim}
+                value={secretText}
+                onChangeText={setSecretText}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+                multiline
+              />
+
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={handleCreateShare}
+                activeOpacity={0.85}
+              >
+                <Text
+                  style={[
+                    styles.primaryButtonText,
+                    { color: colors.onPrimary },
+                  ]}
+                >
+                  Generate One-Time Link
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </AnimatedScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   backButton: {
-    padding: spacing.xs,
+    minWidth: layout.minTouchTarget,
+    minHeight: layout.minTouchTarget,
+    justifyContent: 'center',
+    paddingRight: spacing.sm,
   },
   backButtonText: {
-    color: colors.emerald,
+    fontFamily: 'Inter',
     fontSize: 16,
+    fontWeight: '600',
   },
   title: {
-    color: colors.text,
+    fontFamily: 'Inter',
     fontSize: 18,
     fontWeight: '700',
+    letterSpacing: -0.5,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     padding: spacing.xl,
     justifyContent: 'center',
   },
+  skeletonCard: {
+    width: '100%',
+  },
+  formCard: {
+    borderRadius: radii.card, // 24px curvy card
+    padding: spacing.lg,
+  },
   label: {
-    color: colors.textMuted,
+    fontFamily: 'Inter',
     fontSize: 13,
-    marginBottom: spacing.xs,
+    fontWeight: '600',
+    marginBottom: spacing.sm,
   },
   input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
+    fontFamily: 'Inter',
+    borderWidth: 1.5,
+    borderRadius: radii.lg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    color: colors.text,
     fontSize: 16,
     marginBottom: spacing.xl,
   },
   multilineInput: {
-    minHeight: 120,
+    minHeight: 132,
     textAlignVertical: 'top',
   },
   primaryButton: {
-    backgroundColor: colors.emerald,
-    borderRadius: radii.md,
+    width: '100%',
+    borderRadius: radii.pill, // 9999 pill-shaped
+    minHeight: layout.minButtonHeight, // >= 52px
     paddingVertical: spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   primaryButtonText: {
-    color: colors.background,
+    fontFamily: 'Inter',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  resultContainer: {
+  resultCard: {
+    borderRadius: radii.card, // 24px curvy card
+    padding: spacing.xl,
     alignItems: 'center',
   },
   successTitle: {
-    color: colors.emerald,
-    fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'Inter',
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.5,
     marginBottom: spacing.xs,
   },
   successSubtitle: {
-    color: colors.textMuted,
+    fontFamily: 'Inter',
     fontSize: 14,
     textAlign: 'center',
     marginBottom: spacing.xl,
+    lineHeight: 20,
   },
-  urlCard: {
+  urlBox: {
     width: '100%',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     padding: spacing.md,
     marginBottom: spacing.xl,
   },
   urlText: {
-    color: colors.textDim,
+    fontFamily: 'monospace',
     fontSize: 13,
   },
 });

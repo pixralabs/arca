@@ -11,7 +11,7 @@
  */
 
 import { parse } from 'tldts';
-import { unsealItem } from '@vaultguard/crypto';
+import { unsealItem, checkPasswordForSavePrompt } from '@vaultguard/crypto';
 import { ALARM_EXPIRE_PENDING_SAVE, PENDING_SAVE_TTL_MINUTES } from '@vaultguard/shared';
 import { readAllEncryptedItems } from '../vault/db.js';
 import { getOrRestoreActiveDEK } from './session.js';
@@ -34,6 +34,10 @@ export interface PendingSaveCandidate {
   password: string;
   isUpdate: boolean;
   existingItemId: string | null;
+  isWeak?: boolean;
+  isReused?: boolean;
+  reusedCount?: number;
+  warningMessage?: string | null;
   stagedAt: number;
   expiresAt: number;
 }
@@ -61,6 +65,7 @@ export async function stagePendingSaveCandidate(
 
   let isUpdate = false;
   let existingItemId: string | null = null;
+  const existingItemsPlain: Array<{ id: string; password?: string; urls?: string[] }> = [];
 
   // Check if credential already matches an item in the unlocked vault
   const dek = await getOrRestoreActiveDEK();
@@ -70,16 +75,29 @@ export async function stagePendingSaveCandidate(
       if (rec.deletedAt !== null) continue;
       try {
         const plain = await unsealItem(dek, rec);
-        if (plain && typeof plain === 'object' && plain.username === params.username) {
-          isUpdate = true;
-          existingItemId = rec.id;
-          break;
+        if (plain && typeof plain === 'object') {
+          existingItemsPlain.push({
+            id: rec.id,
+            password: plain.password,
+            urls: plain.urls,
+          });
+          if (plain.username === params.username) {
+            isUpdate = true;
+            existingItemId = rec.id;
+          }
         }
       } catch {
         // Ignore unseal failures
       }
     }
   }
+
+  // Audit password strength and cross-site reuse
+  const promptCheck = checkPasswordForSavePrompt(
+    params.password,
+    domain,
+    existingItemsPlain
+  );
 
   const now = Date.now();
   const candidate: PendingSaveCandidate = {
@@ -91,6 +109,10 @@ export async function stagePendingSaveCandidate(
     password: params.password,
     isUpdate,
     existingItemId,
+    isWeak: promptCheck.isWeak,
+    isReused: promptCheck.isReused,
+    reusedCount: promptCheck.reusedCount,
+    warningMessage: promptCheck.warningMessage,
     stagedAt: now,
     expiresAt: now + PENDING_SAVE_TTL_MINUTES * 60 * 1000,
   };
@@ -123,11 +145,14 @@ export async function stagePendingSaveCandidate(
     });
   }
   if (g.chrome?.notifications?.create) {
+    const notifMsg = candidate.warningMessage
+      ? `${candidate.warningMessage} Click the Arca SAVE badge to manage this login for ${domain}.`
+      : `Click the Arca SAVE badge to store your login for ${domain}.`;
     g.chrome.notifications.create(`vg-save-${candidate.id}`, {
       type: 'basic',
       iconUrl: 'icons/48.png',
       title: 'Arca by Pixra — Save Login?',
-      message: `Click the Arca SAVE badge to store your login for ${domain}.`,
+      message: notifMsg,
     });
   }
 

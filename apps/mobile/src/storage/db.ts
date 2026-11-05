@@ -4,19 +4,21 @@
  * Enforces PRAGMA journal_mode = WAL, PRAGMA secure_delete = ON, and PRAGMA foreign_keys = ON.
  */
 
-import { open, DB } from '@op-engineering/op-sqlite';
+import type { DB } from '@op-engineering/op-sqlite';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 let dbInstance: DB | null = null;
 let dbInitPromise: Promise<void> | null = null;
 
 export function getDatabase(): DB {
   if (!dbInstance) {
+    const { open } = require('@op-engineering/op-sqlite');
     dbInstance = open({
       name: 'arca_vault.db',
       location: 'default',
     });
   }
-  return dbInstance;
+  return dbInstance!;
 }
 
 export async function ensureDatabaseReady(): Promise<DB> {
@@ -145,4 +147,5 @@ export async function purgeAllVaultData(): Promise<void> {
   await db.execute('DELETE FROM vault_meta;');
   await db.execute('DELETE FROM sync_state;');
   await db.execute('VACUUM;');
+  await AsyncStorage.removeItem('@arca_vault_created').catch(() => {});
 }
