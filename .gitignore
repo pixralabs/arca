@@ -29,3 +29,10 @@ ios/build/
 # Archives
 *.zip
 *.tar.gz
+
+# Release and Build Binaries
+playstore-release/
+releases/
+*.aab
+*.apk
+
