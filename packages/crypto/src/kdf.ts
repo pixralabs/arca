@@ -146,7 +146,13 @@ export async function deriveMasterKEK(
   return defaultKdfQueue.enqueue(async () => {
     let masterSeed: Uint8Array | null = null;
     try {
-      if (typeof WebAssembly !== 'undefined') {
+      const isReactNative =
+        (typeof navigator !== 'undefined' && (navigator as any).product === 'ReactNative') ||
+        (typeof global !== 'undefined' &&
+          ((global as any).nativeCallSyncHook !== undefined ||
+            (global as any).HermesInternal !== undefined));
+
+      if (typeof WebAssembly !== 'undefined' && !isReactNative) {
         try {
           masterSeed = await wasmArgon2id({
             password,
@@ -167,7 +173,8 @@ export async function deriveMasterKEK(
           m: params.m,
           p: params.p,
           dkLen: DEK_BYTES,
-        });
+          asyncTick: 16, // Yields every 16ms frame so UI animations (skeletons/spinners) stay at 60fps
+        } as any);
       }
       const masterKek = sodium.crypto_kdf_derive_from_key(
         DEK_BYTES,
