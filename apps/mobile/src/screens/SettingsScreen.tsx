@@ -16,8 +16,10 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
+import { Smartphone, Sun, Moon } from 'lucide-react-native';
 import {
   useTheme,
+  ThemePreference,
   spacing,
   radii,
   layout,
@@ -43,8 +45,36 @@ interface MobileDeviceEntry {
   isCurrent?: boolean;
 }
 
+const THEME_OPTIONS: {
+  key: ThemePreference;
+  label: string;
+  icon: (color: string) => React.ReactNode;
+}[] = [
+  {
+    key: 'system',
+    label: 'System',
+    icon: (color: string) => <Smartphone size={15} color={color} style={{ marginRight: 6 }} />,
+  },
+  {
+    key: 'light',
+    label: 'Light',
+    icon: (color: string) => <Sun size={15} color={color} style={{ marginRight: 6 }} />,
+  },
+  {
+    key: 'dark',
+    label: 'Dark',
+    icon: (color: string) => <Moon size={15} color={color} style={{ marginRight: 6 }} />,
+  },
+];
+
 export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
-  const { colors } = useTheme();
+  const { colors, isDark, themePreference, setThemePreference } = useTheme();
+
+  const segmentedBg = isDark ? '#18181B' : '#F4F4F5';
+  const activePillBg = isDark ? '#FFFFFF' : '#000000';
+  const activeTextColor = isDark ? '#000000' : '#FFFFFF';
+  const inactiveTextColor = isDark ? '#A1A1AA' : '#52525B';
+
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [syncStatus, setSyncStatus] = useState(
     '100% Local Mode (SQLite Only — Zero Network)'
@@ -148,6 +178,60 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
             Settings
           </Text>
           <View style={{ width: layout.minTouchTarget }} />
+        </View>
+
+        {/* ── Appearance Section ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+            Appearance
+          </Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
+            Choose how Arca looks to you.
+          </Text>
+
+          <View
+            style={[
+              styles.segmentedContainer,
+              {
+                backgroundColor: segmentedBg,
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+              },
+            ]}
+          >
+            {THEME_OPTIONS.map((opt) => {
+              const isActive = themePreference === opt.key;
+              const textColor = isActive ? activeTextColor : inactiveTextColor;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.segmentedItem,
+                    isActive && {
+                      backgroundColor: activePillBg,
+                      shadowColor: isDark ? '#ffffff' : '#000000',
+                      shadowOpacity: isDark ? 0.16 : 0.12,
+                      shadowRadius: 8,
+                      shadowOffset: { width: 0, height: 2 },
+                      elevation: 3,
+                    },
+                  ]}
+                  onPress={() => {
+                    if (themePreference !== opt.key) {
+                      triggerLightHaptic();
+                      setThemePreference(opt.key);
+                    }
+                  }}
+                  activeOpacity={0.8}
+                  hitSlop={HIT_SLOP}
+                >
+                  {opt.icon(textColor)}
+                  <Text style={[styles.segmentedText, { color: textColor }]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -408,7 +492,34 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: -0.5,
+    marginBottom: spacing.xs,
+  },
+  sectionSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    lineHeight: 18,
     marginBottom: spacing.sm,
+  },
+  segmentedContainer: {
+    flexDirection: 'row',
+    borderRadius: radii.pill,
+    padding: 4,
+    borderWidth: 1,
+  },
+  segmentedItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    minHeight: 44,
+    borderRadius: radii.pill,
+  },
+  segmentedText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.2,
   },
   card: {
     borderRadius: radii.card, // 24px curvy surface

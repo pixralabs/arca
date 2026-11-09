@@ -10,6 +10,12 @@
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/RNGetRandomValuesSpec_autolinked_build/CMakeFiles/react_codegen_RNGetRandomValuesSpec.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/RNGetRandomValuesSpec_autolinked_build/CMakeFiles/edit_cache.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/RNGetRandomValuesSpec_autolinked_build/CMakeFiles/rebuild_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/RNHapticFeedbackSpec_autolinked_build/CMakeFiles/react_codegen_RNHapticFeedbackSpec.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/RNHapticFeedbackSpec_autolinked_build/CMakeFiles/edit_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/RNHapticFeedbackSpec_autolinked_build/CMakeFiles/rebuild_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/rnreanimated_autolinked_build/CMakeFiles/edit_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/rnreanimated_autolinked_build/CMakeFiles/rebuild_cache.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/safeareacontext_autolinked_build/CMakeFiles/edit_cache.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/safeareacontext_autolinked_build/CMakeFiles/rebuild_cache.dir
@@ -19,3 +25,6 @@
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/rnsvg_autolinked_build/CMakeFiles/react_codegen_rnsvg.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/rnsvg_autolinked_build/CMakeFiles/edit_cache.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/rnsvg_autolinked_build/CMakeFiles/rebuild_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/rnworklets_autolinked_build/CMakeFiles/edit_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/armeabi-v7a/rnworklets_autolinked_build/CMakeFiles/rebuild_cache.dir

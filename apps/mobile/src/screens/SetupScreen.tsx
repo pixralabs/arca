@@ -1,11 +1,11 @@
 /**
  * @file apps/mobile/src/screens/SetupScreen.tsx
- * @description Arca Mobile — Zero-Knowledge Vault Creation and BIP-39 Recovery Phrase Screen
- * with Monochrome + Electric Indigo Palette, Pill Buttons (minHeight 52), 24px Curvy Cards,
- * Focus-Glow Soft Inputs, Keyboard Awareness, Shimmering Skeleton State, and Tactile Haptics.
+ * @description Ultra-Premium Zero-Knowledge Vault Setup Screen
+ * Strict Monochrome (Black & White) Aesthetic — Vault Name Input,
+ * Sleek SVG Logo, Reanimated Spring Press, Smooth Keyboard Handling.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,11 +14,14 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
+  StatusBar,
 } from 'react-native';
-import { Eye, EyeOff, Sparkles, ShieldCheck } from 'lucide-react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+import { Eye, EyeOff, Sparkles, ArrowLeft } from 'lucide-react-native';
 import {
   useTheme,
   spacing,
@@ -30,105 +33,193 @@ import {
   triggerSuccessHaptic,
 } from '../theme/theme';
 import { mobileSetupVault } from '../crypto/mobileCrypto';
+import { getAllVaults, VaultRecord } from '../storage/db';
+import { ArcaBrandLogo } from '../components/ArcaBrandLogo';
 
 interface SetupScreenProps {
-  onVaultCreated: () => void;
+  onVaultCreated: (vaultId?: string) => void;
   onGoToUnlock: () => void;
 }
 
+// ─── Animated Primary Button (Monochrome) ─────────────────────────────────────
+function AnimatedPrimaryButton({
+  onPress,
+  disabled,
+  label,
+  isDark,
+}: {
+  onPress: () => void;
+  disabled: boolean;
+  label: string;
+  isDark: boolean;
+}) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.97, { damping: 15, stiffness: 300 });
+  };
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+  };
+
+  const btnBg = isDark ? '#ffffff' : '#000000';
+  const btnText = isDark ? '#000000' : '#ffffff';
+
+  return (
+    <Animated.View style={[animStyle, { marginTop: spacing.lg }]}>
+      <TouchableOpacity
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={disabled}
+        activeOpacity={0.88}
+        style={[
+          styles.primaryButton,
+          {
+            backgroundColor: btnBg,
+            opacity: disabled ? 0.35 : 1,
+            shadowColor: isDark ? '#ffffff' : '#000000',
+            shadowOpacity: isDark ? 0.12 : 0.16,
+            shadowRadius: 16,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 6,
+          },
+        ]}
+      >
+        <Text style={[styles.primaryButtonText, { color: btnText }]}>{label}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// ─── Main SetupScreen ─────────────────────────────────────────────────────────
 export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+
+  const [existingVaults, setExistingVaults] = useState<VaultRecord[]>([]);
+  const [vaultName, setVaultName] = useState('Personal Vault');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [mnemonic, setMnemonic] = useState<string | null>(null);
-  const [confirmedBackup, setConfirmedBackup] = useState(false);
-  const [focusedInput, setFocusedInput] = useState<'master' | 'confirm' | null>(null);
+  const [focusedField, setFocusedField] = useState<'name' | 'pass' | 'confirm' | null>(null);
+  const [mnemonicWords, setMnemonicWords] = useState<string[]>([]);
+  const [mnemonicConfirmed, setMnemonicConfirmed] = useState(false);
+  const [createdVaultId, setCreatedVaultId] = useState<string>('');
 
-  const strengthAudit = useMemo(() => {
+  const passwordRef = useRef<TextInput>(null);
+  const confirmRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    getAllVaults().then((vaults) => {
+      setExistingVaults(vaults);
+      if (vaults.length > 0) {
+        setVaultName(`Vault ${vaults.length + 1}`);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Password strength (0–4)
+  const passwordStrength = useCallback((p: string) => {
+    let score = 0;
+    if (p.length >= 8) score++;
+    if (p.length >= 14) score++;
+    if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
+    if (/\d/.test(p)) score++;
+    if (/[^A-Za-z0-9]/.test(p)) score++;
+    return Math.min(score, 4);
+  }, []);
+
+  const strength = passwordStrength(password);
+  const strengthColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#10b981'];
+  const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+
+  const handleGenerate = useCallback(() => {
+    triggerLightHaptic();
+    const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijkmnopqrstuvwxyz';
+    const numbers = '23456789';
+    const symbols = '!@#$%^&*_-+=';
+    const all = uppercase + lowercase + numbers + symbols;
+
+    let pass = '';
+    for (let i = 0; i < 4; i++) pass += uppercase[Math.floor(Math.random() * uppercase.length)];
+    for (let i = 0; i < 4; i++) pass += lowercase[Math.floor(Math.random() * lowercase.length)];
+    for (let i = 0; i < 4; i++) pass += numbers[Math.floor(Math.random() * numbers.length)];
+    for (let i = 0; i < 4; i++) pass += symbols[Math.floor(Math.random() * symbols.length)];
+    for (let i = 0; i < 4; i++) pass += all[Math.floor(Math.random() * all.length)];
+
+    const shuffled = pass.split('').sort(() => 0.5 - Math.random()).join('');
+    setPassword(shuffled);
+    setConfirmPassword(shuffled);
+  }, []);
+
+  const handleSetup = useCallback(async () => {
+    triggerLightHaptic();
+    const cleanName = vaultName.trim();
+    if (!cleanName) {
+      Alert.alert('Required', 'Please enter a name for your vault.');
+      return;
+    }
     if (!password) {
-      return { score: 0, isWeak: true, reasons: [] };
-    }
-    const { auditPasswordStrength } = require('@vaultguard/crypto');
-    return auditPasswordStrength(password);
-  }, [password]);
-
-  const strengthColor = useMemo(() => {
-    if (!password) return 'transparent';
-    if (strengthAudit.score >= 80) return colors.primary;
-    if (strengthAudit.score >= 50) return colors.warning;
-    return colors.danger;
-  }, [password, strengthAudit.score, colors]);
-
-  const strengthLabel = useMemo(() => {
-    if (!password) return '';
-    if (strengthAudit.score >= 80) return 'Strong (High Entropy)';
-    if (strengthAudit.score >= 50) return 'Fair (Add symbols / numbers)';
-    return 'Weak (Min 12 chars & mixed characters)';
-  }, [password, strengthAudit.score]);
-
-  const handleGeneratePassword = async () => {
-    triggerLightHaptic();
-    try {
-      const { generatePassword } = require('@vaultguard/crypto');
-      const generated = await generatePassword({
-        length: 24,
-      });
-      setPassword(generated);
-      setConfirmPassword(generated);
-      setShowPassword(true);
-      setShowConfirmPassword(true);
-      triggerSuccessHaptic();
-    } catch {
-      Alert.alert('Error', 'Failed to generate password');
-    }
-  };
-
-  const handleCreateVault = async () => {
-    triggerLightHaptic();
-    if (password.length < 12) {
-      Alert.alert('Weak Password', 'Master Password must be at least 12 characters.');
+      Alert.alert('Required', 'Please enter a Master Password.');
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Mismatch', 'Master Passwords do not match.');
+      Alert.alert('Mismatch', 'Passwords do not match.');
+      return;
+    }
+    if (strength < 2) {
+      Alert.alert('Weak Password', 'Please choose a stronger password.');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await mobileSetupVault(password);
+      const result = await mobileSetupVault(password, cleanName);
       triggerSuccessHaptic();
-      setMnemonic(res.mnemonic);
+      setCreatedVaultId(result.vaultId);
+      if (result?.mnemonic) {
+        setMnemonicWords(result.mnemonic.split(' '));
+      } else {
+        onVaultCreated(result.vaultId);
+      }
     } catch (err: any) {
-      Alert.alert('Creation Failed', err?.message || 'Failed to initialize vault.');
-    } finally {
       setLoading(false);
+      Alert.alert('Setup Failed', err?.message || 'Could not initialize vault.');
     }
+  }, [vaultName, password, confirmPassword, strength, onVaultCreated]);
+
+  // Input shell focus styling
+  const inputShellStyle = (field: 'name' | 'pass' | 'confirm') => {
+    const focused = focusedField === field;
+    return {
+      backgroundColor: colors.inputBackground,
+      borderColor: focused ? colors.primary : 'transparent',
+      shadowColor: focused ? colors.primary : 'transparent',
+      shadowOpacity: focused ? (isDark ? 0.2 : 0.15) : 0,
+      shadowRadius: focused ? 8 : 0,
+      shadowOffset: { width: 0, height: 0 },
+      elevation: focused ? 3 : 0,
+    };
   };
 
-  const handleFinish = () => {
-    triggerLightHaptic();
-    if (!confirmedBackup) {
-      Alert.alert(
-        'Confirmation Required',
-        'Please confirm that you have saved your recovery phrase.'
-      );
-      return;
-    }
-    triggerSuccessHaptic();
-    onVaultCreated();
-  };
-
-  if (loading) {
+  // Loading skeleton screen
+  if (loading && mnemonicWords.length === 0) {
     return (
-      <View style={[styles.skeletonRoot, { backgroundColor: colors.background }]}>
-        <View style={styles.skeletonBanner}>
-          <ShieldCheck size={20} color={colors.primary} />
-          <Text style={[styles.skeletonBannerText, { color: colors.textMuted }]}>
-            Deriving Argon2id keys & sealing zero-knowledge vault...
+      <View style={[styles.flex, { backgroundColor: colors.background }]}>
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+        />
+        <View style={styles.loadingBanner}>
+          <Text style={[styles.loadingText, { color: colors.textMuted }]}>
+            Initializing zero-knowledge vault...
           </Text>
         </View>
         <VaultSkeletonLoader />
@@ -136,128 +227,127 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
     );
   }
 
-  if (mnemonic) {
-    const words = mnemonic.split(' ');
+  // Mnemonic backup screen
+  if (mnemonicWords.length > 0) {
     return (
-      <ScrollView
-        style={{ backgroundColor: colors.background }}
-        contentContainerStyle={[
-          styles.scrollContainer,
-          { backgroundColor: colors.background },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
+      <View style={[styles.flex, { backgroundColor: colors.background }]}>
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+        />
+        <ScrollView
+          contentContainerStyle={styles.mnemonicScroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={[styles.title, { color: colors.textHeading, marginBottom: spacing.xs }]}>
+            Recovery Phrase
+          </Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted, marginBottom: spacing.xl }]}>
+            Write these 24 words down safely for "{vaultName}". They are the only way to recover this vault.
+          </Text>
+
           <View
             style={[
-              styles.badge,
-              {
-                backgroundColor: colors.primaryGlow,
-                borderColor: colors.primaryBorderGlow,
-              },
+              styles.glassCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
-            <Text style={[styles.badgeText, { color: colors.primary }]}>
-              24-Word Recovery Phrase
+            <View style={styles.wordGrid}>
+              {mnemonicWords.map((word, i) => (
+                <View
+                  key={i}
+                  style={[styles.wordBadge, { backgroundColor: colors.surfaceSubtle }]}
+                >
+                  <Text style={[styles.wordIndex, { color: colors.textDim }]}>{i + 1}.</Text>
+                  <Text style={[styles.wordText, { color: colors.text }]}>{word}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Confirm checkbox */}
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            onPress={() => {
+              triggerLightHaptic();
+              setMnemonicConfirmed((v) => !v);
+            }}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.checkbox,
+                {
+                  backgroundColor: mnemonicConfirmed ? colors.primary : 'transparent',
+                  borderColor: mnemonicConfirmed ? colors.primary : colors.border,
+                },
+              ]}
+            >
+              {mnemonicConfirmed && (
+                <Text style={[styles.checkmark, { color: colors.onPrimary }]}>✓</Text>
+              )}
+            </View>
+            <Text style={[styles.checkboxLabel, { color: colors.textMuted }]}>
+              I have written down and saved this recovery phrase securely.
             </Text>
-          </View>
-          <Text style={[styles.title, { color: colors.textHeading }]}>
-            Emergency Recovery Kit
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            Write down these 24 words in exact order. Store them in a secure physical location.
-            Pixra does not keep a copy and cannot recover your vault without them.
-          </Text>
-        </View>
+          </TouchableOpacity>
 
-        <View
-          style={[
-            styles.mnemonicCard,
-            {
-              backgroundColor: colors.surface,
-            },
-          ]}
-        >
-          <View style={styles.grid}>
-            {words.map((word, idx) => (
-              <View
-                key={idx}
-                style={[
-                  styles.wordBadge,
-                  { backgroundColor: colors.surfaceSubtle },
-                ]}
-              >
-                <Text style={[styles.wordIndex, { color: colors.textDim }]}>
-                  {idx + 1}.
-                </Text>
-                <Text style={[styles.wordText, { color: colors.text }]}>{word}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={styles.checkboxContainer}
-          hitSlop={HIT_SLOP}
-          onPress={() => {
-            triggerLightHaptic();
-            setConfirmedBackup(!confirmedBackup);
-          }}
-          activeOpacity={0.8}
-        >
-          <View
-            style={[
-              styles.checkbox,
-              { borderColor: colors.borderSubtle },
-              confirmedBackup && {
-                backgroundColor: colors.primary,
-                borderColor: colors.primary,
-              },
-            ]}
-          >
-            {confirmedBackup && (
-              <Text style={[styles.checkmark, { color: colors.onPrimary }]}>✓</Text>
-            )}
-          </View>
-          <Text style={[styles.checkboxLabel, { color: colors.textMuted }]}>
-            I have securely written down and stored my 24 recovery words.
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.primaryButton,
-            { backgroundColor: colors.primary },
-            !confirmedBackup && styles.buttonDisabled,
-          ]}
-          onPress={handleFinish}
-          disabled={!confirmedBackup}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.primaryButtonText, { color: colors.onPrimary }]}>
-            Enter My Vault
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+          <AnimatedPrimaryButton
+            onPress={() => {
+              triggerSuccessHaptic();
+              onVaultCreated(createdVaultId);
+            }}
+            disabled={!mnemonicConfirmed}
+            label="Enter Vault →"
+            isDark={isDark}
+          />
+        </ScrollView>
+      </View>
     );
   }
 
+  // Glass card aesthetic
+  const glassCardBg = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)';
+  const glassCardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
   return (
-    <KeyboardAvoidingView
-      style={[styles.keyboardRoot, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <View style={[styles.flex, { backgroundColor: colors.background }]}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+      />
+
       <ScrollView
-        contentContainerStyle={styles.scrollCenterContent}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
       >
+        {/* Top Back Button if existing vaults are present */}
+        {existingVaults.length > 0 && (
+          <TouchableOpacity
+            style={styles.topBackNav}
+            hitSlop={HIT_SLOP}
+            onPress={() => {
+              triggerLightHaptic();
+              onGoToUnlock();
+            }}
+          >
+            <ArrowLeft size={18} color={colors.textMuted} />
+            <Text style={[styles.topBackNavText, { color: colors.textMuted }]}>
+              Back to Unlock
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* ── Header ── */}
         <View style={styles.header}>
-          <Image
-            source={require('../assets/icon_transparent.png')}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
+          {/* Original Arca Logo with Monochrome Theme */}
+          <ArcaBrandLogo isDark={isDark} size={80} />
+
+          {/* Badge (Strict Monochrome, No Emoji) */}
           <View
             style={[
               styles.badge,
@@ -271,303 +361,285 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
               Zero-Knowledge Setup
             </Text>
           </View>
+
           <Text style={[styles.title, { color: colors.textHeading }]}>
-            Create Master Password
+            {existingVaults.length > 0 ? 'Create New Vault' : 'Create Master Password'}
           </Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            This password encrypts your vault with Argon2id and XChaCha20-Poly1305.
-            Choose a strong, unique passphrase.
+            Encrypted with Argon2id + XChaCha20-Poly1305.{'\n'}Each vault is completely isolated.
           </Text>
         </View>
 
+        {/* ── Glass Card ── */}
         <View
           style={[
-            styles.formCard,
-            {
-              backgroundColor: colors.surface,
-            },
+            styles.glassCard,
+            { backgroundColor: glassCardBg, borderColor: glassCardBorder },
           ]}
         >
-          {/* Master Password Input with Generate and Visibility Toggle */}
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                backgroundColor: colors.surfaceSubtle,
-                borderColor:
-                  focusedInput === 'master' ? colors.primary : 'transparent',
-              },
-              focusedInput === 'master' && {
-                shadowColor: colors.primary,
-                shadowOpacity: 0.28,
-                shadowRadius: 10,
-                shadowOffset: { width: 0, height: 0 },
-              },
-            ]}
-          >
-            <TextInput
-              style={[styles.inputWithActions, { color: colors.text }]}
-              placeholder="Enter Master Password"
-              placeholderTextColor={colors.textDim}
-              value={password}
-              onChangeText={setPassword}
-              onFocus={() => setFocusedInput('master')}
-              onBlur={() => setFocusedInput(null)}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <View style={styles.inputActions}>
-              <TouchableOpacity
-                style={[
-                  styles.generateButton,
-                  {
-                    backgroundColor: colors.primaryGlow,
-                    borderColor: colors.primaryBorderGlow,
-                  },
-                ]}
-                hitSlop={HIT_SLOP}
-                onPress={handleGeneratePassword}
-                activeOpacity={0.75}
-                accessibilityLabel="Generate strong password"
-              >
-                <Sparkles size={14} color={colors.primary} />
-                <Text style={[styles.generateButtonText, { color: colors.primary }]}>
-                  Generate
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.eyeButton}
-                hitSlop={HIT_SLOP}
-                onPress={() => {
-                  triggerLightHaptic();
-                  setShowPassword(!showPassword);
-                }}
-                activeOpacity={0.7}
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? (
-                  <EyeOff size={19} color={colors.textMuted} />
-                ) : (
-                  <Eye size={19} color={colors.textMuted} />
-                )}
-              </TouchableOpacity>
+          {/* 1. Vault Name Field */}
+          <View style={styles.fieldBlock}>
+            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Vault Name</Text>
+            <View style={[styles.inputShell, inputShellStyle('name')]}>
+              <TextInput
+                style={[styles.inputText, { color: colors.text }]}
+                placeholder="e.g. Personal Vault, Work, Finances"
+                placeholderTextColor={colors.textDim}
+                value={vaultName}
+                onChangeText={setVaultName}
+                autoCorrect={false}
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                onFocus={() => setFocusedField('name')}
+                onBlur={() => setFocusedField(null)}
+              />
             </View>
           </View>
 
-          {/* Password Strength Progress Bar */}
+          {/* 2. Master Password Field */}
+          <View style={[styles.fieldBlock, { marginTop: spacing.md }]}>
+            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Master Password</Text>
+            <View style={[styles.inputShell, inputShellStyle('pass')]}>
+              <TextInput
+                ref={passwordRef}
+                style={[styles.inputText, { color: colors.text }]}
+                placeholder="Enter Master Password"
+                placeholderTextColor={colors.textDim}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCorrect={false}
+                autoCapitalize="none"
+                autoComplete="password-new"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => confirmRef.current?.focus()}
+                onFocus={() => setFocusedField('pass')}
+                onBlur={() => setFocusedField(null)}
+              />
+              <View style={styles.inputActions}>
+                <TouchableOpacity
+                  style={[
+                    styles.generateBtn,
+                    {
+                      backgroundColor: colors.primaryGlow,
+                      borderColor: colors.primaryBorderGlow,
+                    },
+                  ]}
+                  onPress={handleGenerate}
+                  hitSlop={HIT_SLOP}
+                  activeOpacity={0.75}
+                >
+                  <Sparkles size={11} color={colors.primary} />
+                  <Text style={[styles.generateBtnText, { color: colors.primary }]}>Generate</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  hitSlop={HIT_SLOP}
+                  onPress={() => {
+                    triggerLightHaptic();
+                    setShowPassword((v) => !v);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color={colors.textDim} />
+                  ) : (
+                    <Eye size={18} color={colors.textDim} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* Strength Bar */}
           {password.length > 0 && (
-            <View style={styles.strengthMeterContainer}>
-              <View
-                style={[
-                  styles.strengthTrack,
-                  { backgroundColor: colors.surfaceSubtle },
-                ]}
-              >
+            <View style={styles.strengthMeter}>
+              <View style={[styles.strengthTrack, { backgroundColor: colors.surfaceSubtle }]}>
                 <View
                   style={[
-                    styles.strengthBar,
+                    styles.strengthFill,
                     {
-                      width: `${Math.max(10, strengthAudit.score)}%`,
-                      backgroundColor: strengthColor,
+                      width: `${((strength + 1) / 5) * 100}%` as any,
+                      backgroundColor: strengthColors[strength],
                     },
                   ]}
                 />
               </View>
-              <View style={styles.strengthMetaRow}>
-                <Text style={[styles.strengthLabelText, { color: strengthColor }]}>
-                  {strengthLabel}
+              <View style={styles.strengthRow}>
+                <Text style={[styles.strengthLabel, { color: strengthColors[strength] }]}>
+                  {strengthLabels[strength]}
                 </Text>
-                <Text style={[styles.strengthScoreText, { color: colors.textMuted }]}>
-                  {strengthAudit.score}%
+                <Text style={[styles.strengthScore, { color: colors.textDim }]}>
+                  {password.length} chars
                 </Text>
               </View>
             </View>
           )}
 
-          {/* Confirm Password Input with Visibility Toggle */}
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                marginTop: spacing.md,
-                backgroundColor: colors.surfaceSubtle,
-                borderColor:
-                  focusedInput === 'confirm' ? colors.primary : 'transparent',
-              },
-              focusedInput === 'confirm' && {
-                shadowColor: colors.primary,
-                shadowOpacity: 0.28,
-                shadowRadius: 10,
-                shadowOffset: { width: 0, height: 0 },
-              },
-            ]}
-          >
-            <TextInput
-              style={[styles.inputWithActions, { color: colors.text }]}
-              placeholder="Confirm Master Password"
-              placeholderTextColor={colors.textDim}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              onFocus={() => setFocusedInput('confirm')}
-              onBlur={() => setFocusedInput(null)}
-              secureTextEntry={!showConfirmPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <View style={styles.inputActions}>
+          {/* 3. Confirm Password Field */}
+          <View style={[styles.fieldBlock, { marginTop: spacing.md }]}>
+            <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Confirm Master Password</Text>
+            <View style={[styles.inputShell, inputShellStyle('confirm')]}>
+              <TextInput
+                ref={confirmRef}
+                style={[styles.inputText, { color: colors.text }]}
+                placeholder="Confirm Master Password"
+                placeholderTextColor={colors.textDim}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+                autoCorrect={false}
+                autoCapitalize="none"
+                autoComplete="password-new"
+                returnKeyType="go"
+                onSubmitEditing={handleSetup}
+                onFocus={() => setFocusedField('confirm')}
+                onBlur={() => setFocusedField(null)}
+              />
               <TouchableOpacity
-                style={styles.eyeButton}
+                style={styles.iconBtn}
                 hitSlop={HIT_SLOP}
                 onPress={() => {
                   triggerLightHaptic();
-                  setShowConfirmPassword(!showConfirmPassword);
+                  setShowConfirmPassword((v) => !v);
                 }}
                 activeOpacity={0.7}
-                accessibilityLabel={
-                  showConfirmPassword ? 'Hide password' : 'Show password'
-                }
               >
                 {showConfirmPassword ? (
-                  <EyeOff size={19} color={colors.textMuted} />
+                  <EyeOff size={18} color={colors.textDim} />
                 ) : (
-                  <Eye size={19} color={colors.textMuted} />
+                  <Eye size={18} color={colors.textDim} />
                 )}
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Password Match Indicator */}
+          {/* Match Indicator */}
           {confirmPassword.length > 0 && (
-            <View style={styles.matchIndicator}>
-              <Text
-                style={[
-                  styles.matchText,
-                  {
-                    color:
-                      password === confirmPassword ? colors.primary : colors.danger,
-                  },
-                ]}
-              >
-                {password === confirmPassword
-                  ? '✓ Passwords match'
-                  : '✕ Passwords do not match'}
-              </Text>
-            </View>
+            <Text
+              style={[
+                styles.matchText,
+                {
+                  color: password === confirmPassword ? '#22c55e' : colors.danger,
+                },
+              ]}
+            >
+              {password === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
+            </Text>
           )}
 
-          <TouchableOpacity
-            style={[
-              styles.primaryButton,
-              { backgroundColor: colors.primary },
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={handleCreateVault}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            <Text style={[styles.primaryButtonText, { color: colors.onPrimary }]}>
-              Initialize Zero-Knowledge Vault
-            </Text>
-          </TouchableOpacity>
+          {/* Primary CTA */}
+          <AnimatedPrimaryButton
+            onPress={handleSetup}
+            disabled={!vaultName.trim() || !password || !confirmPassword}
+            label={existingVaults.length > 0 ? `Initialize "${vaultName.trim() || 'Vault'}"` : 'Initialize Zero-Knowledge Vault'}
+            isDark={isDark}
+          />
         </View>
 
+        {/* ── Footer Link ── */}
         <TouchableOpacity
-          style={styles.linkButton}
+          style={styles.linkBtn}
           hitSlop={HIT_SLOP}
           onPress={() => {
             triggerLightHaptic();
             onGoToUnlock();
           }}
         >
-          <Text style={[styles.linkButtonText, { color: colors.primary }]}>
-            Already have a vault? Unlock
+          <Text style={[styles.linkText, { color: colors.primary }]}>
+            {existingVaults.length > 0 ? '← Back to Existing Vaults' : 'Already have a vault? Unlock'}
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  keyboardRoot: {
-    flex: 1,
-  },
-  skeletonRoot: {
-    flex: 1,
-  },
-  skeletonBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingTop: spacing.xl,
-  },
-  skeletonBannerText: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  scrollCenterContent: {
+  flex: { flex: 1 },
+
+  scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxl,
   },
-  scrollContainer: {
+  mnemonicScroll: {
     padding: spacing.xl,
     paddingBottom: spacing.xxl,
   },
-  header: {
+
+  topBackNav: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
+    alignSelf: 'flex-start',
+    gap: 6,
   },
-  logoImage: {
-    width: 72,
-    height: 72,
-    marginBottom: spacing.md,
+  topBackNavText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '500',
   },
+
+  header: { alignItems: 'center', marginBottom: spacing.xl },
   badge: {
     borderWidth: 1,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
+    marginTop: spacing.md,
     marginBottom: spacing.md,
   },
-  badgeText: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
+  badgeText: { fontFamily: 'Inter', fontSize: 12, fontWeight: '600', letterSpacing: 0.3 },
   title: {
     fontFamily: 'Inter',
     fontSize: 28,
     fontWeight: '800',
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
     marginBottom: spacing.xs,
     textAlign: 'center',
   },
   subtitle: {
     fontFamily: 'Inter',
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
-    lineHeight: 20,
+    lineHeight: 19,
   },
-  formCard: {
+
+  glassCard: {
     width: '100%',
-    borderRadius: radii.card, // 24px curvy surface
+    borderRadius: 24,
     padding: spacing.lg,
     marginBottom: spacing.md,
+    borderWidth: 1,
   },
-  inputContainer: {
+
+  fieldBlock: {
+    width: '100%',
+  },
+  fieldLabel: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+    marginBottom: 6,
+    marginLeft: 2,
+  },
+
+  inputShell: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
     borderRadius: radii.lg,
-    minHeight: 54,
+    borderWidth: 1.5,
+    minHeight: 52,
+    overflow: 'hidden',
   },
-  inputWithActions: {
+  inputText: {
     flex: 1,
     fontFamily: 'Inter',
     paddingHorizontal: spacing.md,
@@ -580,126 +652,84 @@ const styles = StyleSheet.create({
     paddingRight: spacing.xs,
     gap: 4,
   },
-  generateButton: {
+  generateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
+    gap: 4,
     borderWidth: 1,
     borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    minHeight: 36,
+    paddingHorizontal: spacing.sm + 4,
+    paddingVertical: 7,
+    minHeight: 32,
   },
-  generateButtonText: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  eyeButton: {
-    minWidth: layout.minTouchTarget,
-    minHeight: layout.minTouchTarget,
-    padding: spacing.md,
+  generateBtnText: { fontFamily: 'Inter', fontSize: 11, fontWeight: '700' },
+  iconBtn: {
+    width: layout.minTouchTarget,
+    height: layout.minTouchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  strengthMeterContainer: {
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  strengthTrack: {
-    height: 5,
-    borderRadius: radii.pill,
-    overflow: 'hidden',
-  },
-  strengthBar: {
-    height: '100%',
-    borderRadius: radii.pill,
-  },
-  strengthMetaRow: {
+
+  strengthMeter: { marginTop: 8, marginBottom: 2 },
+  strengthTrack: { height: 4, borderRadius: 99, overflow: 'hidden' },
+  strengthFill: { height: '100%', borderRadius: 99 },
+  strengthRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 6,
+    marginTop: 5,
     paddingHorizontal: 2,
   },
-  strengthLabelText: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  strengthScoreText: {
-    fontSize: 12,
-    fontFamily: 'monospace',
-  },
-  matchIndicator: {
-    marginTop: 8,
-    paddingHorizontal: 4,
-  },
-  matchText: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  strengthLabel: { fontFamily: 'Inter', fontSize: 11, fontWeight: '600' },
+  strengthScore: { fontFamily: 'monospace', fontSize: 11 },
+
+  matchText: { fontFamily: 'Inter', fontSize: 11, fontWeight: '600', marginTop: 7, paddingHorizontal: 4 },
+
   primaryButton: {
-    borderRadius: radii.pill, // 9999 pill-shaped
-    minHeight: layout.minButtonHeight, // >= 52px
+    borderRadius: radii.pill,
+    minHeight: 52,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.lg,
   },
   primaryButtonText: {
     fontFamily: 'Inter',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
-  buttonDisabled: {
-    opacity: 0.45,
-  },
-  linkButton: {
+
+  linkBtn: {
     minHeight: layout.minTouchTarget,
     paddingVertical: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  linkButtonText: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  mnemonicCard: {
-    borderRadius: radii.card, // 24px curvy card
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
-  },
-  grid: {
+  linkText: { fontFamily: 'Inter', fontSize: 14, fontWeight: '600' },
+
+  loadingBanner: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingTop: spacing.xl,
   },
+  loadingText: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600' },
+
+  wordGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   wordBadge: {
-    width: '48.2%',
+    width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     borderRadius: radii.md,
     marginBottom: spacing.sm,
   },
-  wordIndex: {
-    fontSize: 12,
-    width: 26,
-    fontFamily: 'monospace',
-  },
-  wordText: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  checkboxContainer: {
+  wordIndex: { fontSize: 11, width: 24, fontFamily: 'monospace' },
+  wordText: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600' },
+
+  checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: layout.minTouchTarget,
@@ -709,20 +739,12 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 8,
+    borderRadius: 7,
     borderWidth: 2,
     marginRight: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkmark: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  checkboxLabel: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    flex: 1,
-    lineHeight: 19,
-  },
+  checkmark: { fontSize: 14, fontWeight: 'bold' },
+  checkboxLabel: { fontFamily: 'Inter', fontSize: 13, flex: 1, lineHeight: 19 },
 });

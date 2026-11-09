@@ -6,6 +6,8 @@ import android.animation.ObjectAnimator
 import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -16,6 +18,7 @@ import android.view.ViewTreeObserver
 import android.view.animation.AccelerateInterpolator
 import android.widget.EditText
 import android.widget.TextView
+import androidx.core.view.WindowCompat
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -31,7 +34,16 @@ class MainActivity : ReactActivity() {
         fun hideSplashScreen() {
             isAppReady = true
             instance?.runOnUiThread {
-                instance?.dismissSplashScreen()
+                instance?.let { act ->
+                    act.applySystemBars(act.resources.configuration)
+                    act.dismissSplashScreen()
+                }
+            }
+        }
+
+        fun updateSystemBarsTheme(isDarkMode: Boolean) {
+            instance?.runOnUiThread {
+                instance?.setSystemBarsTheme(isDarkMode)
             }
         }
     }
@@ -52,7 +64,14 @@ class MainActivity : ReactActivity() {
             com.facebook.react.devsupport.DefaultDevLoadingViewImplementation.setDevLoadingEnabled(false)
         } catch (_: Throwable) {}
 
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
+        window.navigationBarColor = Color.TRANSPARENT
+
         applyThemeIcon(resources.configuration)
+        applySystemBars(resources.configuration)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             splashScreen.setOnExitAnimationListener { splashScreenView ->
@@ -102,6 +121,37 @@ class MainActivity : ReactActivity() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         applyThemeIcon(newConfig)
+        applySystemBars(newConfig)
+    }
+
+    private fun applySystemBars(config: Configuration) {
+        try {
+            val currentNightMode = config.uiMode and Configuration.UI_MODE_NIGHT_MASK
+            val isDarkMode = currentNightMode == Configuration.UI_MODE_NIGHT_YES
+            setSystemBarsTheme(isDarkMode)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun setSystemBarsTheme(isDarkMode: Boolean) {
+        try {
+            val bgColor = if (isDarkMode) Color.parseColor("#09090b") else Color.parseColor("#fafafa")
+            window.setBackgroundDrawable(ColorDrawable(bgColor))
+            window.navigationBarColor = bgColor
+            window.statusBarColor = bgColor
+
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            insetsController.isAppearanceLightNavigationBars = !isDarkMode
+            insetsController.isAppearanceLightStatusBars = !isDarkMode
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                window.isNavigationBarContrastEnforced = false
+                window.isStatusBarContrastEnforced = false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun applyThemeIcon(config: Configuration) {

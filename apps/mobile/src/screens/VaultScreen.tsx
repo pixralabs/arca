@@ -33,6 +33,7 @@ import {
   mobileGetDecryptedItems,
   mobileSaveItem,
   clearActiveSession,
+  getActiveSession,
 } from '../crypto/mobileCrypto';
 import { softDeleteVaultItem } from '../storage/db';
 import { VaultItemPlaintext } from '@vaultguard/shared';
@@ -376,10 +377,8 @@ export function VaultScreen({
   const handleTopMoreMenu = () => {
     triggerLightHaptic();
     Alert.alert('Vault Actions', 'Choose an action:', [
-      { text: '📥 Import Passwords (CSV)', onPress: () => setShowImportSheet(true) },
-      { text: '⚡ Password Generator', onPress: onGoToGenerator },
-      { text: '⚙ Sync & Security Settings', onPress: onGoToSettings },
       { text: '🔒 Lock Vault', style: 'destructive', onPress: handleLockVault },
+      { text: '📥 Import Passwords (CSV)', onPress: () => setShowImportSheet(true) },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
@@ -439,6 +438,16 @@ export function VaultScreen({
           <TouchableOpacity
             style={[styles.utilityPill, { backgroundColor: colors.surface }]}
             hitSlop={HIT_SLOP}
+            onPress={handleLockVault}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.utilityPillText, { color: colors.textMuted }]}>
+              🔒 Lock
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.utilityPill, { backgroundColor: colors.surface }]}
+            hitSlop={HIT_SLOP}
             onPress={() => {
               triggerLightHaptic();
               onGoToSettings();
@@ -462,11 +471,38 @@ export function VaultScreen({
         </TouchableOpacity>
       </View>
 
-      {/* Large "Passwords" Heading */}
+      {/* Large "Passwords" Heading + Vault Badge */}
       <View style={styles.headerTitleContainer}>
-        <Text style={[styles.largeHeaderTitle, { color: colors.textHeading }]}>
-          Passwords
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={[styles.largeHeaderTitle, { color: colors.textHeading }]}>
+            Passwords
+          </Text>
+          {getActiveSession()?.vaultName && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 4,
+                borderRadius: radii.pill,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surfaceSubtle,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: '600',
+                  color: colors.textMuted,
+                }}
+              >
+                {getActiveSession()?.vaultName}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Show Shimmering Skeletons while Vault is Decrypting */}

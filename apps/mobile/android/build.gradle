@@ -24,3 +24,24 @@ allprojects {
         mavenCentral()
     }
 }
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null) {
+                    if (project.name == 'react-native-biometrics') {
+                        namespace 'com.rnbiometrics'
+                    } else if (project.hasProperty('group') && project.group) {
+                        namespace project.group
+                    }
+                }
+                compileSdkVersion 36
+                defaultConfig {
+                    minSdkVersion 29
+                }
+            }
+        }
+    }
+}
+

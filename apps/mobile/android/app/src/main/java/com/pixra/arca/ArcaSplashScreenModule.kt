@@ -11,4 +11,9 @@ class ArcaSplashScreenModule(reactContext: ReactApplicationContext) : ReactConte
     fun hide() {
         MainActivity.hideSplashScreen()
     }
+
+    @ReactMethod
+    fun setSystemBarsTheme(isDark: Boolean) {
+        MainActivity.updateSystemBarsTheme(isDark)
+    }
 }

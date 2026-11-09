@@ -3,9 +3,12 @@
     "/home/radhe/Development/arca/apps/mobile/node_modules/@op-engineering/op-sqlite/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/home/radhe/Development/arca/apps/mobile/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-get-random-values/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
     "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
     "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt",
+    "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/home/radhe/Development/arca/apps/mobile/node_modules/react-native/ReactAndroid/cmake-utils/default-app-setup/CMakeLists.txt"
   ],
   "cleanCommandsComponents": [
@@ -42,6 +45,11 @@
       "abi": "x86",
       "artifactName": "react_codegen_RNGetRandomValuesSpec"
     },
+    "react_codegen_RNHapticFeedbackSpec::@a83561f277f6afbb326c": {
+      "toolchain": "toolchain",
+      "abi": "x86",
+      "artifactName": "react_codegen_RNHapticFeedbackSpec"
+    },
     "react_codegen_opsqlite::@29dbe4a8d7c7d52648b7": {
       "toolchain": "toolchain",
       "abi": "x86",
@@ -51,6 +59,11 @@
       "toolchain": "toolchain",
       "abi": "x86",
       "artifactName": "react_codegen_rnasyncstorage"
+    },
+    "react_codegen_rnreanimated::@8afabad14bfffa3f8b9a": {
+      "toolchain": "toolchain",
+      "abi": "x86",
+      "artifactName": "react_codegen_rnreanimated"
     },
     "react_codegen_rnscreens::@25bcbd507e98d3a854ad": {
       "toolchain": "toolchain",
@@ -73,6 +86,11 @@
         "/home/radhe/.gradle/caches/8.13/transforms/6c32794ad944d1ce5408574b2dc67ed3/transformed/jetified-react-android-0.81.6-release/prefab/modules/jsi/libs/android.x86/libjsi.so",
         "/home/radhe/.gradle/caches/8.13/transforms/212b7a95748768c3fc61b6549d55147a/transformed/jetified-fbjni-0.7.0/prefab/modules/fbjni/libs/android.x86/libfbjni.so"
       ]
+    },
+    "react_codegen_rnworklets::@68f58d84d4754f193387": {
+      "toolchain": "toolchain",
+      "abi": "x86",
+      "artifactName": "react_codegen_rnworklets"
     },
     "react_codegen_safeareacontext::@7984cd80db47aa7b952a": {
       "toolchain": "toolchain",

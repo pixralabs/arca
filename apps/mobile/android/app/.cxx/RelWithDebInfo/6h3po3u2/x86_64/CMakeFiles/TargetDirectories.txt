@@ -10,6 +10,12 @@
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/RNGetRandomValuesSpec_autolinked_build/CMakeFiles/react_codegen_RNGetRandomValuesSpec.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/RNGetRandomValuesSpec_autolinked_build/CMakeFiles/edit_cache.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/RNGetRandomValuesSpec_autolinked_build/CMakeFiles/rebuild_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/RNHapticFeedbackSpec_autolinked_build/CMakeFiles/react_codegen_RNHapticFeedbackSpec.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/RNHapticFeedbackSpec_autolinked_build/CMakeFiles/edit_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/RNHapticFeedbackSpec_autolinked_build/CMakeFiles/rebuild_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/rnreanimated_autolinked_build/CMakeFiles/edit_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/rnreanimated_autolinked_build/CMakeFiles/rebuild_cache.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/safeareacontext_autolinked_build/CMakeFiles/edit_cache.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/safeareacontext_autolinked_build/CMakeFiles/rebuild_cache.dir
@@ -19,3 +25,6 @@
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/rnsvg_autolinked_build/CMakeFiles/react_codegen_rnsvg.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/rnsvg_autolinked_build/CMakeFiles/edit_cache.dir
 /home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/rnsvg_autolinked_build/CMakeFiles/rebuild_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/rnworklets_autolinked_build/CMakeFiles/edit_cache.dir
+/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86_64/rnworklets_autolinked_build/CMakeFiles/rebuild_cache.dir

@@ -13,6 +13,7 @@ import {
   View,
   LogBox,
   NativeModules,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -22,7 +23,7 @@ import {
   triggerLightHaptic,
 } from './theme/theme';
 import type { VaultItemPlaintext } from '@vaultguard/shared';
-import { getVaultMeta } from './storage/db';
+import { getVaultMeta, getAllVaults } from './storage/db';
 import { SetupScreen } from './screens/SetupScreen';
 import { UnlockScreen } from './screens/UnlockScreen';
 import { VaultScreen } from './screens/VaultScreen';
@@ -49,6 +50,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    ArcaSplashScreen?.setSystemBarsTheme?.(isDark);
+  }, [isDark]);
+
+  useEffect(() => {
     let isMounted = true;
 
     AsyncStorage.getItem('@arca_vault_created')
@@ -70,12 +75,17 @@ export default function App() {
 
     const timer = setTimeout(async () => {
       try {
-        const header = await getVaultMeta('header');
+        const vaults = await getAllVaults();
         if (!isMounted) return;
-        if (header) {
+        if (vaults.length > 0) {
           await AsyncStorage.setItem('@arca_vault_created', 'true');
         } else {
-          await AsyncStorage.setItem('@arca_vault_created', 'false');
+          const header = await getVaultMeta('header');
+          if (header) {
+            await AsyncStorage.setItem('@arca_vault_created', 'true');
+          } else {
+            await AsyncStorage.setItem('@arca_vault_created', 'false');
+          }
         }
       } catch {
         // Fallback gracefully
@@ -95,7 +105,6 @@ export default function App() {
         <StatusBar
           barStyle={isDark ? 'light-content' : 'dark-content'}
           backgroundColor={colors.background}
-          translucent
         />
         <VaultSkeletonLoader />
       </SafeAreaView>

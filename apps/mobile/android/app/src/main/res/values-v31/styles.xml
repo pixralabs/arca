@@ -6,7 +6,9 @@
         <item name="android:windowSplashScreenBrandingImage">@drawable/splash_footer</item>
         <item name="android:windowSplashScreenAnimationDuration">200</item>
         <item name="android:windowBackground">@color/splash_background</item>
-        <item name="android:statusBarColor">@color/splash_background</item>
-        <item name="android:navigationBarColor">@color/splash_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 </resources>

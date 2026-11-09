@@ -47,9 +47,12 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86/opsqlite_autolinked_build/cmake_install.cmake")
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86/rnasyncstorage_autolinked_build/cmake_install.cmake")
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86/RNGetRandomValuesSpec_autolinked_build/cmake_install.cmake")
+  include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86/RNHapticFeedbackSpec_autolinked_build/cmake_install.cmake")
+  include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86/rnreanimated_autolinked_build/cmake_install.cmake")
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86/safeareacontext_autolinked_build/cmake_install.cmake")
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86/rnscreens_autolinked_build/cmake_install.cmake")
   include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86/rnsvg_autolinked_build/cmake_install.cmake")
+  include("/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/x86/rnworklets_autolinked_build/cmake_install.cmake")
 
 endif()
 

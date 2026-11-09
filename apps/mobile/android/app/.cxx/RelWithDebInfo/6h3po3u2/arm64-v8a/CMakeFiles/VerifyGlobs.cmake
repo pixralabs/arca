@@ -87,6 +87,56 @@ if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   file(TOUCH_NOCREATE "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/arm64-v8a/CMakeFiles/cmake.verify_globs")
 endif()
 
+# react_codegen_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/*.cpp")
+set(OLD_GLOB
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/RNHapticFeedbackSpec-generated.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/arm64-v8a/CMakeFiles/cmake.verify_globs")
+endif()
+
+# react_codegen_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/react/renderer/components/RNHapticFeedbackSpec/*.cpp")
+set(OLD_GLOB
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/react/renderer/components/RNHapticFeedbackSpec/ComponentDescriptors.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/react/renderer/components/RNHapticFeedbackSpec/EventEmitters.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/react/renderer/components/RNHapticFeedbackSpec/Props.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/react/renderer/components/RNHapticFeedbackSpec/RNHapticFeedbackSpecJSI-generated.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/react/renderer/components/RNHapticFeedbackSpec/ShadowNodes.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-haptic-feedback/android/build/generated/source/codegen/jni/react/renderer/components/RNHapticFeedbackSpec/States.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/arm64-v8a/CMakeFiles/cmake.verify_globs")
+endif()
+
+# react_codegen_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/*.cpp")
+set(OLD_GLOB
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/rnreanimated-generated.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/arm64-v8a/CMakeFiles/cmake.verify_globs")
+endif()
+
+# react_codegen_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/*.cpp")
+set(OLD_GLOB
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/ComponentDescriptors.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/EventEmitters.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/Props.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/ShadowNodes.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/States.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/react/renderer/components/rnreanimated/rnreanimatedJSI-generated.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/arm64-v8a/CMakeFiles/cmake.verify_globs")
+endif()
+
 # LIB_CUSTOM_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt:22 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-safe-area-context/android/src/main/jni/*.cpp")
 set(OLD_GLOB
@@ -145,8 +195,9 @@ endif()
 # LIB_CUSTOM_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt:23 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/*.cpp")
 set(OLD_GLOB
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSFormSheetHostShadowNode.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSFormSheetHostState.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSBottomTabsAccessoryShadowNode.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSBottomTabsShadowNode.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSBottomTabsState.cpp"
   "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSFullWindowOverlayShadowNode.cpp"
   "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSModalScreenShadowNode.cpp"
   "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSSafeAreaViewShadowNode.cpp"
@@ -158,18 +209,7 @@ set(OLD_GLOB
   "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSScreenStackHeaderSubviewShadowNode.cpp"
   "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSScreenStackHeaderSubviewState.cpp"
   "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSScreenState.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSSplitScreenShadowNode.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSStackHeaderConfigShadowNode.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSStackHeaderConfigState.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSStackHeaderItemShadowNode.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSStackHeaderItemState.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSStackHeaderSubviewShadowNode.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSStackHeaderSubviewState.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSStackScreenShadowNode.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSStackScreenState.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSTabsBottomAccessoryShadowNode.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSTabsHostShadowNode.cpp"
-  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSTabsHostState.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSSplitViewScreenShadowNode.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")
@@ -232,6 +272,31 @@ set(OLD_GLOB
   "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnsvg/ShadowNodes.cpp"
   "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnsvg/States.cpp"
   "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnsvg/rnsvgJSI-generated.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/arm64-v8a/CMakeFiles/cmake.verify_globs")
+endif()
+
+# react_codegen_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/*.cpp")
+set(OLD_GLOB
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/rnworklets-generated.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/home/radhe/Development/arca/apps/mobile/android/app/.cxx/RelWithDebInfo/6h3po3u2/arm64-v8a/CMakeFiles/cmake.verify_globs")
+endif()
+
+# react_codegen_SRCS at /home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/CMakeLists.txt:9 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/*.cpp")
+set(OLD_GLOB
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/ComponentDescriptors.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/EventEmitters.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/Props.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/ShadowNodes.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/States.cpp"
+  "/home/radhe/Development/arca/apps/mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/react/renderer/components/rnworklets/rnworkletsJSI-generated.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")

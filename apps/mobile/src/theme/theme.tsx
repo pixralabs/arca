@@ -1,9 +1,10 @@
 /**
  * @file apps/mobile/src/theme/theme.ts
- * @description Master UI/UX Design System — "Apple/Stripe Level" Monochrome + Electric Indigo Aesthetic.
+ * @description Master UI/UX Design System — "Monochrome Ultra-Premium" (Vercel/Apple style).
  * Supports Dark & Light modes via `useColorScheme()`, Inter typography with tight tracking (-0.5),
  * pill-shaped buttons (radius 9999, minHeight 52), curvy 24px cards, >=48x48px touch targets,
  * tactile haptics (`react-native-haptic-feedback`), and 60fps `react-native-reanimated` primitives.
+ * Primary accent: Pure White (#ffffff) in Dark, Pure Black (#000000) in Light — strictly monochrome.
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -29,41 +30,43 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type ColorSchemeMode = 'dark' | 'light';
+export type ThemePreference = 'system' | 'light' | 'dark';
 
 export interface ThemeColors {
   // Core Surfaces
-  background: string;        // Zinc-950 (#09090b) in Dark, Zinc-50 (#fafafa) in Light
-  surface: string;           // Zinc-900 (#18181b) in Dark, White (#ffffff) in Light
-  card: string;              // Alias for surface (#18181b / #ffffff)
+  background: string;        // #000000 in Dark, #ffffff in Light
+  surface: string;           // #111111 in Dark, #ffffff in Light
+  card: string;              // Alias for surface
   surfaceElevated: string;   // Elevated sheet / floating bar surface
   surfaceSubtle: string;     // Soft grey input & secondary pill background
-  inputBackground: string;   // Soft grey input fill with no harsh border
+  inputBackground: string;   // Input fill — #1a1a1a dark / #f4f4f5 light
   border: string;            // Subtle structural hairline
   borderSubtle: string;      // Muted divider
 
-  // Primary Brand Accent (Electric Indigo)
-  primary: string;           // Electric Indigo (#6366f1)
-  primaryHover: string;      // Indigo-600 (#4f46e5)
-  primaryGlow: string;       // Subtle Indigo glow for focused inputs & badges
-  primaryBorderGlow: string; // Indigo focus ring border
-  onPrimary: string;         // Crisp white/zinc-50 text on Indigo buttons
+  // Primary Brand Accent (Monochrome: White in Dark, Black in Light)
+  primary: string;           // #ffffff dark / #000000 light
+  primaryHover: string;      // Slightly dimmed primary
+  primaryGlow: string;       // Subtle glow tint for focused inputs & badges
+  primaryBorderGlow: string; // Focus ring border
+  onPrimary: string;         // Text on primary button — #000000 dark / #ffffff light
 
   // Typography
-  text: string;              // Zinc-50 (#fafafa) in Dark, Zinc-950 (#09090b) in Light
-  textHeading: string;       // Zinc-50 (#fafafa) / Zinc-950 (#09090b)
-  textMuted: string;         // Zinc-400 (#a1a1aa) for subtitles
-  textDim: string;           // Zinc-500 (#71717a) for placeholders & hints
+  text: string;              // #ffffff dark / #000000 light
+  textHeading: string;       // Pure white / pure black
+  textMuted: string;         // #a1a1aa subtitles
+  textDim: string;           // #71717a placeholders & hints
 
   // Semantic & Status Accents
-  danger: string;            // Soft Red (#ef4444) for destructive/delete/warning actions
-  dangerGlow: string;        // Subtle red surface tint
-  dangerBorder: string;      // Subtle red border
-  warning: string;           // Amber (#f59e0b) for medium alerts
-  warningGlow: string;       // Subtle amber tint
+  danger: string;            // Soft Red (#ef4444)
+  dangerGlow: string;
+  dangerBorder: string;
+  warning: string;           // Amber (#f59e0b)
+  warningGlow: string;
 
-  // Category & Chrome Tokens (Monochrome + Electric Indigo)
+  // Accent tokens (kept for backward compat — now zinc-based)
   accentIndigo: string;
   accentIndigoGlow: string;
   accentViolet: string;
@@ -79,80 +82,80 @@ export interface ThemeColors {
 }
 
 export const darkColors: ThemeColors = {
-  background: '#09090b',      // Zinc-950
-  surface: '#18181b',         // Zinc-900
-  card: '#18181b',            // Zinc-900
-  surfaceElevated: '#27272a', // Zinc-800
-  surfaceSubtle: '#27272a',   // Zinc-800
-  inputBackground: '#18181b', // Soft dark grey input surface
-  border: '#27272a',          // Zinc-800
-  borderSubtle: '#3f3f46',    // Zinc-700
+  background: '#000000',      // Pure Black
+  surface: '#111111',         // Near-black surface
+  card: '#111111',
+  surfaceElevated: '#1a1a1a', // Slightly lifted
+  surfaceSubtle: '#1a1a1a',   // Input background
+  inputBackground: '#1a1a1a', // Dark input fill
+  border: '#222222',          // Hairline
+  borderSubtle: '#333333',    // Divider
 
-  primary: '#6366f1',         // Electric Indigo
-  primaryHover: '#4f46e5',
-  primaryGlow: 'rgba(99, 102, 241, 0.16)',
-  primaryBorderGlow: 'rgba(99, 102, 241, 0.65)',
-  onPrimary: '#fafafa',
+  primary: '#ffffff',         // Pure White — monochrome CTA
+  primaryHover: '#e4e4e7',    // Slightly dimmed white
+  primaryGlow: 'rgba(255, 255, 255, 0.08)',  // Subtle white glow badge
+  primaryBorderGlow: 'rgba(255, 255, 255, 0.35)', // White focus ring
+  onPrimary: '#000000',       // Black text on white button
 
-  text: '#fafafa',            // Zinc-50
-  textHeading: '#fafafa',     // Zinc-50
-  textMuted: '#a1a1aa',       // Zinc-400
-  textDim: '#71717a',         // Zinc-500
+  text: '#ffffff',            // Pure White
+  textHeading: '#ffffff',     // Pure White
+  textMuted: '#a1a1aa',       // Zinc-400 subtitles
+  textDim: '#71717a',         // Zinc-500 placeholders
 
-  danger: '#ef4444',          // Soft Red
+  danger: '#ef4444',
   dangerGlow: 'rgba(239, 68, 68, 0.14)',
   dangerBorder: 'rgba(239, 68, 68, 0.38)',
   warning: '#f59e0b',
   warningGlow: 'rgba(245, 158, 11, 0.14)',
 
-  accentIndigo: '#6366f1',
-  accentIndigoGlow: 'rgba(99, 102, 241, 0.18)',
-  accentViolet: '#818cf8',
-  accentVioletGlow: 'rgba(129, 140, 248, 0.18)',
+  accentIndigo: '#a1a1aa',
+  accentIndigoGlow: 'rgba(161, 161, 170, 0.16)',
+  accentViolet: '#d4d4d8',
+  accentVioletGlow: 'rgba(212, 212, 216, 0.14)',
   accentZinc: '#a1a1aa',
   accentZincGlow: 'rgba(161, 161, 170, 0.16)',
-  floatingBar: 'rgba(9, 9, 11, 0.90)',
-  backdrop: 'rgba(9, 9, 11, 0.76)',
+  floatingBar: 'rgba(0, 0, 0, 0.92)',
+  backdrop: 'rgba(0, 0, 0, 0.78)',
 
-  skeletonBase: '#18181b',
-  skeletonHighlight: '#27272a',
+  skeletonBase: '#111111',
+  skeletonHighlight: '#1a1a1a',
 };
 
 export const lightColors: ThemeColors = {
-  background: '#fafafa',      // Zinc-50
-  surface: '#ffffff',         // White
-  card: '#ffffff',            // White
+  background: '#ffffff',      // Pure White
+  surface: '#ffffff',         // White surface
+  card: '#ffffff',
   surfaceElevated: '#f4f4f5', // Zinc-100
-  surfaceSubtle: '#f4f4f5',   // Zinc-100
-  inputBackground: '#f4f4f5', // Soft grey input background in Light Mode
+  surfaceSubtle: '#f4f4f5',   // Zinc-100 input bg
+  inputBackground: '#f4f4f5', // Soft grey input
   border: '#e4e4e7',          // Zinc-200
   borderSubtle: '#d4d4d8',    // Zinc-300
 
-  primary: '#6366f1',         // Electric Indigo
-  primaryHover: '#4f46e5',
-  primaryGlow: 'rgba(99, 102, 241, 0.12)',
-  primaryBorderGlow: 'rgba(99, 102, 241, 0.55)',
-  onPrimary: '#fafafa',
+  primary: '#000000',         // Pure Black — monochrome CTA
+  primaryHover: '#27272a',    // Slightly lighter black
+  primaryGlow: 'rgba(0, 0, 0, 0.06)',       // Subtle black glow badge
+  primaryBorderGlow: 'rgba(0, 0, 0, 0.25)', // Black focus ring
+  onPrimary: '#ffffff',       // White text on black button
 
-  text: '#09090b',            // Zinc-950 crisp text on light background
-  textHeading: '#09090b',     // Zinc-950
-  textMuted: '#a1a1aa',       // Zinc-400 subtitles
-  textDim: '#71717a',         // Zinc-500
+  text: '#000000',            // Pure Black
+  textHeading: '#000000',     // Pure Black
+  textMuted: '#52525b',       // Zinc-600 subtitles
+  textDim: '#71717a',         // Zinc-500 placeholders
 
-  danger: '#ef4444',          // Soft Red
+  danger: '#ef4444',
   dangerGlow: 'rgba(239, 68, 68, 0.10)',
   dangerBorder: 'rgba(239, 68, 68, 0.30)',
   warning: '#f59e0b',
   warningGlow: 'rgba(245, 158, 11, 0.12)',
 
-  accentIndigo: '#6366f1',
-  accentIndigoGlow: 'rgba(99, 102, 241, 0.14)',
-  accentViolet: '#4f46e5',
-  accentVioletGlow: 'rgba(79, 70, 229, 0.14)',
+  accentIndigo: '#52525b',
+  accentIndigoGlow: 'rgba(82, 82, 91, 0.12)',
+  accentViolet: '#3f3f46',
+  accentVioletGlow: 'rgba(63, 63, 70, 0.10)',
   accentZinc: '#71717a',
   accentZincGlow: 'rgba(113, 113, 122, 0.12)',
-  floatingBar: 'rgba(250, 250, 250, 0.92)',
-  backdrop: 'rgba(9, 9, 11, 0.45)',
+  floatingBar: 'rgba(255, 255, 255, 0.94)',
+  backdrop: 'rgba(0, 0, 0, 0.45)',
 
   skeletonBase: '#e4e4e7',
   skeletonHighlight: '#f4f4f5',
@@ -246,17 +249,109 @@ export const layout = {
 
 export const HIT_SLOP = layout.hitSlop;
 
+// ─── Theme Store & Persistence (AsyncStorage) ──────────────────────────────────
+export const THEME_PREFERENCE_STORAGE_KEY = '@arca_theme_preference';
+
+export interface ThemeStoreState {
+  themePreference: ThemePreference;
+  setThemePreference: (pref: ThemePreference) => void;
+}
+
+export interface ThemeContextValue {
+  themePreference: ThemePreference;
+  setThemePreference: (pref: ThemePreference) => void;
+  activeTheme: 'dark' | 'light';
+  isDark: boolean;
+  mode: ColorSchemeMode;
+  colors: ThemeColors;
+  typography: typeof typography;
+  spacing: typeof spacing;
+  radii: typeof radii;
+  layout: typeof layout;
+  hitSlop: typeof HIT_SLOP;
+}
+
+let currentThemePreference: ThemePreference = 'system';
+const themeListeners = new Set<() => void>();
+
+// Load persisted preference once on module load
+AsyncStorage.getItem(THEME_PREFERENCE_STORAGE_KEY)
+  .then((saved) => {
+    if (saved === 'system' || saved === 'light' || saved === 'dark') {
+      currentThemePreference = saved;
+      themeListeners.forEach((fn) => fn());
+    }
+  })
+  .catch(() => {});
+
+export const themeStore = {
+  getState: (): ThemeStoreState => ({
+    themePreference: currentThemePreference,
+    setThemePreference: (pref: ThemePreference) => {
+      if (currentThemePreference === pref) return;
+      currentThemePreference = pref;
+      themeListeners.forEach((fn) => fn());
+      AsyncStorage.setItem(THEME_PREFERENCE_STORAGE_KEY, pref).catch(() => {});
+    },
+  }),
+  subscribe: (listener: () => void) => {
+    themeListeners.add(listener);
+    return () => {
+      themeListeners.delete(listener);
+    };
+  },
+};
+
 /**
- * Centralized theme hook supporting both Dark and Light modes via `useColorScheme()`.
+ * Zustand-compatible global hook selector for theme state:
+ * e.g. const themePref = useThemeStore(s => s.themePreference);
  */
-export function useTheme() {
-  const scheme = useColorScheme();
-  const isDark = scheme !== 'light';
+export function useThemeStore<T>(selector: (state: ThemeStoreState) => T): T {
+  const [value, setValue] = React.useState(() => selector(themeStore.getState()));
+  React.useEffect(() => {
+    const unsub = themeStore.subscribe(() => {
+      setValue(selector(themeStore.getState()));
+    });
+    return unsub;
+  }, [selector]);
+  return value;
+}
+
+/**
+ * Centralized theme hook supporting 'system' | 'light' | 'dark' preferences,
+ * persisted via AsyncStorage and reacting in real-time across the app.
+ */
+export function useTheme(): ThemeContextValue {
+  const [themePreference, setThemePreferenceState] = React.useState<ThemePreference>(
+    currentThemePreference
+  );
+  const systemScheme = useColorScheme();
+
+  React.useEffect(() => {
+    const unsub = themeStore.subscribe(() => {
+      setThemePreferenceState(currentThemePreference);
+    });
+    return unsub;
+  }, []);
+
+  const setThemePreference = React.useCallback((pref: ThemePreference) => {
+    themeStore.getState().setThemePreference(pref);
+  }, []);
+
+  const activeTheme: 'dark' | 'light' =
+    themePreference === 'system'
+      ? (systemScheme === 'dark' ? 'dark' : 'light')
+      : themePreference;
+
+  const isDark = activeTheme === 'dark';
   const activeColors = isDark ? darkColors : lightColors;
 
   return {
+    themePreference,
+    setThemePreference,
+    activeTheme,
     isDark,
-    mode: (isDark ? 'dark' : 'light') as ColorSchemeMode,
+    mode: activeTheme as ColorSchemeMode,
     colors: activeColors,
     typography,
     spacing,
