@@ -7,7 +7,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   View,
@@ -15,6 +14,8 @@ import {
   NativeModules,
   Platform,
 } from 'react-native';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
+import { SafeAreaView } from './components/SafeAreaView';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   useTheme,
@@ -101,14 +102,22 @@ export default function App() {
   // Show smooth shimmering skeleton loader while checking initial vault state
   if (isInitializing) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaProvider
+        initialMetrics={initialWindowMetrics}
+        style={{ flex: 1, backgroundColor: colors.background }}
+      >
         <StatusBar
           translucent
           barStyle={isDark ? 'light-content' : 'dark-content'}
           backgroundColor="transparent"
         />
-        <VaultSkeletonLoader />
-      </SafeAreaView>
+        <SafeAreaView
+          edges={['top', 'bottom']}
+          style={[styles.container, { backgroundColor: colors.background }]}
+        >
+          <VaultSkeletonLoader />
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
@@ -171,7 +180,10 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaProvider
+      initialMetrics={initialWindowMetrics}
+      style={{ flex: 1, backgroundColor: colors.background }}
+    >
       <StatusBar
         translucent
         barStyle={isDark ? 'light-content' : 'dark-content'}
@@ -180,7 +192,7 @@ export default function App() {
       <View style={[styles.content, { backgroundColor: colors.background }]}>
         <AnimatedScreen key={currentScreen}>{renderScreen()}</AnimatedScreen>
       </View>
-    </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 

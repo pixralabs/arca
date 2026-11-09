@@ -1,8 +1,8 @@
 /**
  * @file apps/mobile/src/screens/UnlockScreen.tsx
  * @description Ultra-Premium Zero-Knowledge Vault Unlock Screen
- * Strict Monochrome (Black & White) Aesthetic — Multi-Vault Identity & Switcher,
- * Sleek SVG Logo, Hardware-Isolated Biometrics, Smooth Keyboard Handling.
+ * Strict Monochrome (Black & White) Aesthetic — Explicit 100ms UI Thread Yield before Argon2id,
+ * Smooth Reanimated Shimmering Skeleton State, Multi-Vault Switcher, and Shake Error Feedback.
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
@@ -17,17 +17,28 @@ import {
   StatusBar,
   Modal,
   TouchableWithoutFeedback,
-  Image,
+  ActivityIndicator,
+  Keyboard,
 } from 'react-native';
+import { SafeAreaView } from '../components/SafeAreaView';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
   withSequence,
-  runOnJS,
 } from 'react-native-reanimated';
-import { Eye, EyeOff, Fingerprint, ShieldCheck, ChevronDown, Check, Plus, X, AlertCircle } from 'lucide-react-native';
+import {
+  Eye,
+  EyeOff,
+  Fingerprint,
+  ShieldCheck,
+  ChevronDown,
+  Check,
+  Plus,
+  X,
+  AlertCircle,
+} from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   useTheme,
@@ -40,17 +51,27 @@ import {
   triggerSuccessHaptic,
   triggerHaptic,
 } from '../theme/theme';
-import { mobileUnlockVault, mobileUnlockWithRecovery, clearActiveSession } from '../crypto/mobileCrypto';
-import { retrieveBiometricSlotKey, hasBiometricSlotKey, clearBiometricSlotKey } from '../crypto/keychain';
+import {
+  mobileUnlockVault,
+  mobileUnlockWithRecovery,
+  clearActiveSession,
+} from '../crypto/mobileCrypto';
+import {
+  retrieveBiometricSlotKey,
+  hasBiometricSlotKey,
+  clearBiometricSlotKey,
+} from '../crypto/keychain';
 import { getAllVaults, VaultRecord, purgeAllVaultData } from '../storage/db';
 import { ArcaBrandLogo } from '../components/ArcaBrandLogo';
+
+declare const __DEV__: boolean;
 
 interface UnlockScreenProps {
   onUnlocked: () => void;
   onGoToSetup: () => void;
 }
 
-// ─── Animated Primary Button (Monochrome + Electric Indigo) ─────────────────
+/* ── Animated Primary Button (Strict Monochrome) ── */
 function AnimatedPrimaryButton({
   onPress,
   disabled,
@@ -91,26 +112,29 @@ function AnimatedPrimaryButton({
           {
             backgroundColor: primaryColor,
             opacity: disabled ? 0.35 : 1,
-            shadowColor: primaryColor,
-            shadowOpacity: 0.35,
-            shadowRadius: 16,
-            shadowOffset: { width: 0, height: 4 },
-            elevation: 6,
           },
         ]}
       >
-        <Text style={[styles.primaryButtonText, { color: onPrimaryColor }]}>
-          {loading ? 'Unlocking...' : label}
-        </Text>
+        {loading ? (
+          <View style={styles.loadingBtnRow}>
+            <ActivityIndicator size="small" color={onPrimaryColor} />
+            <Text style={[styles.primaryButtonText, { color: onPrimaryColor }]}>
+              Unlocking...
+            </Text>
+          </View>
+        ) : (
+          <Text style={[styles.primaryButtonText, { color: onPrimaryColor }]}>
+            {label}
+          </Text>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
-// ─── Main UnlockScreen ────────────────────────────────────────────────────────
+/* ── Main UnlockScreen ── */
 export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const { colors, isDark } = useTheme();
-
   const [vaults, setVaults] = useState<VaultRecord[]>([]);
   const [activeVault, setActiveVault] = useState<VaultRecord | null>(null);
   const [showSwitchSheet, setShowSwitchSheet] = useState(false);
@@ -120,26 +144,22 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [recoveryPhrase, setRecoveryPhrase] = useState('');
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<'password' | 'recovery' | null>(null);
 
   const passwordRef = useRef<TextInput>(null);
 
-  // Load vaults and active vault
   const loadVaults = useCallback(async () => {
     try {
       const allVaults = await getAllVaults();
       setVaults(allVaults);
-
       if (allVaults.length === 0) {
         onGoToSetup();
         return;
       }
-
       const savedActiveId = await AsyncStorage.getItem('@arca_active_vault_id').catch(() => null);
       const matched = allVaults.find((v) => v.id === savedActiveId) || allVaults[0];
       setActiveVault(matched);
-
       if (matched) {
         const hasBio = await hasBiometricSlotKey(matched.id);
         setIsBioEnabledForActive(hasBio);
@@ -153,30 +173,20 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
     loadVaults();
   }, [loadVaults]);
 
-  // Handle switching active vault
   const handleSelectVault = async (vault: VaultRecord) => {
     triggerLightHaptic();
     setActiveVault(vault);
-    await AsyncStorage.setItem('@arca_active_vault_id', vault.id).catch(() => {});
+    await AsyncStorage.setItem('@arca_active_vault_id', vault.id).catch(() => { });
     const hasBio = await hasBiometricSlotKey(vault.id);
     setIsBioEnabledForActive(hasBio);
     setPassword('');
     setRecoveryPhrase('');
+    setErrorMessage(null);
     setShowSwitchSheet(false);
   };
 
-  // Fluid unlock exit transition
-  const opacity = useSharedValue(1);
-  const scale = useSharedValue(1);
-  const translateY = useSharedValue(0);
   const shakeOffset = useSharedValue(0);
-
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const animatedContainerStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ scale: scale.value }, { translateY: translateY.value }],
-  }));
 
   const shakeAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: shakeOffset.value }],
@@ -185,28 +195,28 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const triggerShakeAnimation = useCallback(() => {
     triggerHaptic('notificationError');
     shakeOffset.value = withSequence(
-      withTiming(-12, { duration: 50 }),
-      withTiming(12, { duration: 50 }),
-      withTiming(-9, { duration: 50 }),
-      withTiming(9, { duration: 50 }),
-      withTiming(-5, { duration: 50 }),
-      withTiming(5, { duration: 50 }),
-      withTiming(0, { duration: 50 })
+      withTiming(-12, { duration: 45 }),
+      withTiming(12, { duration: 45 }),
+      withTiming(-9, { duration: 45 }),
+      withTiming(9, { duration: 45 }),
+      withTiming(-5, { duration: 45 }),
+      withTiming(5, { duration: 45 }),
+      withTiming(0, { duration: 45 })
     );
   }, [shakeOffset]);
 
-  const triggerSpringUnlockTransition = useCallback(() => {
-    triggerSuccessHaptic();
-    opacity.value = withTiming(0, { duration: 180 });
-    scale.value = withSpring(1.03, { damping: 18, stiffness: 220 });
-    translateY.value = withSpring(-12, { damping: 18, stiffness: 220 }, () => {
-      runOnJS(onUnlocked)();
-    });
-  }, [opacity, scale, translateY, onUnlocked]);
-
+  /**
+   * 1. Yield to UI Thread (Crucial):
+   * Sets `isLoading(true)` FIRST, waits 100ms for the UI thread to paint the Reanimated
+   * shimmering skeleton screen, and ONLY THEN runs Argon2id KDF derivation.
+   * Navigates immediately to `VaultScreen` once the DEK is derived in RAM so item bodies
+   * are decrypted lazily after navigation.
+   */
   const handleUnlock = async () => {
+    if (isLoading) return;
     triggerLightHaptic();
     setErrorMessage(null);
+
     if (!isRecoveryMode && !password) {
       triggerShakeAnimation();
       setErrorMessage('Please enter your Master Password.');
@@ -218,30 +228,70 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
       return;
     }
 
-    setLoading(true);
-    // Yield execution to JS event loop so the UI updates to loading state immediately
-    setTimeout(async () => {
-      try {
-        if (isRecoveryMode) {
-          await mobileUnlockWithRecovery(recoveryPhrase.trim(), activeVault?.id);
-        } else {
-          await mobileUnlockVault(password, activeVault?.id);
-        }
-        triggerSpringUnlockTransition();
-      } catch (err: any) {
-        setLoading(false);
-        triggerShakeAnimation();
-        setErrorMessage('Incorrect Master Password');
-        setTimeout(() => setErrorMessage(null), 3000);
+    Keyboard.dismiss();
+    setIsLoading(true);
+
+    // Yield a frame so UI thread can paint the shimmering skeleton screen immediately
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    try {
+      if (isRecoveryMode) {
+        await mobileUnlockWithRecovery(recoveryPhrase.trim(), activeVault?.id);
+      } else {
+        await mobileUnlockVault(password, activeVault?.id);
       }
-    }, 40);
+      triggerSuccessHaptic();
+      // Navigate immediately to VaultScreen; item decryption happens lazily after transition
+      onUnlocked();
+    } catch {
+      setIsLoading(false);
+      triggerShakeAnimation();
+      setErrorMessage('Incorrect Master Password');
+      setTimeout(() => setErrorMessage(null), 3000);
+    }
+  };
+
+  const handleBiometricUnlock = async () => {
+    if (isLoading) return;
+    triggerLightHaptic();
+    setErrorMessage(null);
+    const vaultId = activeVault?.id || 'default_vault';
+    const vaultName = activeVault?.name || 'Personal Vault';
+
+    try {
+      const storedKey = await retrieveBiometricSlotKey(`Unlock "${vaultName}"`, vaultId);
+      if (storedKey) {
+        Keyboard.dismiss();
+        setIsLoading(true);
+        // Allow UI thread a frame to paint the shimmering skeleton screen
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        try {
+          await mobileUnlockVault(storedKey, vaultId);
+          triggerSuccessHaptic();
+          onUnlocked();
+        } catch {
+          setIsLoading(false);
+          triggerShakeAnimation();
+          setErrorMessage('Biometric key invalid or expired.');
+        }
+      } else {
+        triggerShakeAnimation();
+        setErrorMessage(`Biometric not enrolled for "${vaultName}". Unlock with password first.`);
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      triggerShakeAnimation();
+      setErrorMessage(err?.message || 'Biometric authentication failed.');
+    }
   };
 
   const handleResetVault = () => {
     triggerLightHaptic();
     Alert.alert(
       'Reset Vault?',
-      `This will permanently erase all local encrypted data for "${activeVault?.name || 'this vault'}" from this device. You will need your 24-word recovery phrase to restore your data.`,
+      `This will permanently erase all local encrypted data for "${activeVault?.name || 'this vault'
+      }" from this device. You can restore later via your 24-word recovery phrase.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -261,75 +311,48 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
     );
   };
 
-  const handleBiometricUnlock = async () => {
-    triggerLightHaptic();
-    setErrorMessage(null);
-    const vaultId = activeVault?.id || 'default_vault';
-    const vaultName = activeVault?.name || 'Personal Vault';
-    try {
-      const storedKey = await retrieveBiometricSlotKey(`Unlock "${vaultName}"`, vaultId);
-      if (storedKey) {
-        setLoading(true);
-        setTimeout(async () => {
-          try {
-            await mobileUnlockVault(storedKey, vaultId);
-            triggerSpringUnlockTransition();
-          } catch (err: any) {
-            setLoading(false);
-            triggerShakeAnimation();
-            setErrorMessage('Biometric key invalid or expired.');
-          }
-        }, 40);
-      } else {
-        triggerShakeAnimation();
-        setErrorMessage(`Biometric not enrolled for "${vaultName}". Unlock with password first.`);
-      }
-    } catch (err: any) {
-      setLoading(false);
-      triggerShakeAnimation();
-      setErrorMessage(err?.message || 'Biometric authentication failed.');
-    }
-  };
-
-  // Input shell focus styling
   const inputShellStyle = (field: 'password' | 'recovery') => {
     const focused = focusedField === field;
     return {
-      backgroundColor: colors.inputBackground,
-      borderColor: focused ? colors.primary : 'transparent',
-      shadowColor: focused ? (isDark ? '#ffffff' : '#000000') : 'transparent',
-      shadowOpacity: focused ? 0.15 : 0,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 0 },
-      elevation: focused ? 3 : 0,
+      backgroundColor: colors.background,
+      borderColor: focused ? colors.primary : colors.border,
     };
   };
 
-  // Loading skeleton screen
-  if (loading) {
+  // Shimmering Skeleton Screen while Argon2id derives MasterKEK on the UI-yielded frame
+  if (isLoading) {
     return (
-      <View style={[styles.flex, { backgroundColor: colors.background }]}>
+      <SafeAreaView
+        edges={['top', 'bottom']}
+        style={[styles.flex, { backgroundColor: colors.background }]}
+      >
         <StatusBar
           translucent
           backgroundColor="transparent"
           barStyle={isDark ? 'light-content' : 'dark-content'}
         />
         <View style={styles.unlockingHeader}>
-          <ShieldCheck size={22} color={colors.primary} />
-          <Text style={[styles.unlockingHeaderText, { color: colors.textMuted }]}>
-            Decrypting {activeVault?.name || 'vault'} in RAM...
+          <ActivityIndicator size="small" color={colors.primary} />
+          <ShieldCheck size={20} color={colors.primary} />
+          <Text style={[styles.unlockingHeaderText, { color: colors.textHeading }]}>
+            Securing your session...
           </Text>
         </View>
+        {__DEV__ && (
+          <Text style={[styles.devSpeedNotice, { color: colors.textDim }]}>
+            Debug/Emulator Mode: Argon2id runs in JS. Release .aab builds run at native speed.
+          </Text>
+        )}
         <VaultSkeletonLoader />
-      </View>
+      </SafeAreaView>
     );
   }
 
-  const glassCardBg = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.85)';
-  const glassCardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-
   return (
-    <View style={[styles.flex, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.flex, { backgroundColor: colors.background }]}
+    >
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -342,264 +365,265 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
         keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={animatedContainerStyle}>
-          {/* ── Header ── */}
-          <View style={styles.header}>
-            {/* Original Arca Logo with Monochrome Theme */}
-            <ArcaBrandLogo isDark={isDark} size={80} />
+        {/* ── Header ── */}
+        <View style={styles.header}>
+          <ArcaBrandLogo isDark={isDark} size={80} />
 
-            {/* Badge (Strict Monochrome, No Emoji) */}
-            <View
-              style={[
-                styles.badge,
-                {
-                  backgroundColor: colors.primaryGlow,
-                  borderColor: colors.primaryBorderGlow,
-                },
-              ]}
-            >
-              <Text style={[styles.badgeText, { color: colors.primary }]}>
-                {isRecoveryMode ? 'Account Recovery' : 'Zero-Knowledge Vault'}
-              </Text>
-            </View>
-
-            <Text style={[styles.title, { color: colors.textHeading }]}>
-              {isRecoveryMode ? 'Account Recovery' : 'Unlock Vault'}
-            </Text>
-
-            {/* Multi-Vault Identity Pill with Circular Avatar & Switch Vault Dropdown */}
-            <View
-              style={[
-                styles.vaultIdentityCard,
-                {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f4f4f5',
-                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                },
-              ]}
-            >
-              <View style={styles.vaultIdentityLeft}>
-                {/* Circular Avatar */}
-                <View
-                  style={[
-                    styles.vaultAvatar,
-                    {
-                      backgroundColor: isDark ? '#ffffff' : '#000000',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.vaultAvatarText,
-                      { color: isDark ? '#000000' : '#ffffff' },
-                    ]}
-                  >
-                    {(activeVault?.name || 'P').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-
-                {/* Vault Name Label */}
-                <View style={styles.vaultTextGroup}>
-                  <Text style={[styles.vaultUnlockingLabel, { color: colors.textDim }]}>
-                    Unlocking
-                  </Text>
-                  <View style={styles.vaultNameRow}>
-                    <Text
-                      style={[styles.vaultNameText, { color: colors.textHeading }]}
-                      numberOfLines={1}
-                    >
-                      {activeVault?.name || 'Personal Vault'}
-                    </Text>
-                    {isBioEnabledForActive && (
-                      <Fingerprint
-                        size={15}
-                        color={colors.textMuted}
-                        style={{ marginLeft: 6 }}
-                      />
-                    )}
-                  </View>
-                </View>
-              </View>
-
-              {/* Switch Vault Action Pill */}
-              <TouchableOpacity
-                style={[
-                  styles.switchVaultButton,
-                  {
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#ffffff',
-                    borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-                  },
-                ]}
-                onPress={() => {
-                  triggerLightHaptic();
-                  setShowSwitchSheet(true);
-                }}
-                hitSlop={HIT_SLOP}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.switchVaultButtonText, { color: colors.text }]}>
-                  {vaults.length > 1 ? 'Switch' : 'Vaults'}
-                </Text>
-                <ChevronDown size={14} color={colors.textMuted} style={{ marginLeft: 4 }} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-              {isRecoveryMode
-                ? 'Enter your 24-word recovery phrase to restore access.'
-                : 'Enter your Master Password to decrypt your zero-knowledge vault.'}
-            </Text>
-          </View>
-
-          {/* ── Glass Card ── */}
           <View
             style={[
-              styles.glassCard,
-              { backgroundColor: glassCardBg, borderColor: glassCardBorder },
+              styles.badge,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
             ]}
           >
-            {isRecoveryMode ? (
+            <Text style={[styles.badgeText, { color: colors.text }]}>
+              {isRecoveryMode ? 'Account Recovery' : 'Zero-Knowledge Vault'}
+            </Text>
+          </View>
+
+          <Text style={[styles.title, { color: colors.textHeading }]}>
+            {isRecoveryMode ? 'Account Recovery' : 'Unlock Vault'}
+          </Text>
+
+          {/* Multi-Vault Identity Pill */}
+          <View
+            style={[
+              styles.vaultIdentityCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View style={styles.vaultIdentityLeft}>
               <View
                 style={[
-                  styles.inputShell,
-                  styles.multilineShell,
-                  inputShellStyle('recovery'),
+                  styles.vaultAvatar,
+                  { backgroundColor: colors.primary },
                 ]}
               >
-                <TextInput
-                  style={[styles.inputText, styles.multilineInput, { color: colors.text }]}
-                  placeholder="Enter your 24-word recovery phrase..."
-                  placeholderTextColor={colors.textDim}
-                  value={recoveryPhrase}
-                  onChangeText={setRecoveryPhrase}
-                  multiline
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  onFocus={() => setFocusedField('recovery')}
-                  onBlur={() => setFocusedField(null)}
-                  textAlignVertical="top"
-                />
-              </View>
-            ) : (
-              <View style={[styles.inputShell, inputShellStyle('password')]}>
-                <TextInput
-                  ref={passwordRef}
-                  style={[styles.inputText, { color: colors.text }]}
-                  placeholder={`Password for ${activeVault?.name || 'Vault'}`}
-                  placeholderTextColor={colors.textDim}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  autoComplete="password"
-                  returnKeyType="go"
-                  onSubmitEditing={handleUnlock}
-                  blurOnSubmit={false}
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
-                />
-                <TouchableOpacity
-                  style={styles.iconBtn}
-                  hitSlop={HIT_SLOP}
-                  onPress={() => {
-                    triggerLightHaptic();
-                    setShowPassword((v) => !v);
-                  }}
-                  activeOpacity={0.7}
+                <Text
+                  style={[
+                    styles.vaultAvatarText,
+                    { color: colors.onPrimary },
+                  ]}
                 >
-                  {showPassword ? (
-                    <EyeOff size={18} color={colors.textDim} />
-                  ) : (
-                    <Eye size={18} color={colors.textDim} />
-                  )}
-                </TouchableOpacity>
+                  {(activeVault?.name || 'P').charAt(0).toUpperCase()}
+                </Text>
               </View>
-            )}
 
-            {/* Primary CTA (Electric Indigo) */}
-            <AnimatedPrimaryButton
-              onPress={handleUnlock}
-              disabled={false}
-              label={isRecoveryMode ? 'Restore Vault' : 'Unlock Vault'}
-              primaryColor={colors.primary}
-              onPrimaryColor={colors.onPrimary}
-              loading={loading}
-            />
-
-            {/* Error Message Toast / Shake */}
-            {errorMessage && (
-              <Animated.View style={[styles.errorToast, shakeAnimatedStyle]}>
-                <AlertCircle size={15} color={colors.danger} />
-                <Text style={[styles.errorToastText, { color: colors.danger }]}>
-                  {errorMessage}
+              <View style={styles.vaultTextGroup}>
+                <Text style={[styles.vaultUnlockingLabel, { color: colors.textDim }]}>
+                  Unlocking
                 </Text>
-              </Animated.View>
-            )}
+                <View style={styles.vaultNameRow}>
+                  <Text
+                    style={[styles.vaultNameText, { color: colors.textHeading }]}
+                    numberOfLines={1}
+                  >
+                    {activeVault?.name || 'Personal Vault'}
+                  </Text>
+                  {isBioEnabledForActive && (
+                    <Fingerprint
+                      size={15}
+                      color={colors.textMuted}
+                      style={{ marginLeft: 6 }}
+                    />
+                  )}
+                </View>
+              </View>
+            </View>
 
-            {/* Premium Biometrics Button */}
-            {!isRecoveryMode && (
-              <TouchableOpacity
-                style={[
-                  styles.biometricBtn,
-                  {
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#ffffff',
-                    borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
-                  },
-                ]}
-                onPress={handleBiometricUnlock}
-                activeOpacity={0.8}
-              >
-                <Fingerprint size={19} color={colors.text} />
-                <Text style={[styles.biometricBtnText, { color: colors.text }]}>
-                  {isBioEnabledForActive ? 'Use Biometrics' : 'Unlock with Biometrics'}
-                </Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={[
+                styles.switchVaultButton,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={() => {
+                triggerLightHaptic();
+                setShowSwitchSheet(true);
+              }}
+              hitSlop={HIT_SLOP}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.switchVaultButtonText, { color: colors.text }]}>
+                {vaults.length > 1 ? 'Switch' : 'Vaults'}
+              </Text>
+              <ChevronDown size={14} color={colors.textMuted} style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
           </View>
 
-          {/* ── Footer Links ── */}
-          <View style={styles.footerLinks}>
-            <TouchableOpacity
-              style={styles.linkBtn}
-              hitSlop={HIT_SLOP}
-              onPress={() => {
-                triggerLightHaptic();
-                setIsRecoveryMode((v) => !v);
-              }}
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            {isRecoveryMode
+              ? 'Enter your 24-word recovery phrase to restore access.'
+              : 'Enter your Master Password to decrypt your zero-knowledge vault.'}
+          </Text>
+        </View>
+
+        {/* ── Monochrome Card ── */}
+        <Animated.View
+          style={[
+            styles.glassCard,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            shakeAnimatedStyle,
+          ]}
+        >
+          {isRecoveryMode ? (
+            <View
+              style={[
+                styles.inputShell,
+                styles.multilineShell,
+                inputShellStyle('recovery'),
+              ]}
             >
-              <Text style={[styles.linkText, { color: colors.primary }]}>
-                {isRecoveryMode
-                  ? 'Back to Master Password'
-                  : 'Lost password? Use Recovery Phrase'}
+              <TextInput
+                style={[styles.inputText, styles.multilineInput, { color: colors.text }]}
+                placeholder="Enter your 24-word recovery phrase..."
+                placeholderTextColor={colors.textDim}
+                value={recoveryPhrase}
+                onChangeText={setRecoveryPhrase}
+                editable={!isLoading}
+                multiline
+                autoCorrect={false}
+                autoCapitalize="none"
+                onFocus={() => setFocusedField('recovery')}
+                onBlur={() => setFocusedField(null)}
+                textAlignVertical="top"
+              />
+            </View>
+          ) : (
+            <View style={[styles.inputShell, inputShellStyle('password')]}>
+              <TextInput
+                ref={passwordRef}
+                style={[styles.inputText, { color: colors.text }]}
+                placeholder={`Password for ${activeVault?.name || 'Vault'}`}
+                placeholderTextColor={colors.textDim}
+                value={password}
+                onChangeText={setPassword}
+                editable={!isLoading}
+                secureTextEntry={!showPassword}
+                autoCorrect={false}
+                autoCapitalize="none"
+                autoComplete="password"
+                returnKeyType="go"
+                onSubmitEditing={handleUnlock}
+                blurOnSubmit={false}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
+              />
+              <TouchableOpacity
+                style={styles.iconBtn}
+                hitSlop={HIT_SLOP}
+                onPress={() => {
+                  triggerLightHaptic();
+                  setShowPassword((v) => !v);
+                }}
+                activeOpacity={0.7}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} color={colors.textDim} />
+                ) : (
+                  <Eye size={18} color={colors.textDim} />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Primary CTA */}
+          <AnimatedPrimaryButton
+            onPress={handleUnlock}
+            disabled={false}
+            label={isRecoveryMode ? 'Restore Vault' : 'Unlock Vault'}
+            primaryColor={colors.primary}
+            onPrimaryColor={colors.onPrimary}
+            loading={isLoading}
+          />
+
+          {/* Error Message Toast */}
+          {errorMessage && (
+            <View style={styles.errorToast}>
+              <AlertCircle size={15} color={colors.danger} />
+              <Text style={[styles.errorToastText, { color: colors.danger }]}>
+                {errorMessage}
+              </Text>
+            </View>
+          )}
+
+          {/* Biometrics Button */}
+          {!isRecoveryMode && (
+            <TouchableOpacity
+              style={[
+                styles.biometricBtn,
+                {
+                  backgroundColor: isDark ? '#27272a' : '#f4f4f5',
+                  borderColor: isDark ? '#3f3f46' : '#e4e4e7',
+                },
+              ]}
+              onPress={handleBiometricUnlock}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <Fingerprint size={19} color={isDark ? '#ffffff' : '#000000'} />
+              <Text
+                style={[
+                  styles.biometricBtnText,
+                  { color: isDark ? '#ffffff' : '#000000' },
+                ]}
+              >
+                {isBioEnabledForActive ? 'Use Biometrics' : 'Unlock with Biometrics'}
               </Text>
             </TouchableOpacity>
+          )}
+        </Animated.View>
 
-            {!isRecoveryMode && (
-              <TouchableOpacity
-                style={styles.linkBtn}
-                hitSlop={HIT_SLOP}
-                onPress={handleResetVault}
-              >
-                <Text style={[styles.dimLinkText, { color: colors.textMuted }]}>
-                  Forgot Password? <Text style={{ color: colors.danger, fontWeight: '700' }}>Reset Vault</Text>
-                </Text>
-              </TouchableOpacity>
-            )}
+        {/* ── Footer Links ── */}
+        <View style={styles.footerLinks}>
+          <TouchableOpacity
+            style={styles.linkBtn}
+            hitSlop={HIT_SLOP}
+            onPress={() => {
+              triggerLightHaptic();
+              setIsRecoveryMode((v) => !v);
+            }}
+          >
+            <Text style={[styles.linkText, { color: colors.text }]}>
+              {isRecoveryMode
+                ? 'Back to Master Password'
+                : 'Lost password? Use Recovery Phrase'}
+            </Text>
+          </TouchableOpacity>
 
+          {!isRecoveryMode && (
             <TouchableOpacity
               style={styles.linkBtn}
               hitSlop={HIT_SLOP}
-              onPress={() => {
-                triggerLightHaptic();
-                onGoToSetup();
-              }}
+              onPress={handleResetVault}
             >
               <Text style={[styles.dimLinkText, { color: colors.textMuted }]}>
-                + Create New Vault
+                Forgot Password?{' '}
+                <Text style={{ color: colors.text, fontWeight: '700' }}>Reset Vault</Text>
               </Text>
             </TouchableOpacity>
-          </View>
-        </Animated.View>
+          )}
+
+          <TouchableOpacity
+            style={styles.linkBtn}
+            hitSlop={HIT_SLOP}
+            onPress={() => {
+              triggerLightHaptic();
+              onGoToSetup();
+            }}
+          >
+            <Text style={[styles.dimLinkText, { color: colors.textMuted }]}>
+              + Create New Vault
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* ── Switch Vault Bottom Sheet Modal ── */}
@@ -621,14 +645,12 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
                   },
                 ]}
               >
-                {/* Drag Handle Bar */}
                 <View style={styles.sheetHandleArea}>
                   <View
                     style={[styles.sheetHandle, { backgroundColor: colors.borderSubtle }]}
                   />
                 </View>
 
-                {/* Modal Title Row */}
                 <View style={styles.sheetHeader}>
                   <View>
                     <Text style={[styles.sheetTitle, { color: colors.textHeading }]}>
@@ -647,7 +669,6 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
                   </TouchableOpacity>
                 </View>
 
-                {/* Vaults List */}
                 <ScrollView style={styles.vaultListScroll} showsVerticalScrollIndicator={false}>
                   {vaults.map((v) => {
                     const isSelected = activeVault?.id === v.id;
@@ -657,26 +678,21 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
                         style={[
                           styles.vaultRowItem,
                           {
-                            backgroundColor: isSelected
-                              ? (isDark ? 'rgba(255,255,255,0.06)' : '#f4f4f5')
-                              : 'transparent',
-                            borderColor: isSelected
-                              ? (isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)')
-                              : 'transparent',
+                            backgroundColor: isSelected ? colors.background : 'transparent',
+                            borderColor: isSelected ? colors.borderSubtle : colors.border,
                           },
                         ]}
                         onPress={() => handleSelectVault(v)}
                         activeOpacity={0.75}
                       >
                         <View style={styles.vaultRowLeft}>
-                          {/* Circular Avatar */}
                           <View
                             style={[
                               styles.vaultAvatar,
                               {
                                 backgroundColor: isSelected
-                                  ? (isDark ? '#ffffff' : '#000000')
-                                  : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'),
+                                  ? colors.primary
+                                  : colors.surfaceSubtle,
                               },
                             ]}
                           >
@@ -684,9 +700,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
                               style={[
                                 styles.vaultAvatarText,
                                 {
-                                  color: isSelected
-                                    ? (isDark ? '#000000' : '#ffffff')
-                                    : colors.text,
+                                  color: isSelected ? colors.onPrimary : colors.text,
                                 },
                               ]}
                             >
@@ -715,10 +729,10 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
                           <View
                             style={[
                               styles.selectedCheckPill,
-                              { backgroundColor: isDark ? '#ffffff' : '#000000' },
+                              { backgroundColor: colors.primary },
                             ]}
                           >
-                            <Check size={14} color={isDark ? '#000000' : '#ffffff'} />
+                            <Check size={14} color={colors.onPrimary} />
                           </View>
                         )}
                       </TouchableOpacity>
@@ -726,13 +740,12 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
                   })}
                 </ScrollView>
 
-                {/* Create New Vault Button inside Sheet */}
                 <TouchableOpacity
                   style={[
                     styles.sheetCreateBtn,
                     {
                       borderColor: colors.border,
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#f4f4f5',
+                      backgroundColor: colors.background,
                     },
                   ]}
                   onPress={() => {
@@ -752,47 +765,40 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxl,
+    paddingBottom: spacing.xxl,
   },
-
   unlockingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xs,
   },
   unlockingHeaderText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: -0.2,
     fontFamily: 'Inter',
   },
-
-  header: { alignItems: 'center', marginBottom: spacing.lg },
-  logoContainer: {
-    width: 84,
-    height: 84,
-    alignItems: 'center',
-    justifyContent: 'center',
+  devSpeedNotice: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    textAlign: 'center',
+    paddingHorizontal: spacing.xl,
     marginBottom: spacing.xs,
   },
-  logoImage: {
-    width: 80,
-    height: 80,
-  },
+  header: { alignItems: 'center', marginBottom: spacing.lg },
   badge: {
     borderWidth: 1,
     borderRadius: radii.pill,
@@ -810,8 +816,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
-
-  // Vault Identity Pill
   vaultIdentityCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -875,7 +879,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-
   subtitle: {
     fontFamily: 'Inter',
     fontSize: 13,
@@ -883,7 +886,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     lineHeight: 19,
   },
-
   glassCard: {
     width: '100%',
     borderRadius: 24,
@@ -891,12 +893,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     borderWidth: 1,
   },
-
   inputShell: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: radii.lg,
-    borderWidth: 1.5,
+    borderWidth: 1,
     minHeight: 52,
     overflow: 'hidden',
   },
@@ -921,7 +922,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   primaryButton: {
     borderRadius: radii.pill,
     minHeight: 52,
@@ -930,19 +930,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  loadingBtnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   primaryButtonText: {
     fontFamily: 'Inter',
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
-
   biometricBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderRadius: radii.pill,
     minHeight: 52,
     marginTop: spacing.md,
@@ -953,7 +957,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.2,
   },
-
   errorToast: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -973,21 +976,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.2,
   },
-
   footerLinks: { alignItems: 'center', gap: spacing.xs },
   linkBtn: {
     minHeight: layout.minTouchTarget,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   linkText: { fontFamily: 'Inter', fontSize: 14, fontWeight: '600' },
   dimLinkText: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600' },
-
-  // Modal Bottom Sheet
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(0,0,0,0.75)',
     justifyContent: 'flex-end',
   },
   modalSheet: {

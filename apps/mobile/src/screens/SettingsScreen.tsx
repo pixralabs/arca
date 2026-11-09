@@ -2,7 +2,7 @@
  * @file apps/mobile/src/screens/SettingsScreen.tsx
  * @description Arca Mobile — Opt-In Cloud Sync Toggle (Default 100% Local SQLite),
  * New Device Approval Prompt (`NEW_DEVICE_ATTEMPT`), Active Device Revocation, and Purge Vault
- * with Monochrome + Electric Indigo (`#6366f1`) & Soft Red (`#ef4444`) Palette, 24px Curvy Cards,
+ * with Strict Monochrome (Pure Black & White) & Soft Red (`#ef4444`) Danger Palette, 24px Curvy Cards,
  * Pill Buttons (minHeight 52), >=48x48 Touch Targets, and Tactile Haptics.
  */
 
@@ -19,6 +19,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { SafeAreaView } from '../components/SafeAreaView';
 import { Smartphone, Sun, Moon, AlertTriangle, X } from 'lucide-react-native';
 import {
   useTheme,
@@ -162,7 +163,10 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
   };
 
   return (
-    <AnimatedScreen style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <ScrollView
         style={styles.container}
         contentContainerStyle={{ paddingBottom: spacing.xxl }}
@@ -569,7 +573,7 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </AnimatedScreen>
+    </SafeAreaView>
   );
 }
 

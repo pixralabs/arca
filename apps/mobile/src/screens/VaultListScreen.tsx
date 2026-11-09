@@ -18,6 +18,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from '../components/SafeAreaView';
 import {
   useTheme,
   spacing,
@@ -33,7 +34,7 @@ import {
   calculateVaultSecurityScore,
   generatePassword,
 } from '@vaultguard/crypto';
-import { mobileSaveItem } from '../crypto/mobileCrypto';
+import { mobileSaveItem, mobileDecryptItemOnDemand } from '../crypto/mobileCrypto';
 
 export type VaultCategoryFilter = 'all' | 'totp' | 'security' | 'deleted';
 
@@ -44,6 +45,7 @@ export interface MobileVaultItem extends VaultItemPlaintext {
   customFields?: Array<{ name: string; value: string }>;
   deletedAt?: number | null;
   updatedAt?: number;
+  isDecrypted?: boolean;
 }
 
 export interface SecurityAuditFinding {
@@ -130,10 +132,14 @@ export function VaultListScreen({
 
   const meta = categoryMetadata[category];
 
-  // In-RAM Security Health Audit
-  const securityScoreResult = useMemo(
-    () => calculateVaultSecurityScore(items),
+  // In-RAM Security Health Audit on decrypted items
+  const decryptedItems = useMemo(
+    () => items.filter((item: MobileVaultItem) => item.isDecrypted !== false && Boolean(item.password)),
     [items]
+  );
+  const securityScoreResult = useMemo(
+    () => calculateVaultSecurityScore(decryptedItems),
+    [decryptedItems]
   );
   const securityFindingsMap = securityScoreResult.findings;
 
@@ -142,11 +148,18 @@ export function VaultListScreen({
     triggerLightHaptic();
     setUpdatingItemId(item.id);
     try {
+      let fullItem = item;
+      if (!item.isDecrypted) {
+        try {
+          fullItem = (await mobileDecryptItemOnDemand(item.id)) as MobileVaultItem;
+        } catch {}
+      }
       const strongPassword = await generatePassword({ length: 20 });
       const updated: MobileVaultItem = {
-        ...item,
+        ...fullItem,
         password: strongPassword,
         updatedAt: Date.now(),
+        isDecrypted: true,
       };
       await mobileSaveItem(updated);
       triggerSuccessHaptic();
@@ -164,11 +177,22 @@ export function VaultListScreen({
     }
   };
 
-  const handleCopyPassword = (item: MobileVaultItem) => {
+  const handleCopyPassword = async (item: MobileVaultItem) => {
     triggerLightHaptic();
-    if (item.password) {
-      Clipboard.setString(item.password);
-      Alert.alert('Copied', `Password for "${item.title}" copied to clipboard.`);
+    try {
+      let fullItem = item;
+      if (!item.isDecrypted || !item.password) {
+        fullItem = (await mobileDecryptItemOnDemand(item.id)) as MobileVaultItem;
+      }
+      if (fullItem.password) {
+        Clipboard.setString(fullItem.password);
+        triggerSuccessHaptic();
+        Alert.alert('Copied', `Password for "${fullItem.title}" copied to clipboard.`);
+      } else {
+        Alert.alert('Notice', 'No password set for this item.');
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to decrypt password.');
     }
   };
 
@@ -202,7 +226,10 @@ export function VaultListScreen({
   }, [items, category, searchQuery, securityFindingsMap]);
 
   return (
-    <AnimatedScreen style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -388,37 +415,39 @@ export function VaultListScreen({
                 <TouchableOpacity
                   style={styles.itemRow}
                   activeOpacity={0.78}
-                  onPress={() => {
+                  onPress={async () => {
                     triggerLightHaptic();
+                    let fullItem = item;
+                    if (!item.isDecrypted) {
+                      try {
+                        fullItem = (await mobileDecryptItemOnDemand(item.id)) as MobileVaultItem;
+                      } catch {}
+                    }
                     if (hasTotp && !isDeleted) {
-                      onSelectTotp(item);
+                      onSelectTotp(fullItem);
                     } else {
                       const detailMsg = [
-                        `Username: ${item.username || 'None'}`,
+                        `Username: ${fullItem.username || 'None'}`,
                         securityReasons
                           ? `Security Issue:\n• ${securityReasons.join('\n• ')}`
                           : null,
-                        isDeleted && item.deletedAt
-                          ? `Deleted: ${new Date(item.deletedAt).toLocaleDateString()}`
+                        isDeleted && fullItem.deletedAt
+                          ? `Deleted: ${new Date(fullItem.deletedAt).toLocaleDateString()}`
                           : null,
                       ]
                         .filter(Boolean)
                         .join('\n\n');
 
-                      Alert.alert(item.title, detailMsg, [
-                        ...(item.password
-                          ? [
-                            {
-                              text: 'Copy Password',
-                              onPress: () => handleCopyPassword(item),
-                            },
-                          ]
-                          : []),
+                      Alert.alert(fullItem.title, detailMsg, [
+                        {
+                          text: 'Copy Password',
+                          onPress: () => void handleCopyPassword(fullItem),
+                        },
                         ...(category === 'security'
                           ? [
                             {
                               text: 'Replace with Arca Generator',
-                              onPress: () => void handleReplaceWithArcaGenerator(item),
+                              onPress: () => void handleReplaceWithArcaGenerator(fullItem),
                             },
                           ]
                           : []),
@@ -428,7 +457,7 @@ export function VaultListScreen({
                               text: 'Restore',
                               onPress: () => {
                                 triggerLightHaptic();
-                                onRestoreItem(item.id);
+                                onRestoreItem(fullItem.id);
                               },
                             },
                           ]
@@ -440,7 +469,7 @@ export function VaultListScreen({
                               style: 'destructive' as const,
                               onPress: () => {
                                 triggerLightHaptic();
-                                onSoftDeleteItem(item.id);
+                                onSoftDeleteItem(fullItem.id);
                               },
                             },
                           ]
@@ -584,7 +613,7 @@ export function VaultListScreen({
           }
         />
       </KeyboardAvoidingView>
-    </AnimatedScreen>
+    </SafeAreaView>
   );
 }
 

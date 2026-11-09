@@ -1,7 +1,7 @@
 /**
  * @file apps/mobile/src/screens/VaultScreen.tsx
  * @description Arca Mobile — "Apple/Stripe Level" Categorized 2-Column Vault Grid Screen
- * with Monochrome + Electric Indigo (`#6366f1`) Palette, 24px Curvy Cards, Pill Buttons (minHeight 52),
+ * with Strict Monochrome (Pure Black & White) Palette, 24px Curvy Cards, Pill Buttons (minHeight 52),
  * Reanimated Drag-to-Dismiss Bottom Sheets (`Add Item` & `CSV Import`), Keyboard-Aware Scroll Forms,
  * Shimmering Skeleton Loaders while Unlocking/Decrypting, >=48x48 Touch Targets, and Haptic Feedback.
  */
@@ -18,6 +18,7 @@ import {
   Alert,
   Clipboard,
 } from 'react-native';
+import { SafeAreaView } from '../components/SafeAreaView';
 import {
   useTheme,
   spacing,
@@ -30,7 +31,9 @@ import {
   triggerSuccessHaptic,
 } from '../theme/theme';
 import {
-  mobileGetDecryptedItems,
+  mobileGetVaultMetadataItems,
+  mobileDecryptItemOnDemand,
+  mobileStartBackgroundDecryption,
   mobileSaveItem,
   clearActiveSession,
   getActiveSession,
@@ -103,13 +106,13 @@ export function VaultScreen({
   const [isImporting, setIsImporting] = useState(false);
 
   const loadItems = async () => {
-    setLoading(true);
     try {
-      const list = (await mobileGetDecryptedItems()) as MobileVaultItem[];
+      // 1. Instant metadata query (< 5ms) — renders VaultScreen immediately!
+      const metaItems = (await mobileGetVaultMetadataItems(true)) as MobileVaultItem[];
       const active: MobileVaultItem[] = [];
       const tombstoned: MobileVaultItem[] = [];
 
-      for (const entry of list) {
+      for (const entry of metaItems) {
         if (entry.deletedAt !== null && entry.deletedAt !== undefined) {
           tombstoned.push(entry);
         } else {
@@ -120,9 +123,17 @@ export function VaultScreen({
       if (tombstoned.length > 0) {
         setDeletedItems(tombstoned);
       }
+      // Turn off loading immediately! Zero delay.
+      setLoading(false);
+
+      // 2. Start progressive non-blocking background decryption for security score and search
+      void mobileStartBackgroundDecryption((decrypted) => {
+        setItems((prev) =>
+          prev.map((it) => (it.id === decrypted.id ? ({ ...it, ...decrypted } as MobileVaultItem) : it))
+        );
+      });
     } catch {
       Alert.alert('Error', 'Failed to read vault items.');
-    } finally {
       setLoading(false);
     }
   };
@@ -136,10 +147,15 @@ export function VaultScreen({
     [items, deletedItems]
   );
 
-  // In-RAM Precision Security Audit (< 12 chars, complexity, or reused passwords)
-  const securityAudit = useMemo(
-    () => calculateVaultSecurityScore(items),
+  // In-RAM Precision Security Audit on decrypted items
+  const decryptedItems = useMemo(
+    () => items.filter((item: MobileVaultItem) => item.isDecrypted !== false && Boolean(item.password)),
     [items]
+  );
+
+  const securityAudit = useMemo(
+    () => calculateVaultSecurityScore(decryptedItems),
+    [decryptedItems]
   );
   const securityFindingsMap = securityAudit.findings;
 
@@ -265,6 +281,7 @@ export function VaultScreen({
         customFields: [],
         updatedAt: Date.now(),
         deletedAt: null,
+        isDecrypted: true,
       };
       await mobileSaveItem(created);
       triggerSuccessHaptic();
@@ -405,7 +422,10 @@ export function VaultScreen({
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Top Bar with Quick Action Pills & Circular More Menu */}
       <View style={styles.topUtilityBar}>
         <View style={styles.quickActionGroup}>
@@ -1130,7 +1150,7 @@ export function VaultScreen({
           </TouchableOpacity>
         </ScrollView>
       </DraggableBottomSheet>
-    </View>
+    </SafeAreaView>
   );
 }
 

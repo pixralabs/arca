@@ -18,6 +18,7 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from '../components/SafeAreaView';
 import {
   useTheme,
   spacing,
@@ -76,7 +77,10 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
   };
 
   return (
-    <AnimatedScreen style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -228,7 +232,7 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </AnimatedScreen>
+    </SafeAreaView>
   );
 }
 

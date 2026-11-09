@@ -1,10 +1,10 @@
 /**
- * @file apps/mobile/src/theme/theme.ts
- * @description Master UI/UX Design System — "Monochrome Ultra-Premium" (Vercel/Apple style).
+ * @file apps/mobile/src/theme/theme.tsx
+ * @description Master UI/UX Design System — "Pure Monochrome Ultra-Premium" (Apple/Vercel/Luxury Banking style).
+ * Strictly Black, White, and Zinc shades (#09090b, #18181b, #27272a, #ffffff).
  * Supports Dark & Light modes via `useColorScheme()`, Inter typography with tight tracking (-0.5),
  * pill-shaped buttons (radius 9999, minHeight 52), curvy 24px cards, >=48x48px touch targets,
  * tactile haptics (`react-native-haptic-feedback`), and 60fps `react-native-reanimated` primitives.
- * Primary accent: Pure White (#ffffff) in Dark, Pure Black (#000000) in Light — strictly monochrome.
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -17,9 +17,12 @@ import {
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
   ViewStyle,
   StyleProp,
 } from 'react-native';
+import { SafeAreaView } from '../components/SafeAreaView';
+export { SafeAreaView };
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -37,36 +40,36 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 
 export interface ThemeColors {
   // Core Surfaces
-  background: string;        // Zinc-950 (#09090b) in Dark, Zinc-50 (#fafafa) in Light
-  surface: string;           // Zinc-900 (#18181b) in Dark, #ffffff in Light
+  background: string;        // #09090b in Dark, #ffffff in Light
+  surface: string;           // #18181b in Dark, #f4f4f5 in Light
   card: string;              // Alias for surface
-  surfaceElevated: string;   // Elevated sheet / floating bar surface
-  surfaceSubtle: string;     // Soft grey input & secondary pill background
-  inputBackground: string;   // Input fill — #18181b dark / #f4f4f5 light
-  border: string;            // Subtle structural hairline
+  surfaceElevated: string;   // Elevated sheet / modal surface
+  surfaceSubtle: string;     // Subtle pill / secondary fill
+  inputBackground: string;   // Input fill
+  border: string;            // 1px structural glass border (#27272a dark / #e4e4e7 light)
   borderSubtle: string;      // Muted divider
 
-  // Primary Brand Accent: Electric Indigo (#6366f1) — Apple/Stripe level premium security
-  primary: string;           // #6366f1 (Electric Indigo)
-  primaryHover: string;      // #4f46e5 (Indigo-600)
-  primaryGlow: string;       // Subtle indigo glow tint for focused inputs & badges
-  primaryBorderGlow: string; // Focus ring border
-  onPrimary: string;         // Text/icon on primary button — Pure White (#ffffff)
+  // Primary Brand Accent: Strictly Monochrome (Pure White in Dark, Pure Black in Light)
+  primary: string;           // #ffffff in Dark, #000000 in Light
+  primaryHover: string;      // #e4e4e7 in Dark, #27272a in Light
+  primaryGlow: string;       // Subtle monochrome badge fill
+  primaryBorderGlow: string; // Subtle monochrome focus ring
+  onPrimary: string;         // #000000 in Dark, #ffffff in Light
 
   // Typography
-  text: string;              // Zinc-50 (#fafafa) dark / Zinc-950 (#09090b) light
-  textHeading: string;       // Zinc-50 (#fafafa) dark / Zinc-950 (#09090b) light
-  textMuted: string;         // Zinc-400 (#a1a1aa) dark / Zinc-500 (#71717a) light
-  textDim: string;           // Zinc-500 (#71717a) dark / Zinc-400 (#a1a1aa) light
+  text: string;              // #ffffff dark / #000000 light
+  textHeading: string;       // #ffffff dark / #000000 light
+  textMuted: string;         // #a1a1aa dark / #52525b light
+  textDim: string;           // #71717a placeholders
 
   // Semantic & Status Accents
-  danger: string;            // Soft Red (#ef4444)
+  danger: string;            // Soft Red (#ef4444) for destructive actions
   dangerGlow: string;
   dangerBorder: string;
-  warning: string;           // Amber (#f59e0b)
+  warning: string;           // Monochrome light zinc for warnings
   warningGlow: string;
 
-  // Accent tokens
+  // Legacy Accent aliases (mapped strictly to Monochrome Zincs so no purple/indigo leaks)
   accentIndigo: string;
   accentIndigoGlow: string;
   accentViolet: string;
@@ -82,95 +85,94 @@ export interface ThemeColors {
 }
 
 export const darkColors: ThemeColors = {
-  background: '#09090b',      // Zinc-950
-  surface: '#18181b',         // Zinc-900
+  background: '#09090b',      // Zinc-950 Deep Charcoal / Black
+  surface: '#18181b',         // Zinc-900 Dark Charcoal Card Surface
   card: '#18181b',            // Zinc-900
   surfaceElevated: '#27272a', // Zinc-800
-  surfaceSubtle: '#27272a',   // Zinc-800 soft input fill
+  surfaceSubtle: '#27272a',   // Zinc-800
   inputBackground: '#18181b', // Zinc-900
-  border: '#27272a',          // Zinc-800 hairline
-  borderSubtle: '#3f3f46',    // Zinc-700 divider
+  border: '#27272a',          // 1px Glass Border in Dark Mode
+  borderSubtle: '#3f3f46',    // Zinc-700
 
-  primary: '#6366f1',         // Electric Indigo
-  primaryHover: '#4f46e5',    // Indigo-600
-  primaryGlow: 'rgba(99, 102, 241, 0.18)',        // Subtle Indigo glow badge
-  primaryBorderGlow: 'rgba(99, 102, 241, 0.45)',  // Indigo focus ring
-  onPrimary: '#ffffff',       // Pure White
+  primary: '#ffffff',         // Pure White Primary Accent
+  primaryHover: '#e4e4e7',    // Zinc-200
+  primaryGlow: 'rgba(255, 255, 255, 0.08)',
+  primaryBorderGlow: 'rgba(255, 255, 255, 0.28)',
+  onPrimary: '#000000',       // Pure Black text/icon on White button
 
-  text: '#fafafa',            // Zinc-50
-  textHeading: '#fafafa',     // Zinc-50
-  textMuted: '#a1a1aa',       // Zinc-400 subtitles
-  textDim: '#71717a',         // Zinc-500 placeholders
+  text: '#ffffff',            // Pure White
+  textHeading: '#ffffff',     // Pure White
+  textMuted: '#a1a1aa',       // Muted Grey (Zinc-400)
+  textDim: '#71717a',         // Dim Grey (Zinc-500)
 
   danger: '#ef4444',
-  dangerGlow: 'rgba(239, 68, 68, 0.16)',
-  dangerBorder: 'rgba(239, 68, 68, 0.42)',
-  warning: '#f59e0b',
-  warningGlow: 'rgba(245, 158, 11, 0.15)',
+  dangerGlow: 'rgba(239, 68, 68, 0.14)',
+  dangerBorder: 'rgba(239, 68, 68, 0.38)',
+  warning: '#d4d4d8',
+  warningGlow: 'rgba(212, 212, 216, 0.12)',
 
-  accentIndigo: '#6366f1',
-  accentIndigoGlow: 'rgba(99, 102, 241, 0.18)',
-  accentViolet: '#8b5cf6',
-  accentVioletGlow: 'rgba(139, 92, 246, 0.16)',
+  accentIndigo: '#ffffff',
+  accentIndigoGlow: 'rgba(255, 255, 255, 0.08)',
+  accentViolet: '#e4e4e7',
+  accentVioletGlow: 'rgba(228, 228, 231, 0.08)',
   accentZinc: '#a1a1aa',
-  accentZincGlow: 'rgba(161, 161, 170, 0.16)',
-  floatingBar: 'rgba(24, 24, 27, 0.94)',
-  backdrop: 'rgba(9, 9, 11, 0.82)',
+  accentZincGlow: 'rgba(161, 161, 170, 0.12)',
+  floatingBar: 'rgba(9, 9, 11, 0.94)',
+  backdrop: 'rgba(0, 0, 0, 0.82)',
 
   skeletonBase: '#18181b',
   skeletonHighlight: '#27272a',
 };
 
 export const lightColors: ThemeColors = {
-  background: '#fafafa',      // Zinc-50
-  surface: '#ffffff',         // Pure White
-  card: '#ffffff',            // Pure White
-  surfaceElevated: '#f4f4f5', // Zinc-100
-  surfaceSubtle: '#f4f4f5',   // Zinc-100 soft input fill
-  inputBackground: '#f4f4f5', // Zinc-100
-  border: '#e4e4e7',          // Zinc-200
+  background: '#ffffff',      // Pure White
+  surface: '#f4f4f5',         // Light Grey (Zinc-100) Card Surface
+  card: '#f4f4f5',            // Light Grey (Zinc-100)
+  surfaceElevated: '#ffffff', // Pure White elevated sheet
+  surfaceSubtle: '#e4e4e7',   // Zinc-200 subtle fill
+  inputBackground: '#f4f4f5', // Light Grey input
+  border: '#e4e4e7',          // 1px Subtle Border in Light Mode
   borderSubtle: '#d4d4d8',    // Zinc-300
 
-  primary: '#6366f1',         // Electric Indigo
-  primaryHover: '#4f46e5',    // Indigo-600
-  primaryGlow: 'rgba(99, 102, 241, 0.12)',        // Subtle Indigo glow badge
-  primaryBorderGlow: 'rgba(99, 102, 241, 0.40)',  // Indigo focus ring
-  onPrimary: '#ffffff',       // Pure White
+  primary: '#000000',         // Pure Black Primary Accent
+  primaryHover: '#27272a',    // Zinc-800
+  primaryGlow: 'rgba(0, 0, 0, 0.06)',
+  primaryBorderGlow: 'rgba(0, 0, 0, 0.22)',
+  onPrimary: '#ffffff',       // Pure White text/icon on Black button
 
-  text: '#09090b',            // Zinc-950
-  textHeading: '#09090b',     // Zinc-950
-  textMuted: '#71717a',       // Zinc-500 subtitles
-  textDim: '#a1a1aa',         // Zinc-400 placeholders
+  text: '#000000',            // Pure Black
+  textHeading: '#000000',     // Pure Black
+  textMuted: '#52525b',       // Muted Grey (Zinc-600)
+  textDim: '#71717a',         // Dim Grey (Zinc-500)
 
-  danger: '#ef4444',
-  dangerGlow: 'rgba(239, 68, 68, 0.12)',
-  dangerBorder: 'rgba(239, 68, 68, 0.32)',
-  warning: '#f59e0b',
-  warningGlow: 'rgba(245, 158, 11, 0.12)',
+  danger: '#dc2626',
+  dangerGlow: 'rgba(220, 38, 38, 0.10)',
+  dangerBorder: 'rgba(220, 38, 38, 0.28)',
+  warning: '#52525b',
+  warningGlow: 'rgba(82, 82, 91, 0.10)',
 
-  accentIndigo: '#6366f1',
-  accentIndigoGlow: 'rgba(99, 102, 241, 0.14)',
-  accentViolet: '#8b5cf6',
-  accentVioletGlow: 'rgba(139, 92, 246, 0.12)',
-  accentZinc: '#71717a',
-  accentZincGlow: 'rgba(113, 113, 122, 0.12)',
+  accentIndigo: '#000000',
+  accentIndigoGlow: 'rgba(0, 0, 0, 0.06)',
+  accentViolet: '#27272a',
+  accentVioletGlow: 'rgba(39, 39, 42, 0.06)',
+  accentZinc: '#52525b',
+  accentZincGlow: 'rgba(82, 82, 91, 0.08)',
   floatingBar: 'rgba(255, 255, 255, 0.94)',
-  backdrop: 'rgba(9, 9, 11, 0.50)',
+  backdrop: 'rgba(0, 0, 0, 0.50)',
 
-  skeletonBase: '#e4e4e7',
-  skeletonHighlight: '#f4f4f5',
+  skeletonBase: '#f4f4f5',
+  skeletonHighlight: '#e4e4e7',
 };
 
-// Default static colors export for non-hook consumers
 export const colors: ThemeColors = darkColors;
 
 export const typography = {
   fontFamily: 'Inter',
   largeTitle: {
     fontFamily: 'Inter',
-    fontSize: 34,
-    fontWeight: '800' as const,
-    letterSpacing: -0.5,
+    fontSize: 38,
+    fontWeight: '900' as const,
+    letterSpacing: -1.0,
   },
   heading1: {
     fontFamily: 'Inter',
@@ -236,20 +238,31 @@ export const radii = {
   md: 14,
   lg: 18,
   xl: 24,
-  card: 24,     // Large 24px card radius (rounded-3xl)
-  pill: 9999,   // Pill-shaped button radius (rounded-full)
+  card: 24,
+  pill: 9999,
   full: 9999,
 };
 
 export const layout = {
-  minButtonHeight: 52, // Pill buttons MUST be >= 52px tall
-  minTouchTarget: 48,  // Every interactive icon/button >= 48x48px
+  minButtonHeight: 52,
+  minTouchTarget: 48,
   hitSlop: { top: 12, bottom: 12, left: 12, right: 12 },
 };
 
 export const HIT_SLOP = layout.hitSlop;
 
-// ─── Theme Store & Persistence (AsyncStorage) ──────────────────────────────────
+/**
+ * Helper to guarantee top status bar clearance on Android & iOS
+ * even when translucent StatusBar is active.
+ */
+export function getSafeTopPadding(extra: number = 12): number {
+  if (Platform.OS === 'android') {
+    return (StatusBar.currentHeight || 28) + extra;
+  }
+  return extra;
+}
+
+/* ── Theme Store & Persistence (AsyncStorage) ── */
 export const THEME_PREFERENCE_STORAGE_KEY = '@arca_theme_preference';
 
 export interface ThemeStoreState {
@@ -274,7 +287,6 @@ export interface ThemeContextValue {
 let currentThemePreference: ThemePreference = 'system';
 const themeListeners = new Set<() => void>();
 
-// Load persisted preference once on module load
 AsyncStorage.getItem(THEME_PREFERENCE_STORAGE_KEY)
   .then((saved) => {
     if (saved === 'system' || saved === 'light' || saved === 'dark') {
@@ -282,7 +294,7 @@ AsyncStorage.getItem(THEME_PREFERENCE_STORAGE_KEY)
       themeListeners.forEach((fn) => fn());
     }
   })
-  .catch(() => {});
+  .catch(() => { });
 
 export const themeStore = {
   getState: (): ThemeStoreState => ({
@@ -291,7 +303,7 @@ export const themeStore = {
       if (currentThemePreference === pref) return;
       currentThemePreference = pref;
       themeListeners.forEach((fn) => fn());
-      AsyncStorage.setItem(THEME_PREFERENCE_STORAGE_KEY, pref).catch(() => {});
+      AsyncStorage.setItem(THEME_PREFERENCE_STORAGE_KEY, pref).catch(() => { });
     },
   }),
   subscribe: (listener: () => void) => {
@@ -302,10 +314,6 @@ export const themeStore = {
   },
 };
 
-/**
- * Zustand-compatible global hook selector for theme state:
- * e.g. const themePref = useThemeStore(s => s.themePreference);
- */
 export function useThemeStore<T>(selector: (state: ThemeStoreState) => T): T {
   const [value, setValue] = React.useState(() => selector(themeStore.getState()));
   React.useEffect(() => {
@@ -317,10 +325,6 @@ export function useThemeStore<T>(selector: (state: ThemeStoreState) => T): T {
   return value;
 }
 
-/**
- * Centralized theme hook supporting 'system' | 'light' | 'dark' preferences,
- * persisted via AsyncStorage and reacting in real-time across the app.
- */
 export function useTheme(): ThemeContextValue {
   const [themePreference, setThemePreferenceState] = React.useState<ThemePreference>(
     currentThemePreference
@@ -340,7 +344,9 @@ export function useTheme(): ThemeContextValue {
 
   const activeTheme: 'dark' | 'light' =
     themePreference === 'system'
-      ? (systemScheme === 'dark' ? 'dark' : 'light')
+      ? systemScheme === 'light'
+        ? 'light'
+        : 'dark'
       : themePreference;
 
   const isDark = activeTheme === 'dark';
@@ -371,11 +377,6 @@ export const theme = {
   hitSlop: HIT_SLOP,
 };
 
-/**
- * Tactile Haptic Feedback helper wrapping `react-native-haptic-feedback`.
- * - `impactLight` for button clicks, copying passwords, or switching tabs/screens.
- * - `notificationSuccess` when a password or vault item is saved.
- */
 export type HapticFeedbackType =
   | 'impactLight'
   | 'impactMedium'
@@ -394,7 +395,7 @@ export function triggerHaptic(type: HapticFeedbackType = 'impactLight'): void {
   try {
     ReactNativeHapticFeedback?.trigger?.(type, HAPTIC_OPTIONS);
   } catch {
-    // Graceful no-op on unsupported test runners
+    // Graceful no-op
   }
 }
 
@@ -402,8 +403,16 @@ export function triggerLightHaptic(): void {
   triggerHaptic('impactLight');
 }
 
+export function triggerMediumHaptic(): void {
+  triggerHaptic('impactMedium');
+}
+
 export function triggerSuccessHaptic(): void {
   triggerHaptic('notificationSuccess');
+}
+
+export function triggerErrorHaptic(): void {
+  triggerHaptic('notificationError');
 }
 
 export interface AnimatedScreenProps {
@@ -412,30 +421,15 @@ export interface AnimatedScreenProps {
   key?: React.Key;
 }
 
-/**
- * Smooth Spring-Based Screen Transition Wrapper (`react-native-reanimated`).
- * Animates opacity and subtle slide-in when mounted.
- */
-export function AnimatedScreen({
-  children,
-  style,
-}: AnimatedScreenProps) {
+export function AnimatedScreen({ children, style }: AnimatedScreenProps) {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(18);
   const scale = useSharedValue(0.985);
 
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 220 });
-    translateY.value = withSpring(0, {
-      damping: 20,
-      stiffness: 210,
-      mass: 0.8,
-    });
-    scale.value = withSpring(1, {
-      damping: 20,
-      stiffness: 210,
-      mass: 0.8,
-    });
+    translateY.value = withSpring(0, { damping: 20, stiffness: 210, mass: 0.8 });
+    scale.value = withSpring(1, { damping: 20, stiffness: 210, mass: 0.8 });
   }, [opacity, scale, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -457,80 +451,119 @@ export interface ShimmerSkeletonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/**
- * Shimmering Skeleton Box powered by `react-native-reanimated`.
- */
 export function ShimmerSkeleton({
   width = '100%',
   height = 20,
   borderRadius = radii.card,
   style,
 }: ShimmerSkeletonProps) {
-  const { colors: themeColors } = useTheme();
-  const pulse = useSharedValue(0.35);
+  const { isDark } = useTheme();
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(0.85, { duration: 750 }),
-        withTiming(0.35, { duration: 750 })
-      ),
+    progress.value = withRepeat(
+      withTiming(1, { duration: 1100 }),
       -1,
       true
     );
-  }, [pulse]);
+  }, [progress]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: pulse.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => {
+    const opacity = 0.35 + progress.value * 0.55;
+    return {
+      opacity,
+    };
+  });
 
   return (
-    <Animated.View
+    <View
       style={[
         {
           width: width as any,
           height,
           borderRadius,
-          backgroundColor: themeColors.skeletonHighlight,
+          backgroundColor: isDark ? '#18181b' : '#f4f4f5',
+          borderWidth: 1,
+          borderColor: isDark ? '#27272a' : '#e4e4e7',
+          overflow: 'hidden',
         },
-        animatedStyle,
         style,
       ]}
-    />
+    >
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFillObject,
+          {
+            backgroundColor: isDark ? '#27272a' : '#e4e4e7',
+          },
+          animatedStyle,
+        ]}
+      />
+    </View>
   );
 }
 
 /**
- * Full-screen Shimmering Vault Skeleton Loader displayed while the vault is unlocking or decrypting.
+ * Premium Shimmering Vault Skeleton Loader matching the exact Vault Screen layout:
+ * - Top Utility Bar: Quick Action Pills + Circular Menu
+ * - Large "Passwords" Heading + Vault Badge
+ * - Soft Grey Search Bar Pill
+ * - Security Recommendations Card (24px curvy)
+ * - 2x2 Grid of 4 Category Cards ("All", "Codes", "Security", "Deleted")
  */
 export function VaultSkeletonLoader() {
-  const { colors: themeColors } = useTheme();
+  const { isDark } = useTheme();
   return (
-    <View style={[skeletonStyles.container, { backgroundColor: themeColors.background }]}>
-      <View style={skeletonStyles.topRow}>
-        <ShimmerSkeleton width={96} height={36} borderRadius={radii.pill} />
-        <ShimmerSkeleton width={110} height={36} borderRadius={radii.pill} />
-        <ShimmerSkeleton width={48} height={48} borderRadius={radii.pill} />
+    <View
+      style={[
+        skeletonStyles.container,
+        { backgroundColor: isDark ? '#09090b' : '#ffffff' },
+      ]}
+    >
+      {/* 1. Top Utility Row: Quick Actions + More Menu */}
+      <View style={skeletonStyles.topBar}>
+        <View style={skeletonStyles.pillRow}>
+          <ShimmerSkeleton width={88} height={34} borderRadius={radii.pill} />
+          <ShimmerSkeleton
+            width={96}
+            height={34}
+            borderRadius={radii.pill}
+            style={{ marginLeft: spacing.sm }}
+          />
+        </View>
+        <ShimmerSkeleton width={38} height={38} borderRadius={radii.pill} />
       </View>
-      <ShimmerSkeleton
-        width={190}
-        height={38}
-        borderRadius={radii.md}
-        style={{ marginBottom: spacing.lg }}
-      />
+
+      {/* 2. Large "Passwords" Heading + Vault Badge */}
+      <View style={skeletonStyles.headerRow}>
+        <ShimmerSkeleton width={160} height={34} borderRadius={radii.md} />
+        <ShimmerSkeleton width={105} height={28} borderRadius={radii.pill} />
+      </View>
+
+      {/* 3. Search Bar Pill */}
       <ShimmerSkeleton
         width="100%"
-        height={84}
+        height={46}
+        borderRadius={radii.pill}
+        style={{ marginBottom: spacing.lg }}
+      />
+
+      {/* 4. Security Audit Banner Card */}
+      <ShimmerSkeleton
+        width="100%"
+        height={86}
         borderRadius={radii.card}
         style={{ marginBottom: spacing.lg }}
       />
+
+      {/* 5. 2x2 Grid matching "All", "Codes", "Security", "Deleted" */}
       <View style={skeletonStyles.gridRow}>
-        <ShimmerSkeleton width="48%" height={116} borderRadius={radii.card} />
-        <ShimmerSkeleton width="48%" height={116} borderRadius={radii.card} />
+        <ShimmerSkeleton width="48%" height={126} borderRadius={radii.card} />
+        <ShimmerSkeleton width="48%" height={126} borderRadius={radii.card} />
       </View>
       <View style={skeletonStyles.gridRow}>
-        <ShimmerSkeleton width="48%" height={116} borderRadius={radii.card} />
-        <ShimmerSkeleton width="48%" height={116} borderRadius={radii.card} />
+        <ShimmerSkeleton width="48%" height={126} borderRadius={radii.card} />
+        <ShimmerSkeleton width="48%" height={126} borderRadius={radii.card} />
       </View>
     </View>
   );
@@ -542,10 +575,6 @@ export interface DraggableBottomSheetProps {
   children?: React.ReactNode;
 }
 
-/**
- * Smooth Drag-to-Dismiss Bottom Sheet powered by `react-native-reanimated` & `PanResponder`.
- * Replaces rigid modals with a spring-animated sheet that scrolls up with the keyboard.
- */
 export function DraggableBottomSheet({
   visible,
   onClose,
@@ -559,11 +588,7 @@ export function DraggableBottomSheet({
   useEffect(() => {
     if (visible) {
       backdropOpacity.value = withTiming(1, { duration: 200 });
-      translateY.value = withSpring(0, {
-        damping: 22,
-        stiffness: 220,
-        mass: 0.85,
-      });
+      translateY.value = withSpring(0, { damping: 22, stiffness: 220, mass: 0.85 });
     } else {
       backdropOpacity.value = withTiming(0, { duration: 180 });
       translateY.value = withTiming(screenHeight, { duration: 200 });
@@ -591,10 +616,7 @@ export function DraggableBottomSheet({
         if (gestureState.dy > 110 || gestureState.vy > 0.85) {
           dismissSheet();
         } else {
-          translateY.value = withSpring(0, {
-            damping: 22,
-            stiffness: 220,
-          });
+          translateY.value = withSpring(0, { damping: 22, stiffness: 220 });
         }
       },
     })
@@ -621,7 +643,6 @@ export function DraggableBottomSheet({
           ]}
         />
       </TouchableWithoutFeedback>
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={sheetStyles.keyboardWrapper}
@@ -656,7 +677,23 @@ const skeletonStyles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.md,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  pillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
   topRow: {
     flexDirection: 'row',

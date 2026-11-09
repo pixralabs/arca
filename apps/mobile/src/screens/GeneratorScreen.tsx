@@ -14,6 +14,7 @@ import {
   Clipboard,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from '../components/SafeAreaView';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -92,7 +93,10 @@ export function GeneratorScreen({ onBack }: GeneratorScreenProps) {
   };
 
   return (
-    <AnimatedScreen style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => {
@@ -232,7 +236,7 @@ export function GeneratorScreen({ onBack }: GeneratorScreenProps) {
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </AnimatedScreen>
+    </SafeAreaView>
   );
 }
 

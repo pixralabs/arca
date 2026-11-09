@@ -15,7 +15,9 @@ import {
   ScrollView,
   Alert,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from '../components/SafeAreaView';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -41,19 +43,21 @@ interface SetupScreenProps {
   onGoToUnlock: () => void;
 }
 
-// ─── Animated Primary Button (Monochrome + Electric Indigo) ─────────────────
+// ─── Animated Primary Button (Strict Monochrome) ─────────────────────────────
 function AnimatedPrimaryButton({
   onPress,
   disabled,
   label,
   primaryColor,
   onPrimaryColor,
+  loading = false,
 }: {
   onPress: () => void;
   disabled: boolean;
   label: string;
   primaryColor: string;
   onPrimaryColor: string;
+  loading?: boolean;
 }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({
@@ -73,22 +77,24 @@ function AnimatedPrimaryButton({
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        disabled={disabled}
+        disabled={disabled || loading}
         activeOpacity={0.88}
         style={[
           styles.primaryButton,
           {
             backgroundColor: primaryColor,
             opacity: disabled ? 0.35 : 1,
-            shadowColor: primaryColor,
-            shadowOpacity: 0.35,
-            shadowRadius: 16,
-            shadowOffset: { width: 0, height: 4 },
-            elevation: 6,
           },
         ]}
       >
-        <Text style={[styles.primaryButtonText, { color: onPrimaryColor }]}>{label}</Text>
+        {loading ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <ActivityIndicator size="small" color={onPrimaryColor} />
+            <Text style={[styles.primaryButtonText, { color: onPrimaryColor }]}>{label}</Text>
+          </View>
+        ) : (
+          <Text style={[styles.primaryButtonText, { color: onPrimaryColor }]}>{label}</Text>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -109,6 +115,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
   const [mnemonicWords, setMnemonicWords] = useState<string[]>([]);
   const [mnemonicConfirmed, setMnemonicConfirmed] = useState(false);
   const [createdVaultId, setCreatedVaultId] = useState<string>('');
+  const [isEnteringVault, setIsEnteringVault] = useState(false);
 
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
@@ -134,7 +141,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
   }, []);
 
   const strength = passwordStrength(password);
-  const strengthColors = ['#ef4444', '#f97316', '#eab308', '#818cf8', '#6366f1'];
+  const strengthColors = ['#ef4444', '#f97316', '#eab308', '#a1a1aa', '#ffffff'];
   const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
 
   const handleGenerate = useCallback(() => {
@@ -178,6 +185,8 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
     }
 
     setLoading(true);
+    // Yield to the React Native event loop so the skeleton screen renders cleanly
+    await new Promise((resolve) => setTimeout(resolve, 150));
     try {
       const result = await mobileSetupVault(password, cleanName);
       triggerSuccessHaptic();
@@ -210,7 +219,10 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
   // Loading skeleton screen
   if (loading && mnemonicWords.length === 0) {
     return (
-      <View style={[styles.flex, { backgroundColor: colors.background }]}>
+      <SafeAreaView
+        edges={['top', 'bottom']}
+        style={[styles.flex, { backgroundColor: colors.background }]}
+      >
         <StatusBar
           translucent
           backgroundColor="transparent"
@@ -222,14 +234,17 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
           </Text>
         </View>
         <VaultSkeletonLoader />
-      </View>
+      </SafeAreaView>
     );
   }
 
   // Mnemonic backup screen
   if (mnemonicWords.length > 0) {
     return (
-      <View style={[styles.flex, { backgroundColor: colors.background }]}>
+      <SafeAreaView
+        edges={['top', 'bottom']}
+        style={[styles.flex, { backgroundColor: colors.background }]}
+      >
         <StatusBar
           translucent
           backgroundColor="transparent"
@@ -293,17 +308,21 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
           </TouchableOpacity>
 
           <AnimatedPrimaryButton
-            onPress={() => {
+            onPress={async () => {
+              if (isEnteringVault) return;
+              setIsEnteringVault(true);
               triggerSuccessHaptic();
+              await new Promise((resolve) => setTimeout(resolve, 150));
               onVaultCreated(createdVaultId);
             }}
-            disabled={!mnemonicConfirmed}
-            label="Enter Vault →"
+            disabled={!mnemonicConfirmed || isEnteringVault}
+            loading={isEnteringVault}
+            label={isEnteringVault ? 'Entering Vault...' : 'Enter Vault →'}
             primaryColor={colors.primary}
             onPrimaryColor={colors.onPrimary}
           />
         </ScrollView>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -312,7 +331,10 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
   const glassCardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
 
   return (
-    <View style={[styles.flex, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={['top', 'bottom']}
+      style={[styles.flex, { backgroundColor: colors.background }]}
+    >
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -352,12 +374,12 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
             style={[
               styles.badge,
               {
-                backgroundColor: colors.primaryGlow,
-                borderColor: colors.primaryBorderGlow,
+                backgroundColor: isDark ? '#18181b' : '#f4f4f5',
+                borderColor: isDark ? '#27272a' : '#e4e4e7',
               },
             ]}
           >
-            <Text style={[styles.badgeText, { color: colors.primary }]}>
+            <Text style={[styles.badgeText, { color: colors.textHeading }]}>
               Zero-Knowledge Setup
             </Text>
           </View>
@@ -423,16 +445,16 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
                   style={[
                     styles.generateBtn,
                     {
-                      backgroundColor: colors.primaryGlow,
-                      borderColor: colors.primaryBorderGlow,
+                      backgroundColor: isDark ? '#27272a' : '#f4f4f5',
+                      borderColor: isDark ? '#3f3f46' : '#e4e4e7',
                     },
                   ]}
                   onPress={handleGenerate}
                   hitSlop={HIT_SLOP}
                   activeOpacity={0.75}
                 >
-                  <Sparkles size={11} color={colors.primary} />
-                  <Text style={[styles.generateBtnText, { color: colors.primary }]}>Generate</Text>
+                  <Sparkles size={11} color={isDark ? '#ffffff' : '#000000'} />
+                  <Text style={[styles.generateBtnText, { color: isDark ? '#ffffff' : '#000000' }]}>Generate</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.iconBtn}
@@ -549,12 +571,12 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
             onGoToUnlock();
           }}
         >
-          <Text style={[styles.linkText, { color: colors.primary }]}>
+          <Text style={[styles.linkText, { color: colors.textMuted }]}>
             {existingVaults.length > 0 ? '← Back to Existing Vaults' : 'Already have a vault? Unlock'}
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

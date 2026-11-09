@@ -29,6 +29,17 @@ export interface StoredMobileItem {
   hlc: string;
   updated_at: number;
   is_deleted: number;
+  item_type?: string | null;
+}
+
+export interface VaultItemMetadata {
+  id: string;
+  vault_id?: string | null;
+  title: string;
+  username: string | null;
+  updated_at: number;
+  is_deleted: number;
+  item_type: string;
 }
 
 export function getDatabase(): DB {
@@ -84,7 +95,8 @@ export async function ensureDatabaseReady(): Promise<DB> {
           tag TEXT NOT NULL,
           hlc TEXT NOT NULL,
           updated_at INTEGER NOT NULL,
-          is_deleted INTEGER NOT NULL DEFAULT 0
+          is_deleted INTEGER NOT NULL DEFAULT 0,
+          item_type TEXT DEFAULT 'login'
         );
       `);
 
@@ -105,6 +117,9 @@ export async function ensureDatabaseReady(): Promise<DB> {
       } catch {}
       try {
         await db.execute('ALTER TABLE vault_items ADD COLUMN vault_id TEXT;');
+      } catch {}
+      try {
+        await db.execute("ALTER TABLE vault_items ADD COLUMN item_type TEXT DEFAULT 'login';");
       } catch {}
 
       // Backward compatibility: Migrate legacy single-vault into vaults table
@@ -226,8 +241,8 @@ export async function saveVaultItem(item: StoredMobileItem): Promise<void> {
   const db = await ensureDatabaseReady();
   await db.execute(
     `INSERT OR REPLACE INTO vault_items 
-     (id, vault_id, title, username, ciphertext, nonce, tag, hlc, updated_at, is_deleted)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
+     (id, vault_id, title, username, ciphertext, nonce, tag, hlc, updated_at, is_deleted, item_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
     [
       item.id,
       item.vault_id || null,
@@ -239,8 +254,60 @@ export async function saveVaultItem(item: StoredMobileItem): Promise<void> {
       item.hlc,
       item.updated_at,
       item.is_deleted,
+      item.item_type || 'login',
     ]
   );
+}
+
+/**
+ * High-performance lightweight metadata query (< 5ms).
+ * Omits heavy ciphertext and nonce columns so VaultScreen renders instantly.
+ */
+export async function getVaultItemsMetadata(
+  includeDeleted = false,
+  vaultId?: string
+): Promise<VaultItemMetadata[]> {
+  const db = await ensureDatabaseReady();
+  let query: string;
+  const params: any[] = [];
+
+  if (vaultId) {
+    query = includeDeleted
+      ? 'SELECT id, vault_id, title, username, updated_at, is_deleted, item_type FROM vault_items WHERE (vault_id = ? OR vault_id IS NULL) ORDER BY updated_at DESC;'
+      : 'SELECT id, vault_id, title, username, updated_at, is_deleted, item_type FROM vault_items WHERE (vault_id = ? OR vault_id IS NULL) AND is_deleted = 0 ORDER BY updated_at DESC;';
+    params.push(vaultId);
+  } else {
+    query = includeDeleted
+      ? 'SELECT id, vault_id, title, username, updated_at, is_deleted, item_type FROM vault_items ORDER BY updated_at DESC;'
+      : 'SELECT id, vault_id, title, username, updated_at, is_deleted, item_type FROM vault_items WHERE is_deleted = 0 ORDER BY updated_at DESC;';
+  }
+
+  const res = await db.execute(query, params);
+  const items: VaultItemMetadata[] = [];
+  if (res.rows) {
+    for (let i = 0; i < res.rows.length; i++) {
+      const row = res.rows.item(i) as any;
+      items.push({
+        id: row.id,
+        vault_id: row.vault_id,
+        title: row.title,
+        username: row.username,
+        updated_at: row.updated_at,
+        is_deleted: row.is_deleted,
+        item_type: row.item_type || 'login',
+      });
+    }
+  }
+  return items;
+}
+
+export async function getVaultItemById(id: string): Promise<StoredMobileItem | null> {
+  const db = await ensureDatabaseReady();
+  const res = await db.execute('SELECT * FROM vault_items WHERE id = ? LIMIT 1;', [id]);
+  if (res.rows && res.rows.length > 0) {
+    return res.rows.item(0) as StoredMobileItem;
+  }
+  return null;
 }
 
 export async function getAllVaultItems(
