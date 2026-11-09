@@ -41,17 +41,19 @@ interface SetupScreenProps {
   onGoToUnlock: () => void;
 }
 
-// ─── Animated Primary Button (Monochrome) ─────────────────────────────────────
+// ─── Animated Primary Button (Monochrome + Electric Indigo) ─────────────────
 function AnimatedPrimaryButton({
   onPress,
   disabled,
   label,
-  isDark,
+  primaryColor,
+  onPrimaryColor,
 }: {
   onPress: () => void;
   disabled: boolean;
   label: string;
-  isDark: boolean;
+  primaryColor: string;
+  onPrimaryColor: string;
 }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({
@@ -65,9 +67,6 @@ function AnimatedPrimaryButton({
     scale.value = withSpring(1, { damping: 15, stiffness: 300 });
   };
 
-  const btnBg = isDark ? '#ffffff' : '#000000';
-  const btnText = isDark ? '#000000' : '#ffffff';
-
   return (
     <Animated.View style={[animStyle, { marginTop: spacing.lg }]}>
       <TouchableOpacity
@@ -79,17 +78,17 @@ function AnimatedPrimaryButton({
         style={[
           styles.primaryButton,
           {
-            backgroundColor: btnBg,
+            backgroundColor: primaryColor,
             opacity: disabled ? 0.35 : 1,
-            shadowColor: isDark ? '#ffffff' : '#000000',
-            shadowOpacity: isDark ? 0.12 : 0.16,
+            shadowColor: primaryColor,
+            shadowOpacity: 0.35,
             shadowRadius: 16,
             shadowOffset: { width: 0, height: 4 },
             elevation: 6,
           },
         ]}
       >
-        <Text style={[styles.primaryButtonText, { color: btnText }]}>{label}</Text>
+        <Text style={[styles.primaryButtonText, { color: onPrimaryColor }]}>{label}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -135,7 +134,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
   }, []);
 
   const strength = passwordStrength(password);
-  const strengthColors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#10b981'];
+  const strengthColors = ['#ef4444', '#f97316', '#eab308', '#818cf8', '#6366f1'];
   const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
 
   const handleGenerate = useCallback(() => {
@@ -300,7 +299,8 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
             }}
             disabled={!mnemonicConfirmed}
             label="Enter Vault →"
-            isDark={isDark}
+            primaryColor={colors.primary}
+            onPrimaryColor={colors.onPrimary}
           />
         </ScrollView>
       </View>
@@ -522,7 +522,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
               style={[
                 styles.matchText,
                 {
-                  color: password === confirmPassword ? '#22c55e' : colors.danger,
+                  color: password === confirmPassword ? colors.primary : colors.danger,
                 },
               ]}
             >
@@ -535,7 +535,8 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
             onPress={handleSetup}
             disabled={!vaultName.trim() || !password || !confirmPassword}
             label={existingVaults.length > 0 ? `Initialize "${vaultName.trim() || 'Vault'}"` : 'Initialize Zero-Knowledge Vault'}
-            isDark={isDark}
+            primaryColor={colors.primary}
+            onPrimaryColor={colors.onPrimary}
           />
         </View>
 

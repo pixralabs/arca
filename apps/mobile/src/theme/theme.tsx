@@ -37,27 +37,27 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 
 export interface ThemeColors {
   // Core Surfaces
-  background: string;        // #000000 in Dark, #ffffff in Light
-  surface: string;           // #111111 in Dark, #ffffff in Light
+  background: string;        // Zinc-950 (#09090b) in Dark, Zinc-50 (#fafafa) in Light
+  surface: string;           // Zinc-900 (#18181b) in Dark, #ffffff in Light
   card: string;              // Alias for surface
   surfaceElevated: string;   // Elevated sheet / floating bar surface
   surfaceSubtle: string;     // Soft grey input & secondary pill background
-  inputBackground: string;   // Input fill — #1a1a1a dark / #f4f4f5 light
+  inputBackground: string;   // Input fill — #18181b dark / #f4f4f5 light
   border: string;            // Subtle structural hairline
   borderSubtle: string;      // Muted divider
 
-  // Primary Brand Accent (Monochrome: White in Dark, Black in Light)
-  primary: string;           // #ffffff dark / #000000 light
-  primaryHover: string;      // Slightly dimmed primary
-  primaryGlow: string;       // Subtle glow tint for focused inputs & badges
+  // Primary Brand Accent: Electric Indigo (#6366f1) — Apple/Stripe level premium security
+  primary: string;           // #6366f1 (Electric Indigo)
+  primaryHover: string;      // #4f46e5 (Indigo-600)
+  primaryGlow: string;       // Subtle indigo glow tint for focused inputs & badges
   primaryBorderGlow: string; // Focus ring border
-  onPrimary: string;         // Text on primary button — #000000 dark / #ffffff light
+  onPrimary: string;         // Text/icon on primary button — Pure White (#ffffff)
 
   // Typography
-  text: string;              // #ffffff dark / #000000 light
-  textHeading: string;       // Pure white / pure black
-  textMuted: string;         // #a1a1aa subtitles
-  textDim: string;           // #71717a placeholders & hints
+  text: string;              // Zinc-50 (#fafafa) dark / Zinc-950 (#09090b) light
+  textHeading: string;       // Zinc-50 (#fafafa) dark / Zinc-950 (#09090b) light
+  textMuted: string;         // Zinc-400 (#a1a1aa) dark / Zinc-500 (#71717a) light
+  textDim: string;           // Zinc-500 (#71717a) dark / Zinc-400 (#a1a1aa) light
 
   // Semantic & Status Accents
   danger: string;            // Soft Red (#ef4444)
@@ -66,7 +66,7 @@ export interface ThemeColors {
   warning: string;           // Amber (#f59e0b)
   warningGlow: string;
 
-  // Accent tokens (kept for backward compat — now zinc-based)
+  // Accent tokens
   accentIndigo: string;
   accentIndigoGlow: string;
   accentViolet: string;
@@ -82,80 +82,80 @@ export interface ThemeColors {
 }
 
 export const darkColors: ThemeColors = {
-  background: '#000000',      // Pure Black
-  surface: '#111111',         // Near-black surface
-  card: '#111111',
-  surfaceElevated: '#1a1a1a', // Slightly lifted
-  surfaceSubtle: '#1a1a1a',   // Input background
-  inputBackground: '#1a1a1a', // Dark input fill
-  border: '#222222',          // Hairline
-  borderSubtle: '#333333',    // Divider
+  background: '#09090b',      // Zinc-950
+  surface: '#18181b',         // Zinc-900
+  card: '#18181b',            // Zinc-900
+  surfaceElevated: '#27272a', // Zinc-800
+  surfaceSubtle: '#27272a',   // Zinc-800 soft input fill
+  inputBackground: '#18181b', // Zinc-900
+  border: '#27272a',          // Zinc-800 hairline
+  borderSubtle: '#3f3f46',    // Zinc-700 divider
 
-  primary: '#ffffff',         // Pure White — monochrome CTA
-  primaryHover: '#e4e4e7',    // Slightly dimmed white
-  primaryGlow: 'rgba(255, 255, 255, 0.08)',  // Subtle white glow badge
-  primaryBorderGlow: 'rgba(255, 255, 255, 0.35)', // White focus ring
-  onPrimary: '#000000',       // Black text on white button
+  primary: '#6366f1',         // Electric Indigo
+  primaryHover: '#4f46e5',    // Indigo-600
+  primaryGlow: 'rgba(99, 102, 241, 0.18)',        // Subtle Indigo glow badge
+  primaryBorderGlow: 'rgba(99, 102, 241, 0.45)',  // Indigo focus ring
+  onPrimary: '#ffffff',       // Pure White
 
-  text: '#ffffff',            // Pure White
-  textHeading: '#ffffff',     // Pure White
+  text: '#fafafa',            // Zinc-50
+  textHeading: '#fafafa',     // Zinc-50
   textMuted: '#a1a1aa',       // Zinc-400 subtitles
   textDim: '#71717a',         // Zinc-500 placeholders
 
   danger: '#ef4444',
-  dangerGlow: 'rgba(239, 68, 68, 0.14)',
-  dangerBorder: 'rgba(239, 68, 68, 0.38)',
+  dangerGlow: 'rgba(239, 68, 68, 0.16)',
+  dangerBorder: 'rgba(239, 68, 68, 0.42)',
   warning: '#f59e0b',
-  warningGlow: 'rgba(245, 158, 11, 0.14)',
+  warningGlow: 'rgba(245, 158, 11, 0.15)',
 
-  accentIndigo: '#a1a1aa',
-  accentIndigoGlow: 'rgba(161, 161, 170, 0.16)',
-  accentViolet: '#d4d4d8',
-  accentVioletGlow: 'rgba(212, 212, 216, 0.14)',
+  accentIndigo: '#6366f1',
+  accentIndigoGlow: 'rgba(99, 102, 241, 0.18)',
+  accentViolet: '#8b5cf6',
+  accentVioletGlow: 'rgba(139, 92, 246, 0.16)',
   accentZinc: '#a1a1aa',
   accentZincGlow: 'rgba(161, 161, 170, 0.16)',
-  floatingBar: 'rgba(0, 0, 0, 0.92)',
-  backdrop: 'rgba(0, 0, 0, 0.78)',
+  floatingBar: 'rgba(24, 24, 27, 0.94)',
+  backdrop: 'rgba(9, 9, 11, 0.82)',
 
-  skeletonBase: '#111111',
-  skeletonHighlight: '#1a1a1a',
+  skeletonBase: '#18181b',
+  skeletonHighlight: '#27272a',
 };
 
 export const lightColors: ThemeColors = {
-  background: '#ffffff',      // Pure White
-  surface: '#ffffff',         // White surface
-  card: '#ffffff',
+  background: '#fafafa',      // Zinc-50
+  surface: '#ffffff',         // Pure White
+  card: '#ffffff',            // Pure White
   surfaceElevated: '#f4f4f5', // Zinc-100
-  surfaceSubtle: '#f4f4f5',   // Zinc-100 input bg
-  inputBackground: '#f4f4f5', // Soft grey input
+  surfaceSubtle: '#f4f4f5',   // Zinc-100 soft input fill
+  inputBackground: '#f4f4f5', // Zinc-100
   border: '#e4e4e7',          // Zinc-200
   borderSubtle: '#d4d4d8',    // Zinc-300
 
-  primary: '#000000',         // Pure Black — monochrome CTA
-  primaryHover: '#27272a',    // Slightly lighter black
-  primaryGlow: 'rgba(0, 0, 0, 0.06)',       // Subtle black glow badge
-  primaryBorderGlow: 'rgba(0, 0, 0, 0.25)', // Black focus ring
-  onPrimary: '#ffffff',       // White text on black button
+  primary: '#6366f1',         // Electric Indigo
+  primaryHover: '#4f46e5',    // Indigo-600
+  primaryGlow: 'rgba(99, 102, 241, 0.12)',        // Subtle Indigo glow badge
+  primaryBorderGlow: 'rgba(99, 102, 241, 0.40)',  // Indigo focus ring
+  onPrimary: '#ffffff',       // Pure White
 
-  text: '#000000',            // Pure Black
-  textHeading: '#000000',     // Pure Black
-  textMuted: '#52525b',       // Zinc-600 subtitles
-  textDim: '#71717a',         // Zinc-500 placeholders
+  text: '#09090b',            // Zinc-950
+  textHeading: '#09090b',     // Zinc-950
+  textMuted: '#71717a',       // Zinc-500 subtitles
+  textDim: '#a1a1aa',         // Zinc-400 placeholders
 
   danger: '#ef4444',
-  dangerGlow: 'rgba(239, 68, 68, 0.10)',
-  dangerBorder: 'rgba(239, 68, 68, 0.30)',
+  dangerGlow: 'rgba(239, 68, 68, 0.12)',
+  dangerBorder: 'rgba(239, 68, 68, 0.32)',
   warning: '#f59e0b',
   warningGlow: 'rgba(245, 158, 11, 0.12)',
 
-  accentIndigo: '#52525b',
-  accentIndigoGlow: 'rgba(82, 82, 91, 0.12)',
-  accentViolet: '#3f3f46',
-  accentVioletGlow: 'rgba(63, 63, 70, 0.10)',
+  accentIndigo: '#6366f1',
+  accentIndigoGlow: 'rgba(99, 102, 241, 0.14)',
+  accentViolet: '#8b5cf6',
+  accentVioletGlow: 'rgba(139, 92, 246, 0.12)',
   accentZinc: '#71717a',
   accentZincGlow: 'rgba(113, 113, 122, 0.12)',
   floatingBar: 'rgba(255, 255, 255, 0.94)',
-  backdrop: 'rgba(0, 0, 0, 0.45)',
+  backdrop: 'rgba(9, 9, 11, 0.50)',
 
   skeletonBase: '#e4e4e7',
   skeletonHighlight: '#f4f4f5',

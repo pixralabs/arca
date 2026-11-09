@@ -103,8 +103,9 @@ export default function App() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <StatusBar
+          translucent
           barStyle={isDark ? 'light-content' : 'dark-content'}
-          backgroundColor={colors.background}
+          backgroundColor="transparent"
         />
         <VaultSkeletonLoader />
       </SafeAreaView>
@@ -172,8 +173,9 @@ export default function App() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar
+        translucent
         barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.background}
+        backgroundColor="transparent"
       />
       <View style={[styles.content, { backgroundColor: colors.background }]}>
         <AnimatedScreen key={currentScreen}>{renderScreen()}</AnimatedScreen>

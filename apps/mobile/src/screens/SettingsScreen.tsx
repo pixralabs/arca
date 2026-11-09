@@ -15,8 +15,11 @@ import {
   Alert,
   ScrollView,
   Switch,
+  TextInput,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
-import { Smartphone, Sun, Moon } from 'lucide-react-native';
+import { Smartphone, Sun, Moon, AlertTriangle, X } from 'lucide-react-native';
 import {
   useTheme,
   ThemePreference,
@@ -130,27 +133,32 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
     );
   };
 
-  const handlePurgeVault = () => {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmText.trim() !== 'DELETE') return;
     triggerLightHaptic();
-    Alert.alert(
-      'Purge Entire Vault?',
-      'This will delete all encrypted credentials and keys from this device. If you do not have your 24-word recovery phrase, your data is gone forever.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Everything',
-          style: 'destructive',
-          onPress: async () => {
-            triggerLightHaptic();
-            clearActiveSession();
-            await clearBiometricSlotKey();
-            await purgeAllVaultData();
-            Alert.alert('Vault Purged', 'All local data wiped securely.');
-            onPurged();
-          },
-        },
-      ]
-    );
+    setIsDeleting(true);
+    try {
+      clearActiveSession();
+      await clearBiometricSlotKey();
+      await purgeAllVaultData();
+      try {
+        await fetch('https://relay.arca.app/v1/account', { method: 'DELETE' });
+      } catch {
+        // Offline or relay unavailable — local purge already complete
+      }
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+      triggerSuccessHaptic();
+      Alert.alert('Vault Deleted', 'All data has been wiped from this device.');
+      onPurged();
+    } catch (err: any) {
+      setIsDeleting(false);
+      Alert.alert('Error', err?.message || 'Failed to delete vault.');
+    }
   };
 
   return (
@@ -428,8 +436,11 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+          <Text style={[styles.sectionTitle, { color: colors.danger }]}>
             Danger Zone
+          </Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
+            Irreversible actions that permanently delete local SQLite data and hardware keys.
           </Text>
           <TouchableOpacity
             style={[
@@ -439,15 +450,125 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
                 borderColor: colors.dangerBorder,
               },
             ]}
-            onPress={handlePurgeVault}
+            onPress={() => {
+              triggerLightHaptic();
+              setDeleteConfirmText('');
+              setShowDeleteModal(true);
+            }}
             activeOpacity={0.85}
           >
             <Text style={[styles.dangerButtonText, { color: colors.danger }]}>
-              Purge All Local Vault Data
+              Delete Vault & Account
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Danger Zone Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setShowDeleteModal(false)}>
+          <View style={styles.modalBackdrop}>
+            <TouchableWithoutFeedback>
+              <View
+                style={[
+                  styles.modalSheet,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <View style={styles.modalHeader}>
+                  <View style={styles.modalIconRow}>
+                    <View
+                      style={[
+                        styles.warningIconBg,
+                        { backgroundColor: colors.dangerGlow },
+                      ]}
+                    >
+                      <AlertTriangle size={22} color={colors.danger} />
+                    </View>
+                    <Text style={[styles.modalTitle, { color: colors.textHeading }]}>
+                      Delete Vault & Account
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    hitSlop={HIT_SLOP}
+                    onPress={() => setShowDeleteModal(false)}
+                  >
+                    <X size={20} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.modalDesc, { color: colors.textMuted }]}>
+                  This action is permanent and cannot be undone. All encrypted credentials, hardware biometric keys, and local SQLite data will be wiped from this device.
+                </Text>
+
+                <Text style={[styles.confirmPrompt, { color: colors.text }]}>
+                  Type <Text style={{ fontWeight: '800', color: colors.danger }}>DELETE</Text> to confirm:
+                </Text>
+
+                <TextInput
+                  style={[
+                    styles.confirmInput,
+                    {
+                      backgroundColor: colors.inputBackground,
+                      borderColor:
+                        deleteConfirmText.trim() === 'DELETE'
+                          ? colors.danger
+                          : colors.border,
+                      color: colors.text,
+                    },
+                  ]}
+                  placeholder="Type DELETE"
+                  placeholderTextColor={colors.textDim}
+                  value={deleteConfirmText}
+                  onChangeText={setDeleteConfirmText}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+
+                <TouchableOpacity
+                  style={[
+                    styles.modalDeleteButton,
+                    {
+                      backgroundColor:
+                        deleteConfirmText.trim() === 'DELETE'
+                          ? colors.danger
+                          : isDark
+                          ? '#27272a'
+                          : '#e4e4e7',
+                      opacity: deleteConfirmText.trim() === 'DELETE' ? 1 : 0.45,
+                    },
+                  ]}
+                  disabled={deleteConfirmText.trim() !== 'DELETE' || isDeleting}
+                  onPress={handleConfirmDelete}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={[
+                      styles.modalDeleteButtonText,
+                      {
+                        color:
+                          deleteConfirmText.trim() === 'DELETE'
+                            ? '#ffffff'
+                            : colors.textDim,
+                      },
+                    ]}
+                  >
+                    {isDeleting ? 'Deleting...' : 'Permanently Delete Vault'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </AnimatedScreen>
   );
 }
@@ -590,6 +711,84 @@ const styles = StyleSheet.create({
   dangerButtonText: {
     fontFamily: 'Inter',
     fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+
+  // Danger Zone Modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  modalSheet: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: radii.card,
+    borderWidth: 1,
+    padding: spacing.xl,
+    shadowColor: '#000000',
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  modalIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+  },
+  warningIconBg: {
+    width: 38,
+    height: 38,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalTitle: {
+    fontFamily: 'Inter',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+  },
+  modalDesc: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: spacing.lg,
+  },
+  confirmPrompt: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    marginBottom: spacing.sm,
+  },
+  confirmInput: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: '700',
+    borderWidth: 1.5,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  modalDeleteButton: {
+    borderRadius: radii.pill,
+    minHeight: layout.minButtonHeight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalDeleteButtonText: {
+    fontFamily: 'Inter',
+    fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
   },

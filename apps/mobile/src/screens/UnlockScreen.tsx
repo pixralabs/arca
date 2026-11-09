@@ -24,9 +24,10 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
+  withSequence,
   runOnJS,
 } from 'react-native-reanimated';
-import { Eye, EyeOff, Fingerprint, ShieldCheck, ChevronDown, Check, Plus, X } from 'lucide-react-native';
+import { Eye, EyeOff, Fingerprint, ShieldCheck, ChevronDown, Check, Plus, X, AlertCircle } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   useTheme,
@@ -37,10 +38,11 @@ import {
   VaultSkeletonLoader,
   triggerLightHaptic,
   triggerSuccessHaptic,
+  triggerHaptic,
 } from '../theme/theme';
-import { mobileUnlockVault, mobileUnlockWithRecovery } from '../crypto/mobileCrypto';
-import { retrieveBiometricSlotKey, hasBiometricSlotKey } from '../crypto/keychain';
-import { getAllVaults, VaultRecord } from '../storage/db';
+import { mobileUnlockVault, mobileUnlockWithRecovery, clearActiveSession } from '../crypto/mobileCrypto';
+import { retrieveBiometricSlotKey, hasBiometricSlotKey, clearBiometricSlotKey } from '../crypto/keychain';
+import { getAllVaults, VaultRecord, purgeAllVaultData } from '../storage/db';
 import { ArcaBrandLogo } from '../components/ArcaBrandLogo';
 
 interface UnlockScreenProps {
@@ -48,17 +50,21 @@ interface UnlockScreenProps {
   onGoToSetup: () => void;
 }
 
-// ─── Animated Primary Button (Monochrome) ─────────────────────────────────────
+// ─── Animated Primary Button (Monochrome + Electric Indigo) ─────────────────
 function AnimatedPrimaryButton({
   onPress,
   disabled,
   label,
-  isDark,
+  primaryColor,
+  onPrimaryColor,
+  loading = false,
 }: {
   onPress: () => void;
   disabled: boolean;
   label: string;
-  isDark: boolean;
+  primaryColor: string;
+  onPrimaryColor: string;
+  loading?: boolean;
 }) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({
@@ -72,31 +78,30 @@ function AnimatedPrimaryButton({
     scale.value = withSpring(1, { damping: 15, stiffness: 300 });
   };
 
-  const btnBg = isDark ? '#ffffff' : '#000000';
-  const btnText = isDark ? '#000000' : '#ffffff';
-
   return (
     <Animated.View style={[animStyle, { marginTop: spacing.lg }]}>
       <TouchableOpacity
         onPress={onPress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        disabled={disabled}
+        disabled={disabled || loading}
         activeOpacity={0.88}
         style={[
           styles.primaryButton,
           {
-            backgroundColor: btnBg,
+            backgroundColor: primaryColor,
             opacity: disabled ? 0.35 : 1,
-            shadowColor: isDark ? '#ffffff' : '#000000',
-            shadowOpacity: isDark ? 0.12 : 0.16,
+            shadowColor: primaryColor,
+            shadowOpacity: 0.35,
             shadowRadius: 16,
             shadowOffset: { width: 0, height: 4 },
             elevation: 6,
           },
         ]}
       >
-        <Text style={[styles.primaryButtonText, { color: btnText }]}>{label}</Text>
+        <Text style={[styles.primaryButtonText, { color: onPrimaryColor }]}>
+          {loading ? 'Unlocking...' : label}
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -164,11 +169,31 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const opacity = useSharedValue(1);
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);
+  const shakeOffset = useSharedValue(0);
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const animatedContainerStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
     transform: [{ scale: scale.value }, { translateY: translateY.value }],
   }));
+
+  const shakeAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shakeOffset.value }],
+  }));
+
+  const triggerShakeAnimation = useCallback(() => {
+    triggerHaptic('notificationError');
+    shakeOffset.value = withSequence(
+      withTiming(-12, { duration: 50 }),
+      withTiming(12, { duration: 50 }),
+      withTiming(-9, { duration: 50 }),
+      withTiming(9, { duration: 50 }),
+      withTiming(-5, { duration: 50 }),
+      withTiming(5, { duration: 50 }),
+      withTiming(0, { duration: 50 })
+    );
+  }, [shakeOffset]);
 
   const triggerSpringUnlockTransition = useCallback(() => {
     triggerSuccessHaptic();
@@ -181,48 +206,88 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
 
   const handleUnlock = async () => {
     triggerLightHaptic();
+    setErrorMessage(null);
     if (!isRecoveryMode && !password) {
-      Alert.alert('Required', 'Please enter your Master Password.');
+      triggerShakeAnimation();
+      setErrorMessage('Please enter your Master Password.');
       return;
     }
     if (isRecoveryMode && !recoveryPhrase) {
-      Alert.alert('Required', 'Please enter your 24-word recovery phrase.');
+      triggerShakeAnimation();
+      setErrorMessage('Please enter your 24-word recovery phrase.');
       return;
     }
 
     setLoading(true);
-    try {
-      if (isRecoveryMode) {
-        await mobileUnlockWithRecovery(recoveryPhrase.trim(), activeVault?.id);
-      } else {
-        await mobileUnlockVault(password, activeVault?.id);
+    // Yield execution to JS event loop so the UI updates to loading state immediately
+    setTimeout(async () => {
+      try {
+        if (isRecoveryMode) {
+          await mobileUnlockWithRecovery(recoveryPhrase.trim(), activeVault?.id);
+        } else {
+          await mobileUnlockVault(password, activeVault?.id);
+        }
+        triggerSpringUnlockTransition();
+      } catch (err: any) {
+        setLoading(false);
+        triggerShakeAnimation();
+        setErrorMessage('Incorrect Master Password');
+        setTimeout(() => setErrorMessage(null), 3000);
       }
-      triggerSpringUnlockTransition();
-    } catch (err: any) {
-      setLoading(false);
-      Alert.alert('Unlock Failed', err?.message || 'Invalid Master Password.');
-    }
+    }, 40);
+  };
+
+  const handleResetVault = () => {
+    triggerLightHaptic();
+    Alert.alert(
+      'Reset Vault?',
+      `This will permanently erase all local encrypted data for "${activeVault?.name || 'this vault'}" from this device. You will need your 24-word recovery phrase to restore your data.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset & Wipe Local Vault',
+          style: 'destructive',
+          onPress: async () => {
+            triggerLightHaptic();
+            clearActiveSession();
+            await clearBiometricSlotKey(activeVault?.id);
+            await purgeAllVaultData();
+            await AsyncStorage.removeItem('@arca_vault_created');
+            Alert.alert('Vault Reset', 'All local data wiped securely.');
+            onGoToSetup();
+          },
+        },
+      ]
+    );
   };
 
   const handleBiometricUnlock = async () => {
     triggerLightHaptic();
+    setErrorMessage(null);
     const vaultId = activeVault?.id || 'default_vault';
     const vaultName = activeVault?.name || 'Personal Vault';
     try {
       const storedKey = await retrieveBiometricSlotKey(`Unlock "${vaultName}"`, vaultId);
       if (storedKey) {
         setLoading(true);
-        await mobileUnlockVault(storedKey, vaultId);
-        triggerSpringUnlockTransition();
+        setTimeout(async () => {
+          try {
+            await mobileUnlockVault(storedKey, vaultId);
+            triggerSpringUnlockTransition();
+          } catch (err: any) {
+            setLoading(false);
+            triggerShakeAnimation();
+            setErrorMessage('Biometric key invalid or expired.');
+          }
+        }, 40);
       } else {
-        Alert.alert(
-          'Biometrics',
-          `Biometric credential not available for "${vaultName}". Please unlock with your Master Password first.`
-        );
+        triggerShakeAnimation();
+        setErrorMessage(`Biometric not enrolled for "${vaultName}". Unlock with password first.`);
       }
     } catch (err: any) {
       setLoading(false);
-      Alert.alert('Biometric Error', err?.message || 'Biometric authentication failed.');
+      triggerShakeAnimation();
+      setErrorMessage(err?.message || 'Biometric authentication failed.');
     }
   };
 
@@ -451,13 +516,25 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
               </View>
             )}
 
-            {/* Primary CTA (Solid Black / Solid White) */}
+            {/* Primary CTA (Electric Indigo) */}
             <AnimatedPrimaryButton
               onPress={handleUnlock}
               disabled={false}
               label={isRecoveryMode ? 'Restore Vault' : 'Unlock Vault'}
-              isDark={isDark}
+              primaryColor={colors.primary}
+              onPrimaryColor={colors.onPrimary}
+              loading={loading}
             />
+
+            {/* Error Message Toast / Shake */}
+            {errorMessage && (
+              <Animated.View style={[styles.errorToast, shakeAnimatedStyle]}>
+                <AlertCircle size={15} color={colors.danger} />
+                <Text style={[styles.errorToastText, { color: colors.danger }]}>
+                  {errorMessage}
+                </Text>
+              </Animated.View>
+            )}
 
             {/* Premium Biometrics Button */}
             {!isRecoveryMode && (
@@ -496,6 +573,18 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
                   : 'Lost password? Use Recovery Phrase'}
               </Text>
             </TouchableOpacity>
+
+            {!isRecoveryMode && (
+              <TouchableOpacity
+                style={styles.linkBtn}
+                hitSlop={HIT_SLOP}
+                onPress={handleResetVault}
+              >
+                <Text style={[styles.dimLinkText, { color: colors.textMuted }]}>
+                  Forgot Password? <Text style={{ color: colors.danger, fontWeight: '700' }}>Reset Vault</Text>
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.linkBtn}
@@ -861,6 +950,26 @@ const styles = StyleSheet.create({
   biometricBtnText: {
     fontFamily: 'Inter',
     fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+
+  errorToast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.32)',
+  },
+  errorToastText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
     fontWeight: '600',
     letterSpacing: -0.2,
   },

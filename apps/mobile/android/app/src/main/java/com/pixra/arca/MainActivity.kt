@@ -67,8 +67,10 @@ class MainActivity : ReactActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
+            window.isStatusBarContrastEnforced = false
         }
         window.navigationBarColor = Color.TRANSPARENT
+        window.statusBarColor = Color.TRANSPARENT
 
         applyThemeIcon(resources.configuration)
         applySystemBars(resources.configuration)
@@ -138,8 +140,8 @@ class MainActivity : ReactActivity() {
         try {
             val bgColor = if (isDarkMode) Color.parseColor("#09090b") else Color.parseColor("#fafafa")
             window.setBackgroundDrawable(ColorDrawable(bgColor))
-            window.navigationBarColor = bgColor
-            window.statusBarColor = bgColor
+            window.navigationBarColor = Color.TRANSPARENT
+            window.statusBarColor = Color.TRANSPARENT
 
             val insetsController = WindowCompat.getInsetsController(window, window.decorView)
             insetsController.isAppearanceLightNavigationBars = !isDarkMode

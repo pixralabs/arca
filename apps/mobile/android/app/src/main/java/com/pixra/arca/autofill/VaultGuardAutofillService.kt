@@ -40,10 +40,20 @@ class VaultGuardAutofillService : AutofillService() {
 
         if (dataset != null) {
             responseBuilder.addDataset(dataset)
-            callback.onSuccess(responseBuilder.build())
-        } else {
-            callback.onSuccess(null)
         }
+
+        if (parsedFields.passwordId != null) {
+            val saveInfoBuilder = android.service.autofill.SaveInfo.Builder(
+                android.service.autofill.SaveInfo.SAVE_DATA_TYPE_PASSWORD or android.service.autofill.SaveInfo.SAVE_DATA_TYPE_USERNAME,
+                arrayOf(parsedFields.passwordId!!)
+            )
+            if (parsedFields.usernameId != null) {
+                saveInfoBuilder.setOptionalIds(arrayOf(parsedFields.usernameId!!))
+            }
+            responseBuilder.setSaveInfo(saveInfoBuilder.build())
+        }
+
+        callback.onSuccess(responseBuilder.build())
     }
 
     override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
