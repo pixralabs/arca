@@ -34,12 +34,10 @@ import {
   Fingerprint,
   ShieldCheck,
   ChevronDown,
-  Check,
-  Plus,
-  X,
   AlertCircle,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { VaultSwitcherModal } from '../components/VaultSwitcherModal';
 import {
   useTheme,
   spacing,
@@ -242,8 +240,10 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
       }
       triggerSuccessHaptic();
       // Navigate immediately to VaultScreen; item decryption happens lazily after transition
+      console.warn('[UnlockScreen] calling onUnlocked()');
       onUnlocked();
-    } catch {
+    } catch (err: any) {
+      console.error('[UnlockScreen] unlock error:', err?.message || err);
       setIsLoading(false);
       triggerShakeAnimation();
       setErrorMessage('Incorrect Master Password');
@@ -626,145 +626,18 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
         </View>
       </ScrollView>
 
-      {/* ── Switch Vault Bottom Sheet Modal ── */}
-      <Modal
+      {/* ── Switch Vault Bottom Sheet Modal (Edge-to-Edge Reanimated) ── */}
+      <VaultSwitcherModal
         visible={showSwitchSheet}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowSwitchSheet(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowSwitchSheet(false)}>
-          <View style={styles.modalBackdrop}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.modalSheet,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <View style={styles.sheetHandleArea}>
-                  <View
-                    style={[styles.sheetHandle, { backgroundColor: colors.borderSubtle }]}
-                  />
-                </View>
-
-                <View style={styles.sheetHeader}>
-                  <View>
-                    <Text style={[styles.sheetTitle, { color: colors.textHeading }]}>
-                      Select Vault
-                    </Text>
-                    <Text style={[styles.sheetSubtitle, { color: colors.textMuted }]}>
-                      Isolated zero-knowledge vaults on this device
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.closeBtn}
-                    hitSlop={HIT_SLOP}
-                    onPress={() => setShowSwitchSheet(false)}
-                  >
-                    <X size={20} color={colors.textMuted} />
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView style={styles.vaultListScroll} showsVerticalScrollIndicator={false}>
-                  {vaults.map((v) => {
-                    const isSelected = activeVault?.id === v.id;
-                    return (
-                      <TouchableOpacity
-                        key={v.id}
-                        style={[
-                          styles.vaultRowItem,
-                          {
-                            backgroundColor: isSelected ? colors.background : 'transparent',
-                            borderColor: isSelected ? colors.borderSubtle : colors.border,
-                          },
-                        ]}
-                        onPress={() => handleSelectVault(v)}
-                        activeOpacity={0.75}
-                      >
-                        <View style={styles.vaultRowLeft}>
-                          <View
-                            style={[
-                              styles.vaultAvatar,
-                              {
-                                backgroundColor: isSelected
-                                  ? colors.primary
-                                  : colors.surfaceSubtle,
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.vaultAvatarText,
-                                {
-                                  color: isSelected ? colors.onPrimary : colors.text,
-                                },
-                              ]}
-                            >
-                              {v.name.charAt(0).toUpperCase()}
-                            </Text>
-                          </View>
-                          <View style={styles.vaultRowDetails}>
-                            <Text
-                              style={[
-                                styles.vaultRowTitle,
-                                {
-                                  color: colors.textHeading,
-                                  fontWeight: isSelected ? '700' : '600',
-                                },
-                              ]}
-                            >
-                              {v.name}
-                            </Text>
-                            <Text style={[styles.vaultRowSub, { color: colors.textDim }]}>
-                              Argon2id + XChaCha20
-                            </Text>
-                          </View>
-                        </View>
-
-                        {isSelected && (
-                          <View
-                            style={[
-                              styles.selectedCheckPill,
-                              { backgroundColor: colors.primary },
-                            ]}
-                          >
-                            <Check size={14} color={colors.onPrimary} />
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-
-                <TouchableOpacity
-                  style={[
-                    styles.sheetCreateBtn,
-                    {
-                      borderColor: colors.border,
-                      backgroundColor: colors.background,
-                    },
-                  ]}
-                  onPress={() => {
-                    setShowSwitchSheet(false);
-                    triggerLightHaptic();
-                    onGoToSetup();
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Plus size={18} color={colors.text} />
-                  <Text style={[styles.sheetCreateBtnText, { color: colors.text }]}>
-                    Create Another Vault
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+        vaults={vaults}
+        activeVault={activeVault}
+        onSelectVault={handleSelectVault}
+        onCreateVault={() => {
+          setShowSwitchSheet(false);
+          onGoToSetup();
+        }}
+        onClose={() => setShowSwitchSheet(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -985,100 +858,4 @@ const styles = StyleSheet.create({
   },
   linkText: { fontFamily: 'Inter', fontSize: 14, fontWeight: '600' },
   dimLinkText: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600' },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderTopWidth: 1,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxl + 8,
-    maxHeight: '80%',
-  },
-  sheetHandleArea: {
-    width: '100%',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: radii.pill,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  sheetTitle: {
-    fontFamily: 'Inter',
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.4,
-  },
-  sheetSubtitle: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    marginTop: 2,
-  },
-  closeBtn: {
-    padding: 6,
-  },
-  vaultListScroll: {
-    maxHeight: 280,
-    marginBottom: spacing.lg,
-  },
-  vaultRowItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    marginBottom: 8,
-  },
-  vaultRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  vaultRowDetails: {
-    flex: 1,
-  },
-  vaultRowTitle: {
-    fontFamily: 'Inter',
-    fontSize: 15,
-    letterSpacing: -0.2,
-  },
-  vaultRowSub: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  selectedCheckPill: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetCreateBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: radii.pill,
-    minHeight: 50,
-  },
-  sheetCreateBtnText: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    fontWeight: '600',
-  },
 });

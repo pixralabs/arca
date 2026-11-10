@@ -18,6 +18,18 @@ import {
   Alert,
   Clipboard,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  EllipsisVertical,
+  Search,
+  Plus,
+  X,
+  KeyRound,
+  ArrowDownToLine,
+  Settings,
+  Lock,
+  ChevronRight,
+} from 'lucide-react-native';
 import { SafeAreaView } from '../components/SafeAreaView';
 import {
   useTheme,
@@ -53,6 +65,7 @@ import {
   evaluateVaultSecurityInRam,
   isTotpItem,
 } from './VaultListScreen';
+import { ItemEditorScreen } from './ItemEditorScreen';
 
 declare const __DEV__: boolean;
 
@@ -64,7 +77,7 @@ interface VaultScreenProps {
 }
 
 interface CategoryTileItem {
-  id: 'all' | 'codes' | 'security' | 'deleted' | 'wifi';
+  id: 'all' | 'codes' | 'security' | 'deleted';
   label: string;
   count: number;
   iconSymbol: string;
@@ -81,7 +94,8 @@ export function VaultScreen({
   onGoToTotp,
   onGoToSettings,
 }: VaultScreenProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<MobileVaultItem[]>([]);
   const [deletedItems, setDeletedItems] = useState<MobileVaultItem[]>([]);
   const [search, setSearch] = useState('');
@@ -89,15 +103,11 @@ export function VaultScreen({
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<VaultCategoryFilter | null>(null);
 
-  // Smooth Drag-to-Dismiss Bottom Sheet state for "Add Item"
+  // Sleek Bottom Sheet state for Menu actions (Generator, Import, Settings, Lock)
+  const [showMenuSheet, setShowMenuSheet] = useState(false);
+
+  // Bottom Sheet / Screen state for "Add Item"
   const [showAddSheet, setShowAddSheet] = useState(false);
-  const [newTitle, setNewTitle] = useState(__DEV__ ? 'GitHub' : '');
-  const [newUsername, setNewUsername] = useState(__DEV__ ? 'octocat@github.com' : '');
-  const [newPassword, setNewPassword] = useState(__DEV__ ? 'Secret123!' : '');
-  const [newTotpSecret, setNewTotpSecret] = useState(__DEV__ ? 'JBSWY3DPEHPK3PXP' : '');
-  const [focusedAddField, setFocusedAddField] = useState<
-    'title' | 'username' | 'password' | 'totp' | null
-  >(null);
 
   // Smooth Drag-to-Dismiss Bottom Sheet state for CSV Import
   const [showImportSheet, setShowImportSheet] = useState(false);
@@ -213,17 +223,6 @@ export function VaultScreen({
         iconTextColor: colors.onPrimary,
         glowColor: colors.accentZincGlow,
       },
-      {
-        id: 'wifi',
-        label: 'Wi-Fi',
-        count: 0,
-        iconSymbol: '🛜',
-        iconBgColor: colors.surfaceSubtle,
-        iconTextColor: colors.textDim,
-        glowColor: colors.accentZincGlow,
-        disabled: true,
-        subtitleBadge: 'Coming Soon',
-      },
     ],
     [items.length, codesCount, securityAudit, deletedItems.length, colors]
   );
@@ -241,13 +240,7 @@ export function VaultScreen({
 
   const handleTilePress = (tile: CategoryTileItem) => {
     triggerLightHaptic();
-    if (tile.disabled || tile.id === 'wifi') {
-      Alert.alert(
-        'Wi-Fi Passwords',
-        'Encrypted Wi-Fi network sharing is coming in a future update.'
-      );
-      return;
-    }
+    if (tile.disabled) return;
     if (tile.id === 'all') {
       setActiveCategory('all');
     } else if (tile.id === 'codes') {
@@ -257,77 +250,6 @@ export function VaultScreen({
     } else if (tile.id === 'deleted') {
       setActiveCategory('deleted');
     }
-  };
-
-  const executeSaveNewItem = async (passwordToSave: string) => {
-    try {
-      const created: MobileVaultItem = {
-        id: 'item_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6),
-        title: newTitle.trim(),
-        username: newUsername.trim(),
-        password: passwordToSave,
-        urls: [],
-        notes: '',
-        totpSecret: newTotpSecret.trim() ? newTotpSecret.trim() : null,
-        totpConfig: newTotpSecret.trim()
-          ? {
-            secret: newTotpSecret.trim(),
-            period: 30,
-            digits: 6,
-            algorithm: 'SHA1',
-          }
-          : undefined,
-        type: newTotpSecret.trim() ? 'totp' : 'login',
-        customFields: [],
-        updatedAt: Date.now(),
-        deletedAt: null,
-        isDecrypted: true,
-      };
-      await mobileSaveItem(created);
-      triggerSuccessHaptic();
-      setNewTitle('');
-      setNewUsername('');
-      setNewPassword('');
-      setNewTotpSecret('');
-      setShowAddSheet(false);
-      await loadItems();
-    } catch {
-      Alert.alert('Error', 'Failed to encrypt and save credential.');
-    }
-  };
-
-  const handleSaveNewItem = async () => {
-    triggerLightHaptic();
-    if (!newTitle.trim()) {
-      Alert.alert('Missing Title', 'Please enter a website or service name.');
-      return;
-    }
-
-    const auditCheck = checkPasswordForSavePrompt(newPassword, '', items);
-    if (auditCheck.warningMessage) {
-      Alert.alert(
-        'Save this existing password to Arca?',
-        auditCheck.warningMessage,
-        [
-          {
-            text: 'Save Anyway',
-            onPress: () => void executeSaveNewItem(newPassword),
-          },
-          {
-            text: 'Replace with Arca Generator',
-            onPress: async () => {
-              const strong = await generatePassword({ length: 20 });
-              setNewPassword(strong);
-              await executeSaveNewItem(strong);
-            },
-          },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
-      return;
-    }
-
-    await executeSaveNewItem(newPassword);
   };
 
   const handleExecuteCsvImport = async () => {
@@ -426,103 +348,26 @@ export function VaultScreen({
       edges={['top', 'bottom']}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      {/* Top Bar with Quick Action Pills & Circular More Menu */}
-      <View style={styles.topUtilityBar}>
-        <View style={styles.quickActionGroup}>
-          <TouchableOpacity
-            style={[styles.utilityPill, { backgroundColor: colors.surface }]}
-            hitSlop={HIT_SLOP}
-            onPress={() => {
-              triggerLightHaptic();
-              setShowImportSheet(true);
-            }}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.utilityPillText, { color: colors.textMuted }]}>
-              📥 Import
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.utilityPill, { backgroundColor: colors.surface }]}
-            hitSlop={HIT_SLOP}
-            onPress={() => {
-              triggerLightHaptic();
-              onGoToGenerator();
-            }}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.utilityPillText, { color: colors.textMuted }]}>
-              ⚡ Generator
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.utilityPill, { backgroundColor: colors.surface }]}
-            hitSlop={HIT_SLOP}
-            onPress={handleLockVault}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.utilityPillText, { color: colors.textMuted }]}>
-              🔒 Lock
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.utilityPill, { backgroundColor: colors.surface }]}
-            hitSlop={HIT_SLOP}
-            onPress={() => {
-              triggerLightHaptic();
-              onGoToSettings();
-            }}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.utilityPillText, { color: colors.textMuted }]}>
-              ⚙ Settings
-            </Text>
-          </TouchableOpacity>
-        </View>
-
+      {/* Top Header Row: "Passwords" Heading + Minimalist Ellipsis Menu Icon */}
+      <View style={styles.headerTitleRow}>
+        <Text style={[styles.largeHeaderTitle, { color: colors.textHeading }]}>
+          Passwords
+        </Text>
         <TouchableOpacity
-          style={[styles.moreCircleButton, { backgroundColor: colors.surface }]}
+          style={[
+            styles.menuCircleButton,
+            { backgroundColor: isDark ? '#18181b' : colors.surfaceSubtle },
+          ]}
           hitSlop={HIT_SLOP}
-          onPress={handleTopMoreMenu}
+          onPress={() => {
+            triggerLightHaptic();
+            setShowMenuSheet(true);
+          }}
           activeOpacity={0.75}
-          accessibilityLabel="More options"
+          accessibilityLabel="Vault actions menu"
         >
-          <Text style={[styles.moreCircleDots, { color: colors.text }]}>•••</Text>
+          <EllipsisVertical size={20} color={colors.text} strokeWidth={2.2} />
         </TouchableOpacity>
-      </View>
-
-      {/* Large "Passwords" Heading + Vault Badge */}
-      <View style={styles.headerTitleContainer}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={[styles.largeHeaderTitle, { color: colors.textHeading }]}>
-            Passwords
-          </Text>
-          {getActiveSession()?.vaultName && (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 12,
-                paddingVertical: 4,
-                borderRadius: radii.pill,
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.surfaceSubtle,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: 'Inter',
-                  fontSize: 12,
-                  fontWeight: '600',
-                  color: colors.textMuted,
-                }}
-              >
-                {getActiveSession()?.vaultName}
-              </Text>
-            </View>
-          )}
-        </View>
       </View>
 
       {/* Show Shimmering Skeletons while Vault is Decrypting */}
@@ -804,48 +649,35 @@ export function VaultScreen({
         </>
       )}
 
-      {/* Persistent Floating Bottom Bar (Folder Button + Soft Search Pill + Electric Indigo '+' Pill Button) */}
+      {/* Persistent Floating Bottom Bar (Wider Rounded Search Bar + Electric Indigo Circle Add Button) */}
       <View
         style={[
           styles.bottomBarContainer,
-          { backgroundColor: colors.floatingBar },
+          {
+            backgroundColor: colors.floatingBar,
+            paddingBottom: Math.max(insets.bottom, 12) + 8,
+          },
         ]}
       >
-        <TouchableOpacity
-          style={[
-            styles.bottomCircleButton,
-            { backgroundColor: colors.surface },
-          ]}
-          hitSlop={HIT_SLOP}
-          activeOpacity={0.75}
-          onPress={() => {
-            triggerLightHaptic();
-            setActiveCategory('all');
-          }}
-          accessibilityLabel="Browse all folders and items"
-        >
-          <Text style={styles.bottomFolderIcon}>📁</Text>
-        </TouchableOpacity>
-
         <View
           style={[
             styles.bottomSearchPill,
             {
-              backgroundColor: colors.surface,
-              borderColor: searchFocused ? colors.primary : 'transparent',
+              backgroundColor: isDark ? '#18181b' : colors.surface,
+              borderColor: searchFocused ? '#6366f1' : (isDark ? '#27272a' : colors.border),
             },
             searchFocused && {
-              shadowColor: colors.primary,
+              shadowColor: '#6366f1',
               shadowOpacity: 0.28,
               shadowRadius: 8,
               shadowOffset: { width: 0, height: 0 },
             },
           ]}
         >
-          <Text style={styles.bottomSearchIcon}>🔍</Text>
+          <Search size={18} color={colors.textDim} style={styles.bottomSearchIcon} />
           <TextInput
             style={[styles.bottomSearchInput, { color: colors.text }]}
-            placeholder="Search"
+            placeholder="Search passwords..."
             placeholderTextColor={colors.textDim}
             value={search}
             onChangeText={setSearch}
@@ -853,28 +685,22 @@ export function VaultScreen({
             onBlur={() => setSearchFocused(false)}
             autoCapitalize="none"
           />
-          {search.length > 0 ? (
+          {search.length > 0 && (
             <TouchableOpacity
               hitSlop={HIT_SLOP}
               onPress={() => {
                 triggerLightHaptic();
                 setSearch('');
               }}
+              style={styles.bottomClearButton}
             >
-              <Text style={[styles.bottomClearText, { color: colors.textMuted }]}>
-                ✕
-              </Text>
+              <X size={16} color={colors.textMuted} />
             </TouchableOpacity>
-          ) : (
-            <Text style={styles.bottomMicIcon}>🎙</Text>
           )}
         </View>
 
         <TouchableOpacity
-          style={[
-            styles.bottomAddCircleButton,
-            { backgroundColor: colors.primary },
-          ]}
+          style={styles.bottomAddCircleButton}
           hitSlop={HIT_SLOP}
           activeOpacity={0.85}
           onPress={() => {
@@ -883,161 +709,17 @@ export function VaultScreen({
           }}
           accessibilityLabel="Add new password"
         >
-          <Text style={[styles.bottomAddPlusText, { color: colors.onPrimary }]}>
-            +
-          </Text>
+          <Plus size={24} color="#ffffff" strokeWidth={2.5} />
         </TouchableOpacity>
       </View>
 
-      {/* Drag-to-Dismiss Reanimated Bottom Sheet for "Add Item" */}
-      <DraggableBottomSheet
+      {/* Premium Item Editor Modal with Camera TOTP Scanner */}
+      <ItemEditorScreen
         visible={showAddSheet}
+        existingItems={items}
         onClose={() => setShowAddSheet(false)}
-      >
-        <View
-          style={[
-            styles.sheetHeaderRow,
-            { borderBottomColor: colors.border },
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.sheetHeaderAction}
-            hitSlop={HIT_SLOP}
-            onPress={() => {
-              triggerLightHaptic();
-              setShowAddSheet(false);
-            }}
-          >
-            <Text style={[styles.sheetCancelText, { color: colors.textMuted }]}>
-              Cancel
-            </Text>
-          </TouchableOpacity>
-          <Text style={[styles.sheetHeaderTitle, { color: colors.textHeading }]}>
-            New Password
-          </Text>
-          <TouchableOpacity
-            style={styles.sheetHeaderAction}
-            hitSlop={HIT_SLOP}
-            onPress={handleSaveNewItem}
-          >
-            <Text style={[styles.sheetSaveText, { color: colors.primary }]}>
-              Save
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          style={styles.sheetScrollForm}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={[styles.sheetFieldLabel, { color: colors.textMuted }]}>
-            Website or Label
-          </Text>
-          <TextInput
-            style={[
-              styles.sheetInput,
-              {
-                backgroundColor: colors.surfaceSubtle,
-                color: colors.text,
-                borderColor:
-                  focusedAddField === 'title' ? colors.primary : 'transparent',
-              },
-            ]}
-            placeholder="e.g. GitHub, Apple, Stripe"
-            placeholderTextColor={colors.textDim}
-            value={newTitle}
-            onChangeText={setNewTitle}
-            onFocus={() => setFocusedAddField('title')}
-            onBlur={() => setFocusedAddField(null)}
-          />
-
-          <Text style={[styles.sheetFieldLabel, { color: colors.textMuted }]}>
-            Username or Email
-          </Text>
-          <TextInput
-            style={[
-              styles.sheetInput,
-              {
-                backgroundColor: colors.surfaceSubtle,
-                color: colors.text,
-                borderColor:
-                  focusedAddField === 'username' ? colors.primary : 'transparent',
-              },
-            ]}
-            placeholder="name@example.com"
-            placeholderTextColor={colors.textDim}
-            value={newUsername}
-            onChangeText={setNewUsername}
-            onFocus={() => setFocusedAddField('username')}
-            onBlur={() => setFocusedAddField(null)}
-            autoCapitalize="none"
-          />
-
-          <Text style={[styles.sheetFieldLabel, { color: colors.textMuted }]}>
-            Password
-          </Text>
-          <TextInput
-            style={[
-              styles.sheetInput,
-              {
-                backgroundColor: colors.surfaceSubtle,
-                color: colors.text,
-                borderColor:
-                  focusedAddField === 'password' ? colors.primary : 'transparent',
-              },
-            ]}
-            placeholder="Enter strong password..."
-            placeholderTextColor={colors.textDim}
-            value={newPassword}
-            onChangeText={setNewPassword}
-            onFocus={() => setFocusedAddField('password')}
-            onBlur={() => setFocusedAddField(null)}
-            secureTextEntry
-            autoCapitalize="none"
-          />
-
-          <Text style={[styles.sheetFieldLabel, { color: colors.textMuted }]}>
-            2FA / TOTP Secret (Optional)
-          </Text>
-          <TextInput
-            style={[
-              styles.sheetInput,
-              {
-                backgroundColor: colors.surfaceSubtle,
-                color: colors.text,
-                borderColor:
-                  focusedAddField === 'totp' ? colors.primary : 'transparent',
-              },
-            ]}
-            placeholder="Base32 secret or otpauth:// URI"
-            placeholderTextColor={colors.textDim}
-            value={newTotpSecret}
-            onChangeText={setNewTotpSecret}
-            onFocus={() => setFocusedAddField('totp')}
-            onBlur={() => setFocusedAddField(null)}
-            autoCapitalize="none"
-          />
-
-          <TouchableOpacity
-            style={[
-              styles.sheetPrimaryPillButton,
-              { backgroundColor: colors.primary },
-            ]}
-            onPress={handleSaveNewItem}
-            activeOpacity={0.85}
-          >
-            <Text
-              style={[
-                styles.sheetPrimaryPillButtonText,
-                { color: colors.onPrimary },
-              ]}
-            >
-              Save Credential
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </DraggableBottomSheet>
+        onSaved={loadItems}
+      />
 
       {/* Drag-to-Dismiss Reanimated Bottom Sheet for Bulk CSV Import */}
       <DraggableBottomSheet
@@ -1150,6 +832,149 @@ export function VaultScreen({
           </TouchableOpacity>
         </ScrollView>
       </DraggableBottomSheet>
+
+      {/* Sleek Drag-to-Dismiss Reanimated Bottom Sheet for Menu (Generator, Import, Settings, Lock) */}
+      <DraggableBottomSheet
+        visible={showMenuSheet}
+        onClose={() => setShowMenuSheet(false)}
+      >
+        <View style={styles.menuSheetHeader}>
+          <Text style={[styles.menuSheetTitle, { color: colors.textHeading }]}>
+            Vault Actions
+          </Text>
+        </View>
+
+        <View style={styles.menuItemsList}>
+          {/* 1. Generator */}
+          <TouchableOpacity
+            style={[
+              styles.menuItemCard,
+              { backgroundColor: isDark ? '#18181b' : colors.surfaceSubtle },
+            ]}
+            activeOpacity={0.75}
+            onPress={() => {
+              triggerLightHaptic();
+              setShowMenuSheet(false);
+              onGoToGenerator();
+            }}
+          >
+            <View
+              style={[
+                styles.menuItemIconCircle,
+                { backgroundColor: isDark ? '#27272a' : '#e4e4e7' },
+              ]}
+            >
+              <KeyRound size={20} color={colors.text} strokeWidth={2} />
+            </View>
+            <View style={styles.menuItemDetails}>
+              <Text style={[styles.menuItemTitle, { color: colors.textHeading }]}>
+                Generator
+              </Text>
+              <Text style={[styles.menuItemSubtitle, { color: colors.textMuted }]}>
+                Create strong, randomized passwords
+              </Text>
+            </View>
+            <ChevronRight size={18} color={colors.textDim} />
+          </TouchableOpacity>
+
+          {/* 2. Import / Export */}
+          <TouchableOpacity
+            style={[
+              styles.menuItemCard,
+              { backgroundColor: isDark ? '#18181b' : colors.surfaceSubtle },
+            ]}
+            activeOpacity={0.75}
+            onPress={() => {
+              triggerLightHaptic();
+              setShowMenuSheet(false);
+              setTimeout(() => {
+                setShowImportSheet(true);
+              }, 220);
+            }}
+          >
+            <View
+              style={[
+                styles.menuItemIconCircle,
+                { backgroundColor: isDark ? '#27272a' : '#e4e4e7' },
+              ]}
+            >
+              <ArrowDownToLine size={20} color={colors.text} strokeWidth={2} />
+            </View>
+            <View style={styles.menuItemDetails}>
+              <Text style={[styles.menuItemTitle, { color: colors.textHeading }]}>
+                Import / Export
+              </Text>
+              <Text style={[styles.menuItemSubtitle, { color: colors.textMuted }]}>
+                Import credentials from CSV files
+              </Text>
+            </View>
+            <ChevronRight size={18} color={colors.textDim} />
+          </TouchableOpacity>
+
+          {/* 3. Settings */}
+          <TouchableOpacity
+            style={[
+              styles.menuItemCard,
+              { backgroundColor: isDark ? '#18181b' : colors.surfaceSubtle },
+            ]}
+            activeOpacity={0.75}
+            onPress={() => {
+              triggerLightHaptic();
+              setShowMenuSheet(false);
+              onGoToSettings();
+            }}
+          >
+            <View
+              style={[
+                styles.menuItemIconCircle,
+                { backgroundColor: isDark ? '#27272a' : '#e4e4e7' },
+              ]}
+            >
+              <Settings size={20} color={colors.text} strokeWidth={2} />
+            </View>
+            <View style={styles.menuItemDetails}>
+              <Text style={[styles.menuItemTitle, { color: colors.textHeading }]}>
+                Settings
+              </Text>
+              <Text style={[styles.menuItemSubtitle, { color: colors.textMuted }]}>
+                Appearance, security, & vault options
+              </Text>
+            </View>
+            <ChevronRight size={18} color={colors.textDim} />
+          </TouchableOpacity>
+
+          {/* 4. Lock Vault */}
+          <TouchableOpacity
+            style={[
+              styles.menuItemCard,
+              { backgroundColor: isDark ? '#18181b' : colors.surfaceSubtle },
+            ]}
+            activeOpacity={0.75}
+            onPress={() => {
+              setShowMenuSheet(false);
+              handleLockVault();
+            }}
+          >
+            <View
+              style={[
+                styles.menuItemIconCircle,
+                { backgroundColor: 'rgba(239, 68, 68, 0.15)' },
+              ]}
+            >
+              <Lock size={20} color="#ef4444" strokeWidth={2} />
+            </View>
+            <View style={styles.menuItemDetails}>
+              <Text style={[styles.menuItemTitle, { color: '#ef4444' }]}>
+                Lock Vault
+              </Text>
+              <Text style={[styles.menuItemSubtitle, { color: colors.textMuted }]}>
+                End session and lock encryption keys
+              </Text>
+            </View>
+            <ChevronRight size={18} color="#ef4444" opacity={0.6} />
+          </TouchableOpacity>
+        </View>
+      </DraggableBottomSheet>
     </SafeAreaView>
   );
 }
@@ -1160,55 +985,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  topUtilityBar: {
+  headerTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.xs,
-  },
-  quickActionGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  utilityPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    minHeight: 40,
-    borderRadius: radii.pill,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  utilityPillText: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  moreCircleButton: {
-    width: layout.minTouchTarget,
-    height: layout.minTouchTarget,
-    borderRadius: radii.pill,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  moreCircleDots: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  headerTitleContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
   largeHeaderTitle: {
     fontFamily: 'Inter',
     fontSize: 34,
     fontWeight: '800',
     letterSpacing: -0.5,
+  },
+  menuCircleButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   gridContentContainer: {
     paddingHorizontal: spacing.lg,
@@ -1351,60 +1147,87 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
     gap: 12,
-  },
-  bottomCircleButton: {
-    width: layout.minButtonHeight, // 52px pill/circle button
-    height: layout.minButtonHeight,
-    borderRadius: radii.pill,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bottomFolderIcon: {
-    fontSize: 18,
   },
   bottomSearchPill: {
     flex: 1,
-    minHeight: layout.minButtonHeight, // 52px pill search bar
-    borderRadius: radii.pill,
-    borderWidth: 1.5,
+    height: 52,
+    borderRadius: 24, // 24px curvy corners
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
   },
   bottomSearchIcon: {
-    fontSize: 14,
-    marginRight: 8,
-    opacity: 0.75,
+    marginRight: 10,
   },
   bottomSearchInput: {
     flex: 1,
     fontFamily: 'Inter',
-    fontSize: 16,
+    fontSize: 15,
     paddingVertical: 0,
   },
-  bottomMicIcon: {
-    fontSize: 14,
-    opacity: 0.7,
-    marginLeft: 6,
-  },
-  bottomClearText: {
-    fontSize: 15,
-    paddingLeft: 8,
+  bottomClearButton: {
+    padding: 4,
   },
   bottomAddCircleButton: {
-    width: layout.minButtonHeight, // 52px pill/circle button
-    height: layout.minButtonHeight,
-    borderRadius: radii.pill,
+    width: 52,
+    height: 52,
+    borderRadius: 26, // perfect circle
+    backgroundColor: '#6366f1', // Electric Indigo accent
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#6366f1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  bottomAddPlusText: {
+  /* Menu Bottom Sheet Styles */
+  menuSheetHeader: {
+    paddingBottom: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  menuSheetTitle: {
     fontFamily: 'Inter',
-    fontSize: 26,
-    fontWeight: '600',
-    lineHeight: 28,
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  menuItemsList: {
+    gap: 10,
+    paddingBottom: spacing.lg,
+  },
+  menuItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: radii.xl,
+    minHeight: 64,
+  },
+  menuItemIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  menuItemDetails: {
+    flex: 1,
+  },
+  menuItemTitle: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  menuItemSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: '500',
   },
   /* Bottom Sheet Content */
   sheetHeaderRow: {
