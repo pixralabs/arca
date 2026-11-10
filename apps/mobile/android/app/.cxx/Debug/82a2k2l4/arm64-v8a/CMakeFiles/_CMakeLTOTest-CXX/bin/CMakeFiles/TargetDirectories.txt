@@ -1,4 +1,0 @@
-/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/82a2k2l4/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
-/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/82a2k2l4/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
-/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/82a2k2l4/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/edit_cache.dir
-/home/radhe/Development/arca/apps/mobile/android/app/.cxx/Debug/82a2k2l4/arm64-v8a/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/rebuild_cache.dir

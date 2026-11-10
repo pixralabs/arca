@@ -36,3 +36,6 @@ releases/
 *.aab
 *.apk
 
+
+# Android CMake and NDK build artifacts
+**/.cxx/
