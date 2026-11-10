@@ -67,3 +67,14 @@
 -keep class com.oblador.keychain.** { *; }
 -keep class com.swmansion.rnscreens.** { *; }
 
+# Vision Camera
+-keep class com.mrousavy.camera.** { *; }
+-keepclassmembers class com.mrousavy.camera.** { *; }
+
+# ViewShot
+-keep class fr.greweb.reactnativeviewshot.** { *; }
+-keepclassmembers class fr.greweb.reactnativeviewshot.** { *; }
+
+# Reanimated
+-keep class com.swmansion.reanimated.** { *; }
+-keepclassmembers class com.swmansion.reanimated.** { *; }
