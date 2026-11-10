@@ -32,12 +32,13 @@ import { TotpScreen } from './screens/TotpScreen';
 import { GeneratorScreen } from './screens/GeneratorScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { ShareScreen } from './screens/ShareScreen';
+import { RecoveryKitScreen } from './screens/RecoveryKitScreen';
 
 const { ArcaSplashScreen } = NativeModules;
 
 LogBox.ignoreAllLogs(true);
 
-type Screen = 'UNLOCK' | 'SETUP' | 'VAULT' | 'TOTP' | 'GENERATOR' | 'SETTINGS' | 'SHARE';
+type Screen = 'UNLOCK' | 'SETUP' | 'VAULT' | 'TOTP' | 'GENERATOR' | 'SETTINGS' | 'SHARE' | 'RECOVERY_KIT';
 
 export default function App() {
   const { colors, isDark } = useTheme();
@@ -166,10 +167,24 @@ export default function App() {
         return (
           <SettingsScreen
             onBack={() => navigateTo('VAULT')}
+            onOpenRecoveryKit={() => navigateTo('RECOVERY_KIT')}
             onPurged={() => {
               AsyncStorage.removeItem('@arca_vault_created').catch(() => {});
               navigateTo('SETUP');
             }}
+          />
+        );
+      case 'RECOVERY_KIT':
+        return (
+          <RecoveryKitScreen
+            vaultName="Personal Vault"
+            mnemonicWords={[
+              'abandon', 'ability', 'able', 'about', 'above', 'absent',
+              'absorb', 'abstract', 'absurd', 'abuse', 'access', 'accident',
+              'account', 'accuse', 'achieve', 'acid', 'acoustic', 'acquire',
+              'across', 'act', 'action', 'actor', 'actress', 'actual'
+            ]}
+            onComplete={() => navigateTo('SETTINGS')}
           />
         );
       case 'SHARE':

@@ -37,6 +37,7 @@ import {
 import { mobileSetupVault } from '../crypto/mobileCrypto';
 import { getAllVaults, VaultRecord } from '../storage/db';
 import { ArcaBrandLogo } from '../components/ArcaBrandLogo';
+import { RecoveryKitScreen } from './RecoveryKitScreen';
 
 interface SetupScreenProps {
   onVaultCreated: (vaultId?: string) => void;
@@ -113,9 +114,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<'name' | 'pass' | 'confirm' | null>(null);
   const [mnemonicWords, setMnemonicWords] = useState<string[]>([]);
-  const [mnemonicConfirmed, setMnemonicConfirmed] = useState(false);
   const [createdVaultId, setCreatedVaultId] = useState<string>('');
-  const [isEnteringVault, setIsEnteringVault] = useState(false);
 
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
@@ -238,91 +237,17 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
     );
   }
 
-  // Mnemonic backup screen
+  // Shamir 2-of-3 Recovery Kit & Backup screen
   if (mnemonicWords.length > 0) {
     return (
-      <SafeAreaView
-        edges={['top', 'bottom']}
-        style={[styles.flex, { backgroundColor: colors.background }]}
-      >
-        <StatusBar
-          translucent
-          backgroundColor="transparent"
-          barStyle={isDark ? 'light-content' : 'dark-content'}
-        />
-        <ScrollView
-          contentContainerStyle={styles.mnemonicScroll}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={[styles.title, { color: colors.textHeading, marginBottom: spacing.xs }]}>
-            Recovery Phrase
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted, marginBottom: spacing.xl }]}>
-            Write these 24 words down safely for "{vaultName}". They are the only way to recover this vault.
-          </Text>
-
-          <View
-            style={[
-              styles.glassCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <View style={styles.wordGrid}>
-              {mnemonicWords.map((word, i) => (
-                <View
-                  key={i}
-                  style={[styles.wordBadge, { backgroundColor: colors.surfaceSubtle }]}
-                >
-                  <Text style={[styles.wordIndex, { color: colors.textDim }]}>{i + 1}.</Text>
-                  <Text style={[styles.wordText, { color: colors.text }]}>{word}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Confirm checkbox */}
-          <TouchableOpacity
-            style={styles.checkboxRow}
-            onPress={() => {
-              triggerLightHaptic();
-              setMnemonicConfirmed((v) => !v);
-            }}
-            activeOpacity={0.8}
-          >
-            <View
-              style={[
-                styles.checkbox,
-                {
-                  backgroundColor: mnemonicConfirmed ? colors.primary : 'transparent',
-                  borderColor: mnemonicConfirmed ? colors.primary : colors.border,
-                },
-              ]}
-            >
-              {mnemonicConfirmed && (
-                <Text style={[styles.checkmark, { color: colors.onPrimary }]}>✓</Text>
-              )}
-            </View>
-            <Text style={[styles.checkboxLabel, { color: colors.textMuted }]}>
-              I have written down and saved this recovery phrase securely.
-            </Text>
-          </TouchableOpacity>
-
-          <AnimatedPrimaryButton
-            onPress={async () => {
-              if (isEnteringVault) return;
-              setIsEnteringVault(true);
-              triggerSuccessHaptic();
-              await new Promise((resolve) => setTimeout(resolve, 150));
-              onVaultCreated(createdVaultId);
-            }}
-            disabled={!mnemonicConfirmed || isEnteringVault}
-            loading={isEnteringVault}
-            label={isEnteringVault ? 'Entering Vault...' : 'Enter Vault →'}
-            primaryColor={colors.primary}
-            onPrimaryColor={colors.onPrimary}
-          />
-        </ScrollView>
-      </SafeAreaView>
+      <RecoveryKitScreen
+        vaultName={vaultName}
+        mnemonicWords={mnemonicWords}
+        onComplete={() => {
+          triggerSuccessHaptic();
+          onVaultCreated(createdVaultId);
+        }}
+      />
     );
   }
 

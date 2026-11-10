@@ -1,9 +1,7 @@
 /**
  * @file apps/mobile/src/screens/SettingsScreen.tsx
- * @description Arca Mobile — Opt-In Cloud Sync Toggle (Default 100% Local SQLite),
- * New Device Approval Prompt (`NEW_DEVICE_ATTEMPT`), Active Device Revocation, and Purge Vault
- * with Strict Monochrome (Pure Black & White) & Soft Red (`#ef4444`) Danger Palette, 24px Curvy Cards,
- * Pill Buttons (minHeight 52), >=48x48 Touch Targets, and Tactile Haptics.
+ * @description Arca Mobile — Frictionless QR Code Device Pairing ("Link a Device"),
+ * Opt-In Cloud Sync Toggle, SAS Verification, Active Device Revocation, and Danger Zone Delete.
  */
 
 import React, { useState } from 'react';
@@ -19,8 +17,25 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { SafeAreaView } from '../components/SafeAreaView';
-import { Smartphone, Sun, Moon, AlertTriangle, X } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import QRCode from 'react-native-qrcode-svg';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+} from 'react-native-reanimated';
+import {
+  Smartphone,
+  Sun,
+  Moon,
+  AlertTriangle,
+  X,
+  QrCode,
+  ScanLine,
+  CheckCircle2,
+  ShieldCheck,
+} from 'lucide-react-native';
 import {
   useTheme,
   ThemePreference,
@@ -28,17 +43,26 @@ import {
   radii,
   layout,
   HIT_SLOP,
+  getSafeTopPadding,
   AnimatedScreen,
   triggerLightHaptic,
   triggerSuccessHaptic,
+  triggerErrorHaptic,
 } from '../theme/theme';
 import { purgeAllVaultData } from '../storage/db';
-import { clearActiveSession } from '../crypto/mobileCrypto';
+import {
+  clearActiveSession,
+  createDevicePairingQrPayload,
+  signAndApproveScannedPairingQr,
+  QrSyncChallengePayload,
+} from '../crypto/mobileCrypto';
 import { clearBiometricSlotKey } from '../crypto/keychain';
+import { QrScannerModal } from '../components/QrScannerModal';
 
 interface SettingsScreenProps {
   onBack: () => void;
   onPurged: () => void;
+  onOpenRecoveryKit?: () => void;
 }
 
 interface MobileDeviceEntry {
@@ -57,31 +81,36 @@ const THEME_OPTIONS: {
   {
     key: 'system',
     label: 'System',
-    icon: (color: string) => <Smartphone size={15} color={color} style={{ marginRight: 6 }} />,
+    icon: (color: string) => (
+      <Smartphone size={15} color={color} style={{ marginRight: 6 }} />
+    ),
   },
   {
     key: 'light',
     label: 'Light',
-    icon: (color: string) => <Sun size={15} color={color} style={{ marginRight: 6 }} />,
+    icon: (color: string) => (
+      <Sun size={15} color={color} style={{ marginRight: 6 }} />
+    ),
   },
   {
     key: 'dark',
     label: 'Dark',
-    icon: (color: string) => <Moon size={15} color={color} style={{ marginRight: 6 }} />,
+    icon: (color: string) => (
+      <Moon size={15} color={color} style={{ marginRight: 6 }} />
+    ),
   },
 ];
 
-export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
+export function SettingsScreen({
+  onBack,
+  onPurged,
+  onOpenRecoveryKit,
+}: SettingsScreenProps) {
   const { colors, isDark, themePreference, setThemePreference } = useTheme();
-
-  const segmentedBg = isDark ? '#18181B' : '#F4F4F5';
-  const activePillBg = isDark ? '#FFFFFF' : '#000000';
-  const activeTextColor = isDark ? '#000000' : '#FFFFFF';
-  const inactiveTextColor = isDark ? '#A1A1AA' : '#52525B';
 
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [syncStatus, setSyncStatus] = useState(
-    '100% Local Mode (SQLite Only — Zero Network)'
+    '100% Local Mode (SQLite Only · Zero Network)'
   );
   const [devices, setDevices] = useState<MobileDeviceEntry[]>([
     {
@@ -98,31 +127,75 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
       status: 'TRUSTED',
     },
   ]);
-  const [pendingAttempt, setPendingAttempt] = useState<MobileDeviceEntry | null>({
-    deviceId: 'dev_new_laptop_03',
-    deviceName: 'New Browser Extension',
-    shortCode: '3B9-8D2',
-    status: 'PENDING',
-  });
+
+  // Frictionless QR Device Pairing State
+  const [showLinkDeviceModal, setShowLinkDeviceModal] = useState(false);
+  const [qrChallengePayload, setQrChallengePayload] =
+    useState<QrSyncChallengePayload | null>(null);
+  const [showQrScanner, setShowQrScanner] = useState(false);
+  const [pairedSuccessDevice, setPairedSuccessDevice] =
+    useState<QrSyncChallengePayload | null>(null);
+
+  const successBadgeScale = useSharedValue(0.5);
+  const animatedSuccessStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: successBadgeScale.value }],
+  }));
+
+  const handleOpenLinkDevice = async () => {
+    triggerLightHaptic();
+    setPairedSuccessDevice(null);
+    const challenge = await createDevicePairingQrPayload(
+      'Arca Android Device',
+      'https://arca-rc8v.onrender.com'
+    );
+    setQrChallengePayload(challenge);
+    setShowLinkDeviceModal(true);
+  };
+
+  const handleDeviceQrScanned = async (rawQr: string) => {
+    setShowQrScanner(false);
+    try {
+      const result = await signAndApproveScannedPairingQr(
+        rawQr,
+        'dev_android_primary_01'
+      );
+      setSyncEnabled(true);
+      setSyncStatus(
+        'Opt-In Cloud Sync Active · Ed25519 QR Paired via Rust Relay'
+      );
+      setDevices((prev) => [
+        ...prev.filter((d) => d.deviceId !== result.payload.deviceId),
+        {
+          deviceId: result.payload.deviceId,
+          deviceName: result.payload.deviceName,
+          shortCode: result.payload.shortCode,
+          status: 'TRUSTED',
+        },
+      ]);
+      setPairedSuccessDevice(result.payload);
+      setShowLinkDeviceModal(true);
+      successBadgeScale.value = withSequence(
+        withSpring(1.12, { damping: 12, stiffness: 240 }),
+        withSpring(1, { damping: 16, stiffness: 220 })
+      );
+      triggerSuccessHaptic();
+    } catch (err: any) {
+      triggerErrorHaptic();
+      Alert.alert(
+        'Pairing Failed',
+        err?.message || 'Could not verify device sync QR code.'
+      );
+    }
+  };
 
   const handleToggleSync = (enabled: boolean) => {
     triggerLightHaptic();
     setSyncEnabled(enabled);
     setSyncStatus(
       enabled
-        ? 'Opt-In Cloud Sync Active — Encrypted Blobs Synced via PostgreSQL Relay'
-        : '100% Local Mode (SQLite Only — Zero Network)'
+        ? 'Opt-In Cloud Sync Active · Encrypted Blobs Synced via PostgreSQL Relay'
+        : '100% Local Mode (SQLite Only · Zero Network)'
     );
-  };
-
-  const handleApproveAttempt = (approve: boolean) => {
-    triggerLightHaptic();
-    if (!pendingAttempt) return;
-    if (approve) {
-      triggerSuccessHaptic();
-      setDevices((prev) => [...prev, { ...pendingAttempt, status: 'TRUSTED' }]);
-    }
-    setPendingAttempt(null);
   };
 
   const handleRevokeDevice = (targetDeviceId: string) => {
@@ -147,9 +220,11 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
       await clearBiometricSlotKey();
       await purgeAllVaultData();
       try {
-        await fetch('https://relay.arca.app/v1/account', { method: 'DELETE' });
+        await fetch('https://arca-rc8v.onrender.com/v1/account', {
+          method: 'DELETE',
+        });
       } catch {
-        // Offline or relay unavailable — local purge already complete
+        // Offline or relay unavailable
       }
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -164,131 +239,47 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
 
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: spacing.xxl }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity
-            onPress={() => {
-              triggerLightHaptic();
-              onBack();
-            }}
-            style={styles.backButton}
-            hitSlop={HIT_SLOP}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.backButtonText, { color: colors.primary }]}>
-              ‹ Back
-            </Text>
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.textHeading }]}>
-            Settings
-          </Text>
-          <View style={{ width: layout.minTouchTarget }} />
-        </View>
-
-        {/* ── Appearance Section ── */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-            Appearance
-          </Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
-            Choose how Arca looks to you.
-          </Text>
-
+      <AnimatedScreen style={[styles.container, { backgroundColor: colors.background }]}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={{ paddingBottom: spacing.xxl }}
+          showsVerticalScrollIndicator={false}
+        >
           <View
             style={[
-              styles.segmentedContainer,
+              styles.header,
               {
-                backgroundColor: segmentedBg,
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                borderBottomColor: colors.border,
+                paddingTop: getSafeTopPadding(10),
               },
             ]}
           >
-            {THEME_OPTIONS.map((opt) => {
-              const isActive = themePreference === opt.key;
-              const textColor = isActive ? activeTextColor : inactiveTextColor;
-              return (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[
-                    styles.segmentedItem,
-                    isActive && {
-                      backgroundColor: activePillBg,
-                      shadowColor: isDark ? '#ffffff' : '#000000',
-                      shadowOpacity: isDark ? 0.16 : 0.12,
-                      shadowRadius: 8,
-                      shadowOffset: { width: 0, height: 2 },
-                      elevation: 3,
-                    },
-                  ]}
-                  onPress={() => {
-                    if (themePreference !== opt.key) {
-                      triggerLightHaptic();
-                      setThemePreference(opt.key);
-                    }
-                  }}
-                  activeOpacity={0.8}
-                  hitSlop={HIT_SLOP}
-                >
-                  {opt.icon(textColor)}
-                  <Text style={[styles.segmentedText, { color: textColor }]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+            <TouchableOpacity
+              onPress={() => {
+                triggerLightHaptic();
+                onBack();
+              }}
+              style={styles.backButton}
+              hitSlop={HIT_SLOP}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.backButtonText, { color: colors.primary }]}>
+                ← Back
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.title, { color: colors.textHeading }]}>
+              Settings
+            </Text>
+            <View style={{ width: layout.minTouchTarget }} />
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-            Cloud Sync (Opt-In Only)
-          </Text>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <View style={styles.rowBetween}>
-              <View style={{ flex: 1, paddingRight: spacing.md }}>
-                <Text style={[styles.cardValue, { color: colors.textHeading }]}>
-                  Enable Cloud Sync
-                </Text>
-                <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
-                  Default is 100% Local SQLite. When enabled, encrypted blobs sync via the Rust Relay.
-                </Text>
-              </View>
-              <Switch
-                value={syncEnabled}
-                onValueChange={handleToggleSync}
-                trackColor={{
-                  false: colors.surfaceSubtle,
-                  true: colors.primary,
-                }}
-                thumbColor={colors.onPrimary}
-              />
-            </View>
-            <View
-              style={[styles.divider, { backgroundColor: colors.border }]}
-            />
-            <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
-              Blind Relay Server (Supabase PostgreSQL)
-            </Text>
-            <Text style={[styles.cardValue, { color: colors.textHeading }]}>
-              https://arca-rc8v.onrender.com
-            </Text>
-            <Text style={[styles.cardStatus, { color: colors.primary }]}>
-              {syncStatus}
-            </Text>
-          </View>
-        </View>
-
-        {pendingAttempt && (
+          {/* ── Frictionless QR Device Pairing Section ── */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-              Security Alert — New Device Attempt
+              Frictionless Device Pairing (QR Sync)
             </Text>
             <View
               style={[
@@ -301,292 +292,532 @@ export function SettingsScreen({ onBack, onPurged }: SettingsScreenProps) {
               ]}
             >
               <Text style={[styles.cardValue, { color: colors.textHeading }]}>
-                A new device is trying to access your vault. Allow?
+                Link a Desktop or Mobile Device
               </Text>
               <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
-                {pendingAttempt.deviceName} • SAS Code: {pendingAttempt.shortCode}
+                Pair instantaneously like WhatsApp Web. Scan a device QR challenge to sign an Ed25519 approval certificate without typing URLs.
               </Text>
-              <View
-                style={[
-                  styles.rowBetween,
-                  { marginTop: spacing.md, gap: spacing.sm },
-                ]}
-              >
+
+              <View style={styles.qrActionsRow}>
                 <TouchableOpacity
                   style={[
-                    styles.actionButton,
-                    { backgroundColor: colors.primary },
+                    styles.primaryPillButton,
+                    { backgroundColor: colors.primary, flex: 1 },
                   ]}
-                  onPress={() => handleApproveAttempt(true)}
+                  hitSlop={HIT_SLOP}
                   activeOpacity={0.85}
+                  onPress={handleOpenLinkDevice}
                 >
+                  <QrCode size={17} color={colors.onPrimary} />
                   <Text
                     style={[
-                      styles.actionButtonText,
+                      styles.primaryPillButtonText,
                       { color: colors.onPrimary },
                     ]}
                   >
-                    Yes, Allow
+                    Link a Device
                   </Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
                   style={[
-                    styles.actionButton,
+                    styles.secondaryPillButton,
                     {
-                      backgroundColor: colors.dangerGlow,
-                      borderColor: colors.dangerBorder,
-                      borderWidth: 1,
+                      backgroundColor: colors.surfaceSubtle,
+                      borderColor: colors.border,
+                      flex: 1,
                     },
                   ]}
-                  onPress={() => handleApproveAttempt(false)}
+                  hitSlop={HIT_SLOP}
                   activeOpacity={0.85}
+                  onPress={() => {
+                    triggerLightHaptic();
+                    setShowQrScanner(true);
+                  }}
                 >
+                  <ScanLine size={17} color={colors.text} />
                   <Text
-                    style={[
-                      styles.actionButtonText,
-                      { color: colors.danger },
-                    ]}
+                    style={[styles.secondaryPillButtonText, { color: colors.text }]}
                   >
-                    No, Deny
+                    Scan Device QR
                   </Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
-        )}
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-            Active Devices &amp; Session Revocation
-          </Text>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            {devices.map((dev, idx) => (
-              <View key={dev.deviceId}>
-                {idx > 0 && (
-                  <View
-                    style={[styles.divider, { backgroundColor: colors.border }]}
-                  />
-                )}
-                <View style={styles.rowBetween}>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[styles.cardValue, { color: colors.textHeading }]}
-                    >
-                      {dev.deviceName} {dev.isCurrent ? '(This Device)' : ''}
-                    </Text>
-                    <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
-                      SAS {dev.shortCode} • Status: {dev.status}
-                    </Text>
-                  </View>
-                  {dev.status === 'TRUSTED' && !dev.isCurrent && (
-                    <TouchableOpacity
-                      style={[
-                        styles.revokeButton,
-                        {
-                          backgroundColor: colors.dangerGlow,
-                          borderColor: colors.dangerBorder,
-                        },
-                      ]}
-                      hitSlop={HIT_SLOP}
-                      onPress={() => handleRevokeDevice(dev.deviceId)}
-                      activeOpacity={0.8}
-                    >
-                      <Text
-                        style={[
-                          styles.revokeButtonText,
-                          { color: colors.danger },
-                        ]}
-                      >
-                        Revoke
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-            Security &amp; Encryption
-          </Text>
-          <View style={[styles.card, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
-              KDF Algorithm
-            </Text>
-            <Text style={[styles.cardValue, { color: colors.textHeading }]}>
-              Argon2id (m=64MB, t=3, p=4)
-            </Text>
-            <View
-              style={[styles.divider, { backgroundColor: colors.border }]}
-            />
-            <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
-              Envelope Cipher
-            </Text>
-            <Text style={[styles.cardValue, { color: colors.textHeading }]}>
-              XChaCha20-Poly1305 (256-bit)
-            </Text>
-            <View
-              style={[styles.divider, { backgroundColor: colors.border }]}
-            />
-            <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
-              Ephemeral Shares
-            </Text>
-            <Text style={[styles.cardValue, { color: colors.textHeading }]}>
-              URL Fragment Key • Burned on 1st View or 5 Min
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.danger }]}>
-            Danger Zone
-          </Text>
-          <Text style={[styles.sectionSubtitle, { color: colors.textMuted }]}>
-            Irreversible actions that permanently delete local SQLite data and hardware keys.
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.dangerButton,
-              {
-                backgroundColor: colors.dangerGlow,
-                borderColor: colors.dangerBorder,
-              },
-            ]}
-            onPress={() => {
-              triggerLightHaptic();
-              setDeleteConfirmText('');
-              setShowDeleteModal(true);
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={[styles.dangerButtonText, { color: colors.danger }]}>
-              Delete Vault & Account
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      {/* Danger Zone Delete Confirmation Modal */}
-      <Modal
-        visible={showDeleteModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDeleteModal(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setShowDeleteModal(false)}>
-          <View style={styles.modalBackdrop}>
-            <TouchableWithoutFeedback>
-              <View
-                style={[
-                  styles.modalSheet,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <View style={styles.modalHeader}>
-                  <View style={styles.modalIconRow}>
-                    <View
-                      style={[
-                        styles.warningIconBg,
-                        { backgroundColor: colors.dangerGlow },
-                      ]}
-                    >
-                      <AlertTriangle size={22} color={colors.danger} />
-                    </View>
-                    <Text style={[styles.modalTitle, { color: colors.textHeading }]}>
-                      Delete Vault & Account
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    hitSlop={HIT_SLOP}
-                    onPress={() => setShowDeleteModal(false)}
-                  >
-                    <X size={20} color={colors.textMuted} />
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={[styles.modalDesc, { color: colors.textMuted }]}>
-                  This action is permanent and cannot be undone. All encrypted credentials, hardware biometric keys, and local SQLite data will be wiped from this device.
+          {/* ── Next-Gen Recovery Kit Launcher ── */}
+          {onOpenRecoveryKit && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+                Shamir 2-of-3 Recovery Kit
+              </Text>
+              <View style={[styles.card, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.cardValue, { color: colors.textHeading }]}>
+                  Export Printable Recovery Kit (PDF / Photos)
                 </Text>
-
-                <Text style={[styles.confirmPrompt, { color: colors.text }]}>
-                  Type <Text style={{ fontWeight: '800', color: colors.danger }}>DELETE</Text> to confirm:
+                <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
+                  View your 3 threshold shares, export to PDF/Photos, or verify your 24-word backup.
                 </Text>
-
-                <TextInput
-                  style={[
-                    styles.confirmInput,
-                    {
-                      backgroundColor: colors.inputBackground,
-                      borderColor:
-                        deleteConfirmText.trim() === 'DELETE'
-                          ? colors.danger
-                          : colors.border,
-                      color: colors.text,
-                    },
-                  ]}
-                  placeholder="Type DELETE"
-                  placeholderTextColor={colors.textDim}
-                  value={deleteConfirmText}
-                  onChangeText={setDeleteConfirmText}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                />
-
                 <TouchableOpacity
                   style={[
-                    styles.modalDeleteButton,
+                    styles.primaryPillButton,
                     {
-                      backgroundColor:
-                        deleteConfirmText.trim() === 'DELETE'
-                          ? colors.danger
-                          : isDark
-                          ? '#27272a'
-                          : '#e4e4e7',
-                      opacity: deleteConfirmText.trim() === 'DELETE' ? 1 : 0.45,
+                      backgroundColor: colors.primaryGlow,
+                      borderColor: colors.primaryBorderGlow,
+                      borderWidth: 1,
+                      marginTop: spacing.md,
                     },
                   ]}
-                  disabled={deleteConfirmText.trim() !== 'DELETE' || isDeleting}
-                  onPress={handleConfirmDelete}
-                  activeOpacity={0.85}
+                  hitSlop={HIT_SLOP}
+                  onPress={() => {
+                    triggerLightHaptic();
+                    onOpenRecoveryKit();
+                  }}
                 >
+                  <ShieldCheck size={17} color={colors.primary} />
                   <Text
                     style={[
-                      styles.modalDeleteButtonText,
-                      {
-                        color:
-                          deleteConfirmText.trim() === 'DELETE'
-                            ? '#ffffff'
-                            : colors.textDim,
-                      },
+                      styles.primaryPillButtonText,
+                      { color: colors.primary },
                     ]}
                   >
-                    {isDeleting ? 'Deleting...' : 'Permanently Delete Vault'}
+                    Open Shamir 2-of-3 Recovery Kit
                   </Text>
                 </TouchableOpacity>
               </View>
-            </TouchableWithoutFeedback>
+            </View>
+          )}
+
+          {/* ── Appearance Section ── */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+              Appearance
+            </Text>
+            <View
+              style={[
+                styles.segmentedContainer,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              {THEME_OPTIONS.map((opt) => {
+                const isActive = themePreference === opt.key;
+                const textColor = isActive ? colors.onPrimary : colors.textMuted;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[
+                      styles.segmentedItem,
+                      isActive && { backgroundColor: colors.primary },
+                    ]}
+                    onPress={() => {
+                      if (themePreference !== opt.key) {
+                        triggerLightHaptic();
+                        setThemePreference(opt.key);
+                      }
+                    }}
+                    activeOpacity={0.8}
+                    hitSlop={HIT_SLOP}
+                  >
+                    {opt.icon(textColor)}
+                    <Text style={[styles.segmentedText, { color: textColor }]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+
+          {/* ── Cloud Sync Section ── */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+              Cloud Sync (Opt-In Only)
+            </Text>
+            <View style={[styles.card, { backgroundColor: colors.surface }]}>
+              <View style={styles.rowBetween}>
+                <View style={{ flex: 1, paddingRight: spacing.md }}>
+                  <Text style={[styles.cardValue, { color: colors.textHeading }]}>
+                    Enable Cloud Sync
+                  </Text>
+                  <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
+                    Default is 100% Local SQLite. When enabled, encrypted blobs sync via the Rust Relay.
+                  </Text>
+                </View>
+                <Switch
+                  value={syncEnabled}
+                  onValueChange={handleToggleSync}
+                  trackColor={{
+                    false: colors.surfaceSubtle,
+                    true: colors.primary,
+                  }}
+                  thumbColor={colors.onPrimary}
+                />
+              </View>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              <Text style={[styles.cardStatus, { color: colors.primary }]}>
+                {syncStatus}
+              </Text>
+            </View>
+          </View>
+
+          {/* ── Active Devices List ── */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+              Active Devices & Session Revocation
+            </Text>
+            <View style={[styles.card, { backgroundColor: colors.surface }]}>
+              {devices.map((dev, idx) => (
+                <View key={dev.deviceId}>
+                  {idx > 0 && (
+                    <View
+                      style={[styles.divider, { backgroundColor: colors.border }]}
+                    />
+                  )}
+                  <View style={styles.rowBetween}>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[styles.cardValue, { color: colors.textHeading }]}
+                      >
+                        {dev.deviceName} {dev.isCurrent ? '(This Device)' : ''}
+                      </Text>
+                      <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
+                        SAS {dev.shortCode} · Status: {dev.status}
+                      </Text>
+                    </View>
+                    {dev.status === 'TRUSTED' && !dev.isCurrent && (
+                      <TouchableOpacity
+                        style={[
+                          styles.revokeButton,
+                          {
+                            backgroundColor: colors.dangerGlow,
+                            borderColor: colors.dangerBorder,
+                          },
+                        ]}
+                        hitSlop={HIT_SLOP}
+                        onPress={() => handleRevokeDevice(dev.deviceId)}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          style={[
+                            styles.revokeButtonText,
+                            { color: colors.danger },
+                          ]}
+                        >
+                          Revoke
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* ── Danger Zone ── */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.danger }]}>
+              Danger Zone
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.dangerButton,
+                {
+                  backgroundColor: colors.dangerGlow,
+                  borderColor: colors.dangerBorder,
+                },
+              ]}
+              hitSlop={HIT_SLOP}
+              onPress={() => {
+                triggerLightHaptic();
+                setDeleteConfirmText('');
+                setShowDeleteModal(true);
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.dangerButtonText, { color: colors.danger }]}>
+                Delete Vault & Account
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* ── Link a Device (QR Challenge + Smooth Success Animation) Modal ── */}
+        <Modal
+          visible={showLinkDeviceModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowLinkDeviceModal(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowLinkDeviceModal(false)}>
+            <View style={styles.modalBackdrop}>
+              <TouchableWithoutFeedback>
+                <View
+                  style={[
+                    styles.modalSheet,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={styles.modalHeader}>
+                    <Text style={[styles.modalTitle, { color: colors.textHeading }]}>
+                      {pairedSuccessDevice
+                        ? 'Device Paired & Verified!'
+                        : 'Link a New Device'}
+                    </Text>
+                    <TouchableOpacity
+                      hitSlop={HIT_SLOP}
+                      onPress={() => setShowLinkDeviceModal(false)}
+                    >
+                      <X size={20} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {pairedSuccessDevice ? (
+                    <Animated.View
+                      style={[styles.pairedSuccessBox, animatedSuccessStyle]}
+                    >
+                      <View
+                        style={[
+                          styles.successIconCircle,
+                          { backgroundColor: colors.successGlow },
+                        ]}
+                      >
+                        <CheckCircle2 size={44} color={colors.success} />
+                      </View>
+                      <Text
+                        style={[
+                          styles.pairedDeviceName,
+                          { color: colors.textHeading },
+                        ]}
+                      >
+                        {pairedSuccessDevice.deviceName}
+                      </Text>
+                      <Text
+                        style={[styles.pairedSasText, { color: colors.primary }]}
+                      >
+                        Verified SAS Code: {pairedSuccessDevice.shortCode}
+                      </Text>
+                      <Text
+                        style={[styles.modalDesc, { color: colors.textMuted, textAlign: 'center' }]}
+                      >
+                        Signed with Ed25519 (`VG_DEVICE_APPROVE_V1:`) and added to your trusted sync ring.
+                      </Text>
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryPillButton,
+                          { backgroundColor: colors.primary, width: '100%' },
+                        ]}
+                        onPress={() => setShowLinkDeviceModal(false)}
+                      >
+                        <Text
+                          style={[
+                            styles.primaryPillButtonText,
+                            { color: colors.onPrimary },
+                          ]}
+                        >
+                          Done
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  ) : (
+                    <>
+                      <Text style={[styles.modalDesc, { color: colors.textMuted }]}>
+                        Scan this QR code from your other logged-in Arca device, or tap "Scan QR From Other Device" below.
+                      </Text>
+
+                      {qrChallengePayload && (
+                        <View style={styles.qrDisplayBox}>
+                          <View style={styles.qrWhiteFrame}>
+                            <QRCode
+                              value={JSON.stringify(qrChallengePayload)}
+                              size={188}
+                              backgroundColor="#ffffff"
+                              color="#09090b"
+                            />
+                          </View>
+                          <View
+                            style={[
+                              styles.sasPill,
+                              { backgroundColor: colors.primaryGlow },
+                            ]}
+                          >
+                            <Text
+                              style={[styles.sasPillText, { color: colors.primary }]}
+                            >
+                              SAS Verification Code: {qrChallengePayload.shortCode}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryPillButton,
+                          { backgroundColor: colors.primary, width: '100%' },
+                        ]}
+                        hitSlop={HIT_SLOP}
+                        onPress={() => {
+                          setShowLinkDeviceModal(false);
+                          setShowQrScanner(true);
+                        }}
+                      >
+                        <ScanLine size={18} color={colors.onPrimary} />
+                        <Text
+                          style={[
+                            styles.primaryPillButtonText,
+                            { color: colors.onPrimary },
+                          ]}
+                        >
+                          Scan QR From Other Device
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+
+        {/* Camera Scanner for Device B (Old/Trusted) */}
+        <QrScannerModal
+          visible={showQrScanner}
+          title="Scan Device Pairing QR"
+          subtitle="Scan the QR code displayed on your new Arca device to sign and approve sync."
+          placeholderHint='{"version":"VG_QR_SYNC_V1","accountId":"acc_01","deviceId":"dev_02","deviceName":"Arca Desktop","deviceAuthPubKey":"...","challenge":"...","shortCode":"4A9-1F2","relayUrl":"https://arca-rc8v.onrender.com","timestamp":1731280000000}'
+          onClose={() => setShowQrScanner(false)}
+          onCodeScanned={handleDeviceQrScanned}
+        />
+
+        {/* Danger Zone Delete Confirmation Modal */}
+        <Modal
+          visible={showDeleteModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDeleteModal(false)}
+        >
+          <TouchableWithoutFeedback onPress={() => setShowDeleteModal(false)}>
+            <View style={styles.modalBackdrop}>
+              <TouchableWithoutFeedback>
+                <View
+                  style={[
+                    styles.modalSheet,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View style={styles.modalHeader}>
+                    <View style={styles.modalIconRow}>
+                      <View
+                        style={[
+                          styles.warningIconBg,
+                          { backgroundColor: colors.dangerGlow },
+                        ]}
+                      >
+                        <AlertTriangle size={22} color={colors.danger} />
+                      </View>
+                      <Text
+                        style={[styles.modalTitle, { color: colors.textHeading }]}
+                      >
+                        Delete Vault & Account
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      hitSlop={HIT_SLOP}
+                      onPress={() => setShowDeleteModal(false)}
+                    >
+                      <X size={20} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <Text style={[styles.modalDesc, { color: colors.textMuted }]}>
+                    This action is permanent. All encrypted credentials, hardware biometric keys, and local SQLite data will be wiped.
+                  </Text>
+
+                  <Text style={[styles.confirmPrompt, { color: colors.text }]}>
+                    Type{' '}
+                    <Text style={{ fontWeight: '800', color: colors.danger }}>
+                      DELETE
+                    </Text>{' '}
+                    to confirm:
+                  </Text>
+
+                  <TextInput
+                    style={[
+                      styles.confirmInput,
+                      {
+                        backgroundColor: colors.inputBackground,
+                        borderColor:
+                          deleteConfirmText.trim() === 'DELETE'
+                            ? colors.danger
+                            : colors.border,
+                        color: colors.text,
+                      },
+                    ]}
+                    placeholder="Type DELETE"
+                    placeholderTextColor={colors.textDim}
+                    value={deleteConfirmText}
+                    onChangeText={setDeleteConfirmText}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                  />
+
+                  <TouchableOpacity
+                    style={[
+                      styles.modalDeleteButton,
+                      {
+                        backgroundColor:
+                          deleteConfirmText.trim() === 'DELETE'
+                            ? colors.danger
+                            : isDark
+                              ? '#27272a'
+                              : '#e4e4e7',
+                        opacity: deleteConfirmText.trim() === 'DELETE' ? 1 : 0.45,
+                      },
+                    ]}
+                    disabled={deleteConfirmText.trim() !== 'DELETE' || isDeleting}
+                    onPress={handleConfirmDelete}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[
+                        styles.modalDeleteButtonText,
+                        {
+                          color:
+                            deleteConfirmText.trim() === 'DELETE'
+                              ? '#ffffff'
+                              : colors.textDim,
+                        },
+                      ]}
+                    >
+                      {isDeleting ? 'Deleting...' : 'Permanently Delete Vault'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
+      </AnimatedScreen>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
   },
@@ -594,7 +825,6 @@ const styles = StyleSheet.create({
     minWidth: layout.minTouchTarget,
     minHeight: layout.minTouchTarget,
     justifyContent: 'center',
-    paddingRight: spacing.sm,
   },
   backButtonText: {
     fontFamily: 'Inter',
@@ -616,14 +846,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
     marginBottom: spacing.xs,
-  },
-  sectionSubtitle: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: spacing.sm,
   },
   segmentedContainer: {
     flexDirection: 'row',
@@ -644,10 +868,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontSize: 13,
     fontWeight: '600',
-    letterSpacing: -0.2,
   },
   card: {
-    borderRadius: radii.card, // 24px curvy surface
+    borderRadius: radii.card,
     padding: spacing.lg,
   },
   rowBetween: {
@@ -658,43 +881,62 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontFamily: 'Inter',
     fontSize: 12,
-    marginTop: 3,
+    marginTop: 4,
     lineHeight: 17,
   },
   cardValue: {
     fontFamily: 'Inter',
     fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: -0.5,
-    marginTop: 2,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   cardStatus: {
     fontFamily: 'Inter',
     fontSize: 12,
     fontWeight: '600',
-    marginTop: spacing.sm,
   },
   divider: {
     height: 1,
     marginVertical: spacing.md,
   },
-  actionButton: {
-    flex: 1,
-    minHeight: layout.minButtonHeight, // >= 52px pill button
-    borderRadius: radii.pill,
+  qrActionsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  primaryPillButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    minHeight: layout.minButtonHeight,
+    borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
   },
-  actionButtonText: {
+  primaryPillButtonText: {
     fontFamily: 'Inter',
-    fontWeight: '700',
     fontSize: 14,
+    fontWeight: '700',
+  },
+  secondaryPillButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: layout.minButtonHeight,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+  },
+  secondaryPillButtonText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '600',
   },
   revokeButton: {
     borderWidth: 1,
     borderRadius: radii.pill,
-    minHeight: layout.minTouchTarget, // >= 48px touch target
+    minHeight: layout.minTouchTarget,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -706,8 +948,8 @@ const styles = StyleSheet.create({
   },
   dangerButton: {
     borderWidth: 1,
-    borderRadius: radii.pill, // 9999 pill-shaped
-    minHeight: layout.minButtonHeight, // >= 52px
+    borderRadius: radii.pill,
+    minHeight: layout.minButtonHeight,
     paddingVertical: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -716,13 +958,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontSize: 16,
     fontWeight: '700',
-    letterSpacing: -0.2,
   },
-
-  // Danger Zone Modal
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.lg,
@@ -733,11 +972,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     borderWidth: 1,
     padding: spacing.xl,
-    shadowColor: '#000000',
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -748,7 +982,7 @@ const styles = StyleSheet.create({
   modalIconRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm + 2,
+    gap: spacing.sm,
   },
   warningIconBg: {
     width: 38,
@@ -760,14 +994,58 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontFamily: 'Inter',
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: -0.4,
   },
   modalDesc: {
     fontFamily: 'Inter',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
     marginBottom: spacing.lg,
+  },
+  qrDisplayBox: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  qrWhiteFrame: {
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: radii.lg,
+    marginBottom: spacing.md,
+  },
+  sasPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
+  },
+  sasPillText: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  pairedSuccessBox: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  successIconCircle: {
+    width: 76,
+    height: 76,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  pairedDeviceName: {
+    fontFamily: 'Inter',
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  pairedSasText: {
+    fontFamily: 'monospace',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: spacing.md,
   },
   confirmPrompt: {
     fontFamily: 'Inter',
@@ -794,6 +1072,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontSize: 15,
     fontWeight: '700',
-    letterSpacing: -0.2,
   },
 });
