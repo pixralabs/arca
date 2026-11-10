@@ -48,6 +48,7 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
+            resValue "string", "CodePushDeploymentKey", '""'
         }
         release {
             signingConfig signingConfigs.release
@@ -55,6 +56,10 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            def codePushKey = project.hasProperty("CODEPUSH_KEY") ?
+                project.property("CODEPUSH_KEY") :
+                (project.hasProperty("CODEPUSH_KEY_ANDROID") ? project.property("CODEPUSH_KEY_ANDROID") : "production-deployment-key-placeholder")
+            resValue "string", "CodePushDeploymentKey", "\"${codePushKey}\""
         }
     }
 }
@@ -67,3 +72,5 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+apply from: "../../node_modules/react-native-code-push/android/codepush.gradle"

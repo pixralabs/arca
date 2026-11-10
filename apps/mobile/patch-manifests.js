@@ -84,3 +84,41 @@ libsToPatch.forEach(lib => {
   }
 });
 
+// Patch react-native-code-push CodePushNativeModule.java for RN 0.77+ (ChoreographerCompat replaced by android.view.Choreographer)
+for (const baseDir of candidateDirs) {
+  const codePushModule = path.join(
+    baseDir,
+    'react-native-code-push',
+    'android',
+    'app',
+    'src',
+    'main',
+    'java',
+    'com',
+    'microsoft',
+    'codepush',
+    'react',
+    'CodePushNativeModule.java'
+  );
+  if (fs.existsSync(codePushModule)) {
+    try {
+      const realModulePath = fs.realpathSync(codePushModule);
+      let content = fs.readFileSync(realModulePath, 'utf8');
+      if (content.includes('com.facebook.react.modules.core.ChoreographerCompat')) {
+        content = content.replace(
+          'import com.facebook.react.modules.core.ChoreographerCompat;',
+          'import android.view.Choreographer;'
+        );
+        content = content.replace(
+          'new ChoreographerCompat.FrameCallback()',
+          'new Choreographer.FrameCallback()'
+        );
+        fs.writeFileSync(realModulePath, content, 'utf8');
+        console.log('[patch-manifests] Patched CodePushNativeModule.java for RN 0.77+ Choreographer');
+      }
+    } catch (err) {
+      console.warn('[patch-manifests] Failed to patch CodePushNativeModule.java:', err.message);
+    }
+  }
+}
+

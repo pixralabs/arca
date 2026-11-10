@@ -33,6 +33,7 @@ import { GeneratorScreen } from './screens/GeneratorScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { ShareScreen } from './screens/ShareScreen';
 import { RecoveryKitScreen } from './screens/RecoveryKitScreen';
+import codePush, { CodePushOptions } from 'react-native-code-push';
 
 const { ArcaSplashScreen } = NativeModules;
 
@@ -40,7 +41,14 @@ LogBox.ignoreAllLogs(true);
 
 type Screen = 'UNLOCK' | 'SETUP' | 'VAULT' | 'TOTP' | 'GENERATOR' | 'SETTINGS' | 'SHARE' | 'RECOVERY_KIT';
 
-export default function App() {
+const codePushOptions: CodePushOptions = {
+  checkFrequency: codePush.CheckFrequency.ON_APP_RESUME,
+  installMode: codePush.InstallMode.ON_NEXT_RESUME,
+  mandatoryInstallMode: codePush.InstallMode.IMMEDIATE,
+  minimumBackgroundDuration: 0,
+};
+
+function App() {
   const { colors, isDark } = useTheme();
   const [isInitializing, setIsInitializing] = useState(true);
   const [currentScreen, setCurrentScreen] = useState<Screen>('SETUP');
@@ -210,6 +218,8 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+export default codePush(codePushOptions)(App);
 
 const styles = StyleSheet.create({
   container: {

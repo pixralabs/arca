@@ -22,6 +22,7 @@
     "react": "19.1.4",
     "react-native": "0.81.6",
     "react-native-biometrics": "^3.0.1",
+    "react-native-code-push": "^9.0.1",
     "react-native-codegen": "^0.70.7",
     "react-native-get-random-values": "^2.1.0",
     "react-native-haptic-feedback": "^3.0.0",

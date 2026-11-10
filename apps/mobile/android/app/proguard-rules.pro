@@ -78,3 +78,8 @@
 # Reanimated
 -keep class com.swmansion.reanimated.** { *; }
 -keepclassmembers class com.swmansion.reanimated.** { *; }
+
+# CodePush
+-keep class com.microsoft.codepush.react.** { *; }
+-keepclassmembers class com.microsoft.codepush.react.** { *; }
+-dontwarn com.nimbusds.jose.**
