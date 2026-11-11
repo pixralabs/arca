@@ -1,8 +1,9 @@
 /**
  * @file apps/mobile/src/screens/UnlockScreen.tsx
  * @description Ultra-Premium Zero-Knowledge Vault Unlock Screen
- * Strict Monochrome (Black & White) Aesthetic — Explicit 100ms UI Thread Yield before Argon2id,
- * Smooth Reanimated Shimmering Skeleton State, Multi-Vault Switcher, and Shake Error Feedback.
+ * Strict Monochrome (Black & White) Aesthetic — Native C++ JSI Argon2id (< 200ms),
+ * Hardware-Backed Biometric Key Wrapping (StrongBox + CryptoObject / Secure Enclave),
+ * OS-Level `FLAG_SECURE` Screenshot Protection, Multi-Vault Switcher, and Shake Error Feedback.
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
@@ -15,8 +16,6 @@ import {
   ScrollView,
   Alert,
   StatusBar,
-  Modal,
-  TouchableWithoutFeedback,
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
@@ -32,7 +31,6 @@ import {
   Eye,
   EyeOff,
   Fingerprint,
-  ShieldCheck,
   ChevronDown,
   AlertCircle,
 } from 'lucide-react-native';
@@ -44,21 +42,21 @@ import {
   radii,
   layout,
   HIT_SLOP,
-  VaultSkeletonLoader,
   triggerLightHaptic,
   triggerSuccessHaptic,
   triggerHaptic,
 } from '../theme/theme';
 import {
   mobileUnlockVault,
+  mobileUnlockWithBiometrics,
   mobileUnlockWithRecovery,
   clearActiveSession,
 } from '../crypto/mobileCrypto';
 import {
-  retrieveBiometricSlotKey,
   hasBiometricSlotKey,
   clearBiometricSlotKey,
 } from '../crypto/keychain';
+import { setFlagSecure } from '../crypto/securityGuard';
 import { getAllVaults, VaultRecord, purgeAllVaultData } from '../storage/db';
 import { ArcaBrandLogo } from '../components/ArcaBrandLogo';
 
@@ -147,6 +145,11 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
 
   const passwordRef = useRef<TextInput>(null);
 
+  // Enforce Android FLAG_SECURE on UnlockScreen to block screenshots and screen-recording malware
+  useEffect(() => {
+    setFlagSecure(true);
+  }, []);
+
   const loadVaults = useCallback(async () => {
     try {
       const allVaults = await getAllVaults();
@@ -174,7 +177,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const handleSelectVault = async (vault: VaultRecord) => {
     triggerLightHaptic();
     setActiveVault(vault);
-    await AsyncStorage.setItem('@arca_active_vault_id', vault.id).catch(() => { });
+    await AsyncStorage.setItem('@arca_active_vault_id', vault.id).catch(() => {});
     const hasBio = await hasBiometricSlotKey(vault.id);
     setIsBioEnabledForActive(hasBio);
     setPassword('');
@@ -204,11 +207,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   }, [shakeOffset]);
 
   /**
-   * 1. Yield to UI Thread (Crucial):
-   * Sets `isLoading(true)` FIRST, waits 100ms for the UI thread to paint the Reanimated
-   * shimmering skeleton screen, and ONLY THEN runs Argon2id KDF derivation.
-   * Navigates immediately to `VaultScreen` once the DEK is derived in RAM so item bodies
-   * are decrypted lazily after navigation.
+   * Native C++ JSI Argon2id Unlock (`m=19456 KiB, t=2, p=1` in < 200ms on physical devices).
    */
   const handleUnlock = async () => {
     if (isLoading) return;
@@ -229,9 +228,6 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
     Keyboard.dismiss();
     setIsLoading(true);
 
-    // Yield a frame so UI thread can paint the shimmering skeleton screen immediately
-    await new Promise((resolve) => setTimeout(resolve, 50));
-
     try {
       if (isRecoveryMode) {
         await mobileUnlockWithRecovery(recoveryPhrase.trim(), activeVault?.id);
@@ -239,8 +235,6 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
         await mobileUnlockVault(password, activeVault?.id);
       }
       triggerSuccessHaptic();
-      // Navigate immediately to VaultScreen; item decryption happens lazily after transition
-      console.warn('[UnlockScreen] calling onUnlocked()');
       onUnlocked();
     } catch (err: any) {
       console.error('[UnlockScreen] unlock error:', err?.message || err);
@@ -251,6 +245,11 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
     }
   };
 
+  /**
+   * Hardware-Backed Biometric Key Unwrapping:
+   * Uses StrongBox (`setIsStrongBoxBacked(true)`) + `CryptoObject` on Android and
+   * `kSecAccessControlBiometryCurrentSet` (Secure Enclave) on iOS.
+   */
   const handleBiometricUnlock = async () => {
     if (isLoading) return;
     triggerLightHaptic();
@@ -259,30 +258,23 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
     const vaultName = activeVault?.name || 'Personal Vault';
 
     try {
-      const storedKey = await retrieveBiometricSlotKey(`Unlock "${vaultName}"`, vaultId);
-      if (storedKey) {
-        Keyboard.dismiss();
-        setIsLoading(true);
-        // Allow UI thread a frame to paint the shimmering skeleton screen
-        await new Promise((resolve) => setTimeout(resolve, 50));
-
-        try {
-          await mobileUnlockVault(storedKey, vaultId);
-          triggerSuccessHaptic();
-          onUnlocked();
-        } catch {
-          setIsLoading(false);
-          triggerShakeAnimation();
-          setErrorMessage('Biometric key invalid or expired.');
-        }
-      } else {
+      const enrolled = await hasBiometricSlotKey(vaultId);
+      if (!enrolled) {
         triggerShakeAnimation();
         setErrorMessage(`Biometric not enrolled for "${vaultName}". Unlock with password first.`);
+        return;
       }
+
+      Keyboard.dismiss();
+      setIsLoading(true);
+
+      await mobileUnlockWithBiometrics(`Unlock "${vaultName}"`, vaultId);
+      triggerSuccessHaptic();
+      onUnlocked();
     } catch (err: any) {
       setIsLoading(false);
       triggerShakeAnimation();
-      setErrorMessage(err?.message || 'Biometric authentication failed.');
+      setErrorMessage(err?.message || 'Biometric key invalid or authentication failed.');
     }
   };
 
@@ -290,7 +282,8 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
     triggerLightHaptic();
     Alert.alert(
       'Reset Vault?',
-      `This will permanently erase all local encrypted data for "${activeVault?.name || 'this vault'
+      `This will permanently erase all local encrypted data for "${
+        activeVault?.name || 'this vault'
       }" from this device. You can restore later via your 24-word recovery phrase.`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -318,35 +311,6 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
       borderColor: focused ? colors.primary : colors.border,
     };
   };
-
-  // Shimmering Skeleton Screen while Argon2id derives MasterKEK on the UI-yielded frame
-  if (isLoading) {
-    return (
-      <SafeAreaView
-        edges={['top', 'bottom']}
-        style={[styles.flex, { backgroundColor: colors.background }]}
-      >
-        <StatusBar
-          translucent
-          backgroundColor="transparent"
-          barStyle={isDark ? 'light-content' : 'dark-content'}
-        />
-        <View style={styles.unlockingHeader}>
-          <ActivityIndicator size="small" color={colors.primary} />
-          <ShieldCheck size={20} color={colors.primary} />
-          <Text style={[styles.unlockingHeaderText, { color: colors.textHeading }]}>
-            Securing your session...
-          </Text>
-        </View>
-        {__DEV__ && (
-          <Text style={[styles.devSpeedNotice, { color: colors.textDim }]}>
-            Debug/Emulator Mode: Argon2id runs in JS. Release .aab builds run at native speed.
-          </Text>
-        )}
-        <VaultSkeletonLoader />
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView
@@ -649,27 +613,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,
-  },
-  unlockingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xs,
-  },
-  unlockingHeaderText: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-    fontFamily: 'Inter',
-  },
-  devSpeedNotice: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    textAlign: 'center',
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.xs,
   },
   header: { alignItems: 'center', marginBottom: spacing.lg },
   badge: {

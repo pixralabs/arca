@@ -2,6 +2,7 @@
  * @file apps/mobile/src/App.tsx
  * @description Arca Mobile — Root Application Container with Dynamic Dark/Light Theme,
  * Spring-Based Screen Transitions (`react-native-reanimated`), Tactile Haptics,
+ * Root/Jailbreak Anti-Tamper Detection (`jail-monkey`), OS-Level `FLAG_SECURE` Guard,
  * and Shimmering Skeleton Loaders during initialization.
  */
 
@@ -10,9 +11,10 @@ import {
   StatusBar,
   StyleSheet,
   View,
+  Text,
+  Alert,
   LogBox,
   NativeModules,
-  Platform,
 } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { SafeAreaView } from './components/SafeAreaView';
@@ -25,6 +27,11 @@ import {
 } from './theme/theme';
 import type { VaultItemPlaintext } from '@vaultguard/shared';
 import { getVaultMeta, getAllVaults } from './storage/db';
+import {
+  isDeviceCompromised,
+  setFlagSecure,
+  SECURITY_COMPROMISED_WARNING,
+} from './crypto/securityGuard';
 import { SetupScreen } from './screens/SetupScreen';
 import { UnlockScreen } from './screens/UnlockScreen';
 import { VaultScreen } from './screens/VaultScreen';
@@ -45,7 +52,7 @@ const codePushOptions: CodePushOptions = {
   checkFrequency: codePush.CheckFrequency.ON_APP_RESUME,
   installMode: codePush.InstallMode.ON_NEXT_RESUME,
   mandatoryInstallMode: codePush.InstallMode.IMMEDIATE,
-  minimumBackgroundDuration: 0,
+  deploymentKey: 'HrZTHeXrYf5jDQbw6iXcWU-BksP8yZrN7mAIqTbThW', // <-- Ye aapki Staging Deployment Key hai
 };
 
 function App() {
@@ -53,6 +60,7 @@ function App() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [currentScreen, setCurrentScreen] = useState<Screen>('SETUP');
   const [activeTotpItem, setActiveTotpItem] = useState<VaultItemPlaintext | null>(null);
+  const [deviceCompromised, setDeviceCompromised] = useState(false);
 
   const navigateTo = useCallback((nextScreen: Screen) => {
     triggerLightHaptic();
@@ -62,6 +70,21 @@ function App() {
   useEffect(() => {
     ArcaSplashScreen?.setSystemBarsTheme?.(isDark);
   }, [isDark]);
+
+  // Enforce FLAG_SECURE on UnlockScreen and VaultScreen (and globally via MainActivity.kt)
+  useEffect(() => {
+    if (currentScreen === 'UNLOCK' || currentScreen === 'VAULT') {
+      setFlagSecure(true);
+    }
+  }, [currentScreen]);
+
+  // Startup Anti-Tamper Root/Jailbreak Check (`jail-monkey`)
+  useEffect(() => {
+    if (isDeviceCompromised()) {
+      setDeviceCompromised(true);
+      Alert.alert('Security Warning', SECURITY_COMPROMISED_WARNING);
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -124,6 +147,13 @@ function App() {
           edges={['top', 'bottom']}
           style={[styles.container, { backgroundColor: colors.background }]}
         >
+          {deviceCompromised && (
+            <View style={styles.compromisedBanner}>
+              <Text style={styles.compromisedBannerText}>
+                {SECURITY_COMPROMISED_WARNING}
+              </Text>
+            </View>
+          )}
           <VaultSkeletonLoader />
         </SafeAreaView>
       </SafeAreaProvider>
@@ -213,6 +243,13 @@ function App() {
         backgroundColor="transparent"
       />
       <View style={[styles.content, { backgroundColor: colors.background }]}>
+        {deviceCompromised && (
+          <View style={styles.compromisedBanner}>
+            <Text style={styles.compromisedBannerText}>
+              {SECURITY_COMPROMISED_WARNING}
+            </Text>
+          </View>
+        )}
         <AnimatedScreen key={currentScreen}>{renderScreen()}</AnimatedScreen>
       </View>
     </SafeAreaProvider>
@@ -227,5 +264,20 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  compromisedBanner: {
+    backgroundColor: '#dc2626',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+  },
+  compromisedBannerText: {
+    color: '#ffffff',
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

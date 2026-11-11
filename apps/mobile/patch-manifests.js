@@ -4,6 +4,8 @@ const path = require('path');
 const libsToPatch = [
   'react-native-biometrics',
   'react-native-keychain',
+  'jail-monkey',
+  'react-native-sodium-jsi',
   '@react-native-async-storage/async-storage',
   'react-native-safe-area-context',
   'react-native-screens',
@@ -32,7 +34,7 @@ libsToPatch.forEach(lib => {
       }
     }
 
-    // Also ensure namespace is present in build.gradle if missing (AGP 8+ requirement)
+    // Ensure namespace is present in build.gradle if missing (AGP 8+ requirement)
     const gradlePath = path.join(baseDir, lib, 'android', 'build.gradle');
     if (fs.existsSync(gradlePath)) {
       try {
@@ -42,6 +44,8 @@ libsToPatch.forEach(lib => {
           'react-native-biometrics': 'com.rnbiometrics',
           'react-native-linear-gradient': 'com.BV.LinearGradient',
           'react-native-keychain': 'com.oblador.keychain',
+          'jail-monkey': 'com.gantix.JailMonkey',
+          'react-native-sodium-jsi': 'com.reactnativesodiumjsi',
           '@react-native-async-storage/async-storage': 'com.reactnativecommunity.asyncstorage',
           'react-native-safe-area-context': 'com.th3rdwave.safeareacontext',
           'react-native-screens': 'com.swmansion.rnscreens',
@@ -56,6 +60,36 @@ libsToPatch.forEach(lib => {
         }
       } catch (err) {
         console.warn(`[patch-manifests] Failed to patch build.gradle for ${lib}:`, err.message);
+      }
+    }
+
+    // Patch react-native-keychain Android CipherStorageBase to enforce StrongBox (setIsStrongBoxBacked(true))
+    // and InvalidatedByBiometricEnrollment(true) for CryptoObject biometric key wrapping
+    if (lib === 'react-native-keychain') {
+      const cipherBaseCandidates = [
+        path.join(baseDir, lib, 'android', 'src', 'main', 'java', 'com', 'oblador', 'keychain', 'cipherStorage', 'CipherStorageBase.java'),
+        path.join(baseDir, lib, 'android', 'src', 'main', 'java', 'com', 'oblador', 'keychain', 'cipherStorage', 'CipherStorageKeystoreAesCbc.java'),
+      ];
+      for (const cipherFile of cipherBaseCandidates) {
+        if (fs.existsSync(cipherFile)) {
+          try {
+            const realCipherFile = fs.realpathSync(cipherFile);
+            let cipherContent = fs.readFileSync(realCipherFile, 'utf8');
+            if (
+              cipherContent.includes('KeyGenParameterSpec.Builder') &&
+              !cipherContent.includes('setIsStrongBoxBacked(true)')
+            ) {
+              cipherContent = cipherContent.replace(
+                /\.setUserAuthenticationRequired\(true\)/g,
+                '.setUserAuthenticationRequired(true).setInvalidatedByBiometricEnrollment(true).setIsStrongBoxBacked(true)'
+              );
+              fs.writeFileSync(realCipherFile, cipherContent, 'utf8');
+              console.log(`[patch-manifests] Enforced StrongBox (setIsStrongBoxBacked(true)) in ${path.basename(cipherFile)}`);
+            }
+          } catch (err) {
+            console.warn('[patch-manifests] Failed to patch StrongBox in react-native-keychain:', err.message);
+          }
+        }
       }
     }
 
@@ -121,4 +155,3 @@ for (const baseDir of candidateDirs) {
     }
   }
 }
-

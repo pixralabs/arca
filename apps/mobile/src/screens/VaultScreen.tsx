@@ -51,6 +51,7 @@ import {
   getActiveSession,
 } from '../crypto/mobileCrypto';
 import { softDeleteVaultItem } from '../storage/db';
+import { setFlagSecure } from '../crypto/securityGuard';
 import { VaultItemPlaintext } from '@vaultguard/shared';
 import {
   calculateVaultSecurityScore,
@@ -149,6 +150,7 @@ export function VaultScreen({
   };
 
   useEffect(() => {
+    setFlagSecure(true);
     void loadItems();
   }, []);
 

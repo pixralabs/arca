@@ -2,7 +2,8 @@
  * @file apps/mobile/src/components/QrScannerModal.tsx
  * @description Reusable 60FPS Camera QR Code Scanner powered by `react-native-vision-camera`.
  * Supports both TOTP (`otpauth://totp/...`) and Device Pairing (`VG_QR_SYNC_V1`) QR codes,
- * with Reanimated scan reticle, Haptic feedback, and Emulator/Paste fallback.
+ * with OS-level `FLAG_SECURE` screen-capture protection, Reanimated scan reticle,
+ * Haptic feedback, and Emulator/Paste fallback.
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -40,6 +41,7 @@ import {
   triggerSuccessHaptic,
   triggerErrorHaptic,
 } from '../theme/theme';
+import { setFlagSecure } from '../crypto/securityGuard';
 
 export interface QrScannerModalProps {
   visible: boolean;
@@ -71,6 +73,8 @@ export function QrScannerModal({
 
   useEffect(() => {
     if (visible) {
+      // Enforce Android FLAG_SECURE while QR Scanner is open to block screen-recording malware
+      setFlagSecure(true);
       hasScannedRef.current = false;
       setShowManualEntry(false);
       setManualValue('');
@@ -438,4 +442,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
