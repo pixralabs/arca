@@ -83,3 +83,9 @@
 -keep class com.microsoft.codepush.react.** { *; }
 -keepclassmembers class com.microsoft.codepush.react.** { *; }
 -dontwarn com.nimbusds.jose.**
+
+# JailMonkey / RootBeer Anti-Tamper
+-keep class com.gantix.JailMonkey.** { *; }
+-dontwarn com.gantix.JailMonkey.**
+-keep class com.scottyab.rootbeer.** { *; }
+-dontwarn com.scottyab.rootbeer.**
