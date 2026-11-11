@@ -93,7 +93,22 @@ libsToPatch.forEach(lib => {
       }
     }
 
-    // Also patch op-sqlite CMakeLists.txt for RN 0.76+ (ReactAndroid::turbomodulejsijni merged into ReactAndroid::reactnative)
+    // Also patch op-sqlite CMakeLists.txt and build.gradle for RN 0.76+ & minSdkVersion 24
+    const opSqliteGradle = path.join(baseDir, '@op-engineering', 'op-sqlite', 'android', 'build.gradle');
+    if (fs.existsSync(opSqliteGradle)) {
+      try {
+        const realGradle = fs.realpathSync(opSqliteGradle);
+        let content = fs.readFileSync(realGradle, 'utf8');
+        if (content.includes('minSdkVersion 23')) {
+          content = content.replace('minSdkVersion 23', 'minSdkVersion safeExtGet("minSdkVersion", 24)');
+          fs.writeFileSync(realGradle, content, 'utf8');
+          console.log('[patch-manifests] Patched op-sqlite build.gradle for minSdkVersion 24');
+        }
+      } catch (err) {
+        console.warn('[patch-manifests] Failed to patch op-sqlite build.gradle:', err.message);
+      }
+    }
+
     const opSqliteCmake = path.join(baseDir, '@op-engineering', 'op-sqlite', 'android', 'CMakeLists.txt');
     if (fs.existsSync(opSqliteCmake)) {
       try {
@@ -154,4 +169,37 @@ for (const baseDir of candidateDirs) {
       console.warn('[patch-manifests] Failed to patch CodePushNativeModule.java:', err.message);
     }
   }
+}
+
+// Patch graphicsConversions.h std::format in Gradle transform caches for NDK 26 compatibility
+try {
+  const os = require('os');
+  const gradleCaches = path.join(os.homedir(), '.gradle', 'caches');
+  if (fs.existsSync(gradleCaches)) {
+    const findAndPatch = (dir) => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          // Avoid scanning non-transform folders to keep it fast
+          if (entry.name === 'transforms' || entry.name.startsWith('8.') || !dir.includes('caches/')) {
+            findAndPatch(fullPath);
+          }
+        } else if (entry.name === 'graphicsConversions.h') {
+          let hContent = fs.readFileSync(fullPath, 'utf8');
+          if (hContent.includes('std::format(')) {
+            hContent = hContent.replace(
+              'std::format("{}%", dimension.value)',
+              'std::to_string(dimension.value) + "%"'
+            );
+            fs.writeFileSync(fullPath, hContent, 'utf8');
+            console.log(`[patch-manifests] Patched graphicsConversions.h: ${fullPath}`);
+          }
+        }
+      }
+    };
+    findAndPatch(gradleCaches);
+  }
+} catch (err) {
+  console.warn('[patch-manifests] Failed to patch graphicsConversions.h:', err.message);
 }

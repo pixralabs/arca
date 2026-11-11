@@ -19,5 +19,5 @@
       "@vaultguard/crypto": ["../../packages/crypto/src"]
     }
   },
-  "include": ["src/**/*", "index.js"]
+  "include": ["src/**/*", "index.*"]
 }
