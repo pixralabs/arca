@@ -7,6 +7,16 @@ module.exports = {
         },
       },
     },
+    'react-native-sodium-jsi': {
+      platforms: {
+        android: null,
+      },
+    },
+    'react-native-jail-monkey': {
+      platforms: {
+        android: null,
+      },
+    },
   },
 };
 

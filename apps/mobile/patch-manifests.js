@@ -50,7 +50,7 @@ libsToPatch.forEach(lib => {
           'react-native-safe-area-context': 'com.th3rdwave.safeareacontext',
           'react-native-screens': 'com.swmansion.rnscreens',
         };
-        if (!gradleContent.includes('namespace') && namespaces[lib]) {
+        if (!/namespace\s+['"][^'"]+['"]/.test(gradleContent) && namespaces[lib]) {
           gradleContent = gradleContent.replace(
             /android\s*\{/,
             `android {\n    namespace "${namespaces[lib]}"`
