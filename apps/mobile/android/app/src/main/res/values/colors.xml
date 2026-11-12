@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="splash_background">#09090b</color>
+    <!-- Background Colors (Light Mode) -->
+    <color name="splash_background">#FFFFFF</color>
     <color name="primary_dark">#09090b</color>
-    <color name="ic_launcher_light_bg">#F7E4C4</color>
-    <color name="ic_launcher_dark_bg">#1D1F2B</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="ic_launcher_light_bg">#FFFFFF</color>
+    <color name="ic_launcher_dark_bg">#09090b</color>
+
+    <!-- Flat Minimalist Padlock Foreground -->
+    <color name="ic_lock_color">#09090B</color>
+    <color name="ic_lock_accent">#10B981</color>
+    <color name="ic_keyhole_color">#FFFFFF</color>
+
+    <!-- Branding Typography -->
+    <color name="splash_brand_text">#71717A</color>
+    <color name="splash_brand_accent">#18181B</color>
 </resources>

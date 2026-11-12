@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+
+    <!-- U-Shackle -->
+    <path
+        android:strokeColor="@color/ic_lock_color"
+        android:strokeWidth="12"
+        android:strokeLineCap="round"
+        android:pathData="M 118,134 V 108 C 118,93.6 129.6,82 144,82 C 158.4,82 170,93.6 170,108 V 134" />
+
+    <!-- Padlock Body -->
+    <path
+        android:fillColor="@color/ic_lock_color"
+        android:pathData="M 104,132 H 184 C 194,132 202,140 202,150 V 172 C 202,182 194,190 184,190 H 104 C 94,190 86,182 86,172 V 150 C 86,140 94,132 104,132 Z" />
+
+    <!-- Keyhole Circle -->
+    <path
+        android:fillColor="@color/ic_keyhole_color"
+        android:pathData="M 144,147 A 6,6 0 1,1 144,159 A 6,6 0 1,1 144,147 Z" />
+
+    <!-- Keyhole Stem -->
+    <path
+        android:fillColor="@color/ic_keyhole_color"
+        android:pathData="M 142,155 L 140,173 C 139.7,175 141.2,176.5 143,176.5 H 145 C 146.8,176.5 148.3,175 148,173 L 146,155 Z" />
+</vector>
+

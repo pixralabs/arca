@@ -3,16 +3,13 @@
     <item>
         <color android:color="@color/splash_background" />
     </item>
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/splash_logo" />
-    </item>
+    <item
+        android:width="160dp"
+        android:height="160dp"
+        android:gravity="center"
+        android:drawable="@drawable/splash_icon" />
     <item
         android:bottom="48dp"
-        android:gravity="bottom|center_horizontal">
-        <bitmap
-            android:gravity="bottom|center_horizontal"
-            android:src="@drawable/splash_footer" />
-    </item>
+        android:gravity="bottom|center_horizontal"
+        android:drawable="@drawable/splash_branding" />
 </layer-list>
