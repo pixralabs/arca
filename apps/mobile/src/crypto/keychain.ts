@@ -36,16 +36,37 @@ export async function checkBiometricsAvailable(): Promise<{
   isStrongBoxBacked?: boolean;
 }> {
   try {
-    const supportedBiometry = await Keychain.getSupportedBiometryType();
-    if (supportedBiometry) {
-      const securityLevel = await Keychain.getSecurityLevel({
-        accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
-      }).catch(() => Keychain.SECURITY_LEVEL.SECURE_HARDWARE);
+    let supportedBiometry: any = null;
+    try {
+      supportedBiometry = await Keychain.getSupportedBiometryType();
+    } catch {
+      supportedBiometry = null;
+    }
 
-      const isStrongBox =
-        Platform.OS === 'android' && typeof nativeSecurity?.isStrongBoxAvailable === 'function'
-          ? await nativeSecurity.isStrongBoxAvailable().catch(() => true)
-          : Platform.OS === 'ios';
+    if (supportedBiometry) {
+      let securityLevel: any = null;
+      try {
+        securityLevel = await Keychain.getSecurityLevel({
+          accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
+        });
+      } catch {
+        securityLevel = Keychain.SECURITY_LEVEL.SECURE_HARDWARE;
+      }
+
+      let isStrongBox = false;
+      try {
+        if (
+          Platform.OS === 'android' &&
+          nativeSecurity &&
+          typeof nativeSecurity.isStrongBoxAvailable === 'function'
+        ) {
+          isStrongBox = Boolean(await nativeSecurity.isStrongBoxAvailable());
+        } else if (Platform.OS === 'ios') {
+          isStrongBox = true;
+        }
+      } catch {
+        isStrongBox = false;
+      }
 
       return {
         available: securityLevel === Keychain.SECURITY_LEVEL.SECURE_HARDWARE || Boolean(supportedBiometry),
@@ -54,20 +75,25 @@ export async function checkBiometricsAvailable(): Promise<{
       };
     }
 
-    const { available, biometryType } = await rnBiometrics.isSensorAvailable();
-    return {
-      available,
-      biometryType:
-        biometryType === BiometryTypes.TouchID
-          ? 'TouchID'
-          : biometryType === BiometryTypes.FaceID
-          ? 'FaceID'
-          : biometryType === BiometryTypes.Biometrics
-          ? 'Biometrics'
-          : null,
-    };
+    try {
+      const { available, biometryType } = await rnBiometrics.isSensorAvailable();
+      return {
+        available: Boolean(available),
+        biometryType:
+          biometryType === BiometryTypes.TouchID
+            ? 'TouchID'
+            : biometryType === BiometryTypes.FaceID
+            ? 'FaceID'
+            : biometryType === BiometryTypes.Biometrics
+            ? 'Biometrics'
+            : null,
+        isStrongBoxBacked: false,
+      };
+    } catch {
+      return { available: false, biometryType: null, isStrongBoxBacked: false };
+    }
   } catch {
-    return { available: false, biometryType: null };
+    return { available: false, biometryType: null, isStrongBoxBacked: false };
   }
 }
 
@@ -78,6 +104,8 @@ export async function checkBiometricsAvailable(): Promise<{
  *   with `SECURITY_LEVEL.SECURE_HARDWARE`, `STORAGE_TYPE.AES` (or `RSA`), and `BIOMETRY_CURRENT_SET`.
  * - iOS: Stores inside the Secure Enclave with `ACCESS_CONTROL.BIOMETRY_CURRENT_SET`
  *   (`kSecAccessControlBiometryCurrentSet`) and `ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY`.
+ * - Graceful fallback: If StrongBox or hardware enclave is unavailable on the device,
+ *   falls back to standard hardware/software keystore storage safely without throwing.
  */
 export async function storeBiometricSlotKey(
   wrappedKeyHex: string,
@@ -103,14 +131,12 @@ export async function storeBiometricSlotKey(
           payloadToStore = hwWrapped;
         }
       } catch {
-        // Fallback to react-native-keychain StrongBox-patched CipherStorage
+        // Fallback to standard keychain payload if StrongBox wrapping is rejected/unavailable
       }
     }
 
-    const options: Keychain.Options = {
+    const hardwareOptions: Keychain.Options = {
       service,
-      // iOS: Maps to `kSecAccessControlBiometryCurrentSet` in Secure Enclave (invalidated on new biometric enrollment)
-      // Android: Enforces `setInvalidatedByBiometricEnrollment(true)` + `BiometricPrompt.CryptoObject`
       accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
       securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
@@ -121,8 +147,24 @@ export async function storeBiometricSlotKey(
       rules: Keychain.SECURITY_RULES.NONE,
     };
 
-    const result = await Keychain.setGenericPassword('biometric_slot', payloadToStore, options);
-    return Boolean(result);
+    try {
+      const result = await Keychain.setGenericPassword('biometric_slot', payloadToStore, hardwareOptions);
+      if (result) return true;
+    } catch {
+      // Fallback for devices without hardware-backed Keystore or enrolled biometrics
+      try {
+        const standardOptions: Keychain.Options = {
+          service,
+          accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+        };
+        const fallbackResult = await Keychain.setGenericPassword('biometric_slot', payloadToStore, standardOptions);
+        return Boolean(fallbackResult);
+      } catch {
+        return false;
+      }
+    }
+
+    return false;
   } catch {
     return false;
   }
@@ -176,12 +218,16 @@ export async function retrieveBiometricSlotKey(
       nativeSecurity &&
       typeof nativeSecurity.unwrapWithStrongBoxCryptoObject === 'function'
     ) {
-      const unwrapped = await nativeSecurity.unwrapWithStrongBoxCryptoObject(
-        service,
-        storedPayload,
-        promptMessage
-      );
-      return typeof unwrapped === 'string' && unwrapped.length > 0 ? unwrapped : null;
+      try {
+        const unwrapped = await nativeSecurity.unwrapWithStrongBoxCryptoObject(
+          service,
+          storedPayload,
+          promptMessage
+        );
+        return typeof unwrapped === 'string' && unwrapped.length > 0 ? unwrapped : null;
+      } catch {
+        return null;
+      }
     }
 
     return storedPayload;

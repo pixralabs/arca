@@ -49,7 +49,7 @@ LogBox.ignoreAllLogs(true);
 type Screen = 'UNLOCK' | 'SETUP' | 'VAULT' | 'TOTP' | 'GENERATOR' | 'SETTINGS' | 'SHARE' | 'RECOVERY_KIT';
 
 const codePushOptions: CodePushOptions = {
-  checkFrequency: codePush.CheckFrequency.ON_APP_RESUME,
+  checkFrequency: codePush.CheckFrequency.MANUAL,
   installMode: codePush.InstallMode.ON_NEXT_RESUME,
   mandatoryInstallMode: codePush.InstallMode.IMMEDIATE,
   deploymentKey: 'HrZTHeXrYf5jDQbw6iXcWU-BksP8yZrN7mAIqTbThW', // <-- Ye aapki Staging Deployment Key hai
@@ -128,6 +128,39 @@ function App() {
     return () => {
       isMounted = false;
       clearTimeout(timer);
+    };
+  }, []);
+
+  // Safe Background CodePush Sync: never blocks startup or crashes if network is offline
+  useEffect(() => {
+    let cpTimer: NodeJS.Timeout | null = null;
+    try {
+      if (typeof codePush?.sync === 'function') {
+        cpTimer = setTimeout(() => {
+          try {
+            codePush.sync(
+              {
+                installMode: codePush.InstallMode.ON_NEXT_RESUME,
+                mandatoryInstallMode: codePush.InstallMode.IMMEDIATE,
+                deploymentKey: 'HrZTHeXrYf5jDQbw6iXcWU-BksP8yZrN7mAIqTbThW',
+              },
+              undefined,
+              undefined
+            ).catch((err: any) => {
+              // Gracefully handle network unavailability
+              console.warn('[CodePush] Sync caught safely:', err);
+            });
+          } catch (err) {
+            console.warn('[CodePush] Sync invocation caught safely:', err);
+          }
+        }, 3000);
+      }
+    } catch (e) {
+      console.warn('[CodePush] Initialization caught safely:', e);
+    }
+
+    return () => {
+      if (cpTimer) clearTimeout(cpTimer);
     };
   }, []);
 
@@ -256,7 +289,17 @@ function App() {
   );
 }
 
-export default codePush(codePushOptions)(App);
+let RootComponent: React.ComponentType = App;
+try {
+  if (typeof codePush === 'function') {
+    RootComponent = codePush(codePushOptions)(App);
+  }
+} catch (e) {
+  console.warn('[CodePush] Root wrapper caught safely:', e);
+  RootComponent = App;
+}
+
+export default RootComponent;
 
 const styles = StyleSheet.create({
   container: {

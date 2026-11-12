@@ -36,12 +36,14 @@
 -keepclassmembers class *  { @com.facebook.react.uimanager.annotations.ReactProp <methods>; }
 -keepclassmembers class *  { @com.facebook.react.uimanager.annotations.ReactPropGroup <methods>; }
 
+# React Native & Hermes
+-keep class com.facebook.react.** { *; }
 -dontwarn com.facebook.react.**
 -keep,includedescriptorclasses class com.facebook.react.bridge.** { *; }
 -keep,includedescriptorclasses class com.facebook.react.turbomodule.core.** { *; }
 -keep,includedescriptorclasses class com.facebook.react.internal.turbomodule.core.** { *; }
-
-# Hermes
+-keep class com.facebook.hermes.** { *; }
+-dontwarn com.facebook.hermes.**
 -keep class com.facebook.jni.** { *; }
 
 # Okio / OkHttp
@@ -62,10 +64,21 @@
 -keep class com.op.sqlite.** { *; }
 -keepclassmembers class com.op.sqlite.** { *; }
 
-# React Native Biometrics / Keychain / Screens
+# React Native Biometrics / Keychain / Screens / Security
 -keep class com.rnbiometrics.** { *; }
 -keep class com.oblador.keychain.** { *; }
+-keep class androidx.security.crypto.** { *; }
+-dontwarn androidx.security.crypto.**
+-keep class androidx.biometric.** { *; }
+-dontwarn androidx.biometric.**
 -keep class com.swmansion.rnscreens.** { *; }
+
+# Pixra Arca Native Security & Sodium JSI
+-keep class com.pixra.arca.** { *; }
+-keepclassmembers class com.pixra.arca.** { *; }
+-keep class com.standardnotes.sodium.** { *; }
+-dontwarn com.standardnotes.sodium.**
+-keepclassmembers class * { native <methods>; }
 
 # Vision Camera
 -keep class com.mrousavy.camera.** { *; }
@@ -79,9 +92,12 @@
 -keep class com.swmansion.reanimated.** { *; }
 -keepclassmembers class com.swmansion.reanimated.** { *; }
 
-# CodePush
+# CodePush & AppCenter
 -keep class com.microsoft.codepush.react.** { *; }
 -keepclassmembers class com.microsoft.codepush.react.** { *; }
+-keep class com.microsoft.appcenter.** { *; }
+-dontwarn com.microsoft.appcenter.**
+-dontwarn com.microsoft.codepush.react.**
 -dontwarn com.nimbusds.jose.**
 
 # JailMonkey / RootBeer Anti-Tamper
