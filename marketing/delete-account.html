@@ -36,17 +36,17 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .bg-grid-pattern {
-      background-image: radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px);
+      background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
       background-size: 28px 28px;
     }
   </style>
 </head>
 <body class="bg-[#09090b] text-zinc-50 antialiased selection:bg-rose-500 selection:text-zinc-950 min-h-screen flex flex-col overflow-x-hidden">
 
-  <!-- Ambient Minimal Glow -->
+  <!-- Ambient Minimal Monochrome & Restrained Rose Glow -->
   <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[720px] h-[380px] bg-rose-500/10 blur-[140px] rounded-full"></div>
-    <div class="absolute top-[40%] -right-32 w-[420px] h-[420px] bg-emerald-500/5 blur-[140px] rounded-full"></div>
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[720px] h-[380px] bg-rose-500/10 blur-[150px] rounded-full"></div>
+    <div class="absolute top-[40%] -right-32 w-[420px] h-[420px] bg-white/[0.03] blur-[150px] rounded-full"></div>
     <div class="absolute inset-0 bg-grid-pattern opacity-50"></div>
   </div>
 
@@ -54,7 +54,7 @@
   <header class="sticky top-0 z-40 border-b border-zinc-800/80 bg-[#09090b]/80 backdrop-blur-xl">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
       <a href="index.html" class="flex items-center gap-2.5 group focus:outline-none">
-        <img src="favicon.png" alt="Arca" class="w-8 h-8 object-contain drop-shadow-[0_2px_10px_rgba(16,185,129,0.35)] group-hover:scale-105 transition-transform" />
+        <img src="favicon.png" alt="Arca" class="w-8 h-8 object-contain drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)] group-hover:scale-105 transition-transform" />
         <span class="text-base font-bold tracking-tight text-zinc-100 group-hover:text-white transition-colors">Arca</span>
       </a>
 
@@ -82,13 +82,13 @@
       </p>
       <div class="flex flex-wrap items-center gap-4 text-xs font-mono text-zinc-400">
         <span>Application: <strong class="text-zinc-200">Arca</strong></span>
-        <span>Package Name: <strong class="text-emerald-400">com.pixra.arca</strong></span>
+        <span>Package Name: <strong class="text-zinc-200">com.pixra.arca</strong></span>
         <span>Developer: <strong class="text-zinc-200">Pixra Labs</strong></span>
       </div>
     </div>
 
     <!-- Zero-Knowledge Callout -->
-    <div class="my-8 p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 space-y-3">
+    <div class="my-8 p-6 rounded-3xl bg-zinc-900/80 border border-zinc-800 space-y-3">
       <div class="flex items-center gap-2.5 text-amber-400 font-bold text-sm uppercase tracking-wide font-mono">
         <svg class="w-5 h-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -96,7 +96,7 @@
         <span>Important: Zero-Knowledge & Permanent Deletion</span>
       </div>
       <p class="text-sm text-zinc-300 leading-relaxed">
-        Because Arca uses client-side envelope encryption (<code class="font-mono text-emerald-400">Argon2id</code> + <code class="font-mono text-emerald-400">XChaCha20-Poly1305</code>), Pixra Labs <strong>never</strong> has access to your Master Password, your cryptographic keys, or your unencrypted vault. 
+        Because Arca uses client-side envelope encryption (<code class="font-mono text-zinc-200">Argon2id</code> + <code class="font-mono text-zinc-200">XChaCha20-Poly1305</code>), Pixra Labs <strong>never</strong> has access to your Master Password, your cryptographic keys, or your unencrypted vault. 
       </p>
       <p class="text-sm text-zinc-400 leading-relaxed">
         <strong>Once data or an account is deleted, it is permanently wiped and mathematically unrecoverable.</strong> Neither you nor Pixra Labs engineers can restore deleted items or vaults.
@@ -107,9 +107,9 @@
     <div class="space-y-10 pt-4">
 
       <!-- Section 1: Individual Item Deletion -->
-      <section class="p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-4">
+      <section class="p-6 sm:p-8 rounded-3xl border border-zinc-800/80 bg-zinc-900/50 space-y-4">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center font-mono font-bold text-sm text-emerald-400">1</div>
+          <div class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-mono font-bold text-sm text-white">1</div>
           <h2 class="text-xl font-bold text-zinc-100">How to Delete an Individual Vault Item</h2>
         </div>
         <p class="text-sm text-zinc-400 leading-relaxed">
@@ -123,14 +123,14 @@
           <li>Confirm the deletion prompt.</li>
         </ol>
         <div class="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800/80 text-xs font-mono text-zinc-400">
-          <strong>Security Action:</strong> The record is zeroized in RAM and permanently deleted from local storage with <code class="text-emerald-400">PRAGMA secure_delete = ON</code>.
+          <strong>Security Action:</strong> The record is zeroized in RAM and permanently deleted from local storage with <code class="text-zinc-200">PRAGMA secure_delete = ON</code>.
         </div>
       </section>
 
       <!-- Section 2: Entire Account & Vault Deletion -->
-      <section class="p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-4">
+      <section class="p-6 sm:p-8 rounded-3xl border border-zinc-800/80 bg-zinc-900/50 space-y-4">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center font-mono font-bold text-sm text-rose-400">2</div>
+          <div class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-mono font-bold text-sm text-rose-400">2</div>
           <h2 class="text-xl font-bold text-zinc-100">How to Delete the Entire Account & Wipe All Vault Data</h2>
         </div>
         <p class="text-sm text-zinc-400 leading-relaxed">
@@ -155,9 +155,9 @@
       </section>
 
       <!-- Section 3: App Uninstall Deletion -->
-      <section class="p-6 sm:p-8 rounded-2xl border border-zinc-800/80 bg-zinc-900/50 space-y-4">
+      <section class="p-6 sm:p-8 rounded-3xl border border-zinc-800/80 bg-zinc-900/50 space-y-4">
         <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center font-mono font-bold text-sm text-zinc-300">3</div>
+          <div class="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center font-mono font-bold text-sm text-zinc-300">3</div>
           <h2 class="text-xl font-bold text-zinc-100">Immediate Device Wiping via Android Settings</h2>
         </div>
         <p class="text-sm text-zinc-400 leading-relaxed">
@@ -178,15 +178,15 @@
       </section>
 
       <!-- Section 5: Support & Assistance -->
-      <section class="p-6 rounded-2xl border border-zinc-800 bg-zinc-900/80 space-y-3">
+      <section class="p-6 rounded-3xl border border-zinc-800 bg-zinc-900/80 space-y-3">
         <h3 class="text-base font-bold text-zinc-100">Assistance & Deletion Verification</h3>
         <p class="text-xs sm:text-sm text-zinc-400 leading-relaxed">
           If you have questions about data deletion or need help verifying that your relay account has been wiped, contact our Security and Privacy team:
         </p>
         <div class="font-mono text-xs text-zinc-300 space-y-1 pt-1">
-          <div>Email: <a href="mailto:security@pixra.dev" class="text-emerald-400 hover:underline">security@pixra.dev</a></div>
+          <div>Email: <a href="mailto:security@pixra.dev" class="text-white hover:underline">security@pixra.dev</a></div>
           <div>Organization: Pixra Labs</div>
-          <div>Project Repository: <a href="https://github.com/pixralabs/arca" class="text-emerald-400 hover:underline">github.com/pixralabs/arca</a></div>
+          <div>Project Repository: <a href="https://github.com/pixralabs/arca" class="text-white hover:underline">github.com/pixralabs/arca</a></div>
         </div>
       </section>
 

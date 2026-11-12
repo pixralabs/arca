@@ -23,9 +23,9 @@
   --text: #f4f4f5;
   --muted: #a1a1aa;
   --dim: #71717a;
-  --emerald: #10b981;
-  --emerald2: #34d399;
-  --emerald3: #059669;
+  --emerald: #ffffff;
+  --emerald2: #e4e4e7;
+  --emerald3: #a1a1aa;
   --amber: #f59e0b;
   --blue: #0a84ff;
   --yellow: #eab308;
@@ -60,7 +60,7 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 800px 600px at 50% -50px, rgba(16, 185, 129, 0.16) 0%, transparent 70%),
+    radial-gradient(ellipse 800px 600px at 50% -50px, rgba(255, 255, 255, 0.04) 0%, transparent 70%),
     radial-gradient(ellipse 600px 500px at 105% 65%, rgba(10, 132, 255, 0.09) 0%, transparent 70%),
     radial-gradient(ellipse 500px 400px at -5% 85%, rgba(245, 158, 11, 0.07) 0%, transparent 60%);
   pointer-events: none;
@@ -95,8 +95,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 100px;
   padding: 8px 24px;
   font-size: 22px;
@@ -104,7 +104,7 @@ body {
   color: var(--emerald2);
   letter-spacing: 0.5px;
   margin-bottom: 28px;
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.08);
 }
 
 .badge-dot {
@@ -129,7 +129,7 @@ body {
 
 .headline em {
   font-style: normal;
-  background: linear-gradient(135deg, #6ee7b7 0%, var(--emerald2) 30%, var(--emerald) 70%, var(--emerald3) 100%);
+  background: linear-gradient(135deg, #ffffff 0%, var(--emerald2) 30%, var(--emerald) 70%, var(--emerald3) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -164,7 +164,7 @@ body {
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.08),
     0 30px 100px rgba(0, 0, 0, 0.95),
-    0 0 70px rgba(16, 185, 129, 0.12),
+    0 0 70px rgba(255, 255, 255, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
   position: relative;
   overflow: hidden;
@@ -245,7 +245,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 19px;
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.25);
 }
 
 .bottom-brand-text {
@@ -337,7 +337,7 @@ body[data-device="tablet-10"] .phone-frame {
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 0.08),
     0 40px 140px rgba(0, 0, 0, 0.95),
-    0 0 100px rgba(16, 185, 129, 0.15);
+    0 0 100px rgba(255, 255, 255, 0.08);
 }
 
 body[data-device="tablet-10"] .phone-notch {

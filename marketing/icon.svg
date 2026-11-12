@@ -8,11 +8,11 @@
       <stop offset="100%" stop-color="#09090b" />
     </radialGradient>
 
-    <!-- Subtle Ambient Emerald Halo Behind Lock for Dark-Mode Edge Separation -->
-    <radialGradient id="emerald-halo" cx="256" cy="276" r="190" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#10b981" stop-opacity="0.22" />
-      <stop offset="65%" stop-color="#10b981" stop-opacity="0.06" />
-      <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+    <!-- Subtle Ambient Silver/White Halo Behind Lock for Dark-Mode Edge Separation -->
+    <radialGradient id="silver-halo" cx="256" cy="276" r="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" />
+      <stop offset="65%" stop-color="#a1a1aa" stop-opacity="0.04" />
+      <stop offset="100%" stop-color="#18181b" stop-opacity="0" />
     </radialGradient>
 
     <!-- Brushed Platinum-Silver Shackle Gradient (High Contrast in Dark & Light Mode) -->
@@ -22,17 +22,18 @@
       <stop offset="100%" stop-color="#71717a" />
     </linearGradient>
 
-    <!-- Silky Jewel-Tone Emerald Body Gradient -->
-    <linearGradient id="emerald-body" x1="168" y1="204" x2="348" y2="392" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#34d399" />
-      <stop offset="42%" stop-color="#10b981" />
-      <stop offset="100%" stop-color="#059669" />
+    <!-- Luxury Satin White-Silver Padlock Body Gradient -->
+    <linearGradient id="silver-body" x1="168" y1="204" x2="348" y2="392" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="45%" stop-color="#f4f4f5" />
+      <stop offset="78%" stop-color="#e4e4e7" />
+      <stop offset="100%" stop-color="#d4d4d8" />
     </linearGradient>
 
     <!-- Recessed Keyhole Rim Bevel -->
     <linearGradient id="keyhole-bevel" x1="234" y1="264" x2="278" y2="344" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#047857" />
-      <stop offset="100%" stop-color="#6ee7b7" />
+      <stop offset="0%" stop-color="#71717a" />
+      <stop offset="100%" stop-color="#e4e4e7" />
     </linearGradient>
   </defs>
 
@@ -52,7 +53,7 @@
   />
 
   <!-- 2. Soft Ambient Halo for Universal Contrast -->
-  <circle cx="256" cy="276" r="185" fill="url(#emerald-halo)" />
+  <circle cx="256" cy="276" r="185" fill="url(#silver-halo)" />
 
   <!-- 3. Floating Elliptical Ground Shadow -->
   <ellipse cx="256" cy="404" rx="124" ry="15" fill="#050507" fill-opacity="0.78" />
@@ -93,14 +94,14 @@
     stroke-opacity="0.92"
   />
 
-  <!-- 5. Chubby Pill-Shaped Emerald Padlock Body -->
+  <!-- 5. Chubby Pill-Shaped Silver Padlock Body -->
   <rect
     x="130"
     y="208"
     width="252"
     height="186"
     rx="93"
-    fill="url(#emerald-body)"
+    fill="url(#silver-body)"
     stroke="#121318"
     stroke-width="10"
   />
@@ -108,18 +109,18 @@
   <!-- Crescent Inner Bottom-Right Shading for 3D Tactile Volume -->
   <path
     d="M352 246 C366 266 372 292 366 318 C356 358 318 384 274 384 H202 C180 384 160 375 146 360 C164 371 186 376 212 376 H266 C312 376 348 344 354 298 C356 280 355 262 352 246 Z"
-    fill="#047857"
+    fill="#a1a1aa"
     fill-opacity="0.68"
   />
 
-  <!-- Subtle Inner Top-Left Emerald Rim Light -->
+  <!-- Subtle Inner Top-Left Silver Rim Light -->
   <rect
     x="135"
     y="213"
     width="242"
     height="176"
     rx="88"
-    stroke="#a7f3d0"
+    stroke="#ffffff"
     stroke-opacity="0.32"
     stroke-width="3"
   />

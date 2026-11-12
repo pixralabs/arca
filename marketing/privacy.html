@@ -36,17 +36,17 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .bg-grid-pattern {
-      background-image: radial-gradient(rgba(16, 185, 129, 0.12) 1px, transparent 1px);
+      background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
       background-size: 28px 28px;
     }
   </style>
 </head>
-<body class="bg-[#09090b] text-zinc-50 antialiased selection:bg-emerald-500 selection:text-zinc-950 min-h-screen flex flex-col overflow-x-hidden">
+<body class="bg-[#09090b] text-zinc-50 antialiased selection:bg-white/20 selection:text-white min-h-screen flex flex-col overflow-x-hidden">
 
-  <!-- Ambient Charcoal + Emerald/Amber Glow -->
+  <!-- Ambient Charcoal + Monochrome Silver Glow -->
   <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[780px] h-[420px] bg-emerald-500/10 blur-[135px] rounded-full"></div>
-    <div class="absolute top-[40%] -right-32 w-[460px] h-[460px] bg-amber-500/10 blur-[140px] rounded-full"></div>
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[780px] h-[420px] bg-white/[0.035] blur-[150px] rounded-full"></div>
+    <div class="absolute top-[40%] -right-32 w-[460px] h-[460px] bg-zinc-400/[0.025] blur-[150px] rounded-full"></div>
     <div class="absolute inset-0 bg-grid-pattern opacity-60"></div>
   </div>
 
@@ -54,14 +54,14 @@
   <header class="sticky top-0 z-40 border-b border-zinc-800 bg-[#09090b]/85 backdrop-blur-md">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
       <a href="index.html" class="flex items-center gap-2.5 group focus:outline-none">
-        <img src="favicon.png" alt="Arca" class="w-8 h-8 object-contain drop-shadow-[0_2px_10px_rgba(16,185,129,0.35)] group-hover:scale-105 transition-transform" />
+        <img src="favicon.png" alt="Arca" class="w-8 h-8 object-contain drop-shadow-[0_2px_10px_rgba(255,255,255,0.2)] group-hover:scale-105 transition-transform" />
         <span class="text-base font-bold tracking-tight text-zinc-100 group-hover:text-white transition-colors">Arca</span>
       </a>
 
       <div class="flex items-center gap-3">
         <a
           href="index.html"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium text-zinc-300 hover:text-zinc-50 hover:bg-zinc-800 transition-colors"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-medium text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
         >
           <span>&larr; Back to Home</span>
         </a>
@@ -69,7 +69,7 @@
           href="https://github.com/pixralabs/arca"
           target="_blank"
           rel="noopener noreferrer"
-          class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors"
+          class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors"
         >
           <span>GitHub</span>
         </a>
@@ -81,8 +81,8 @@
   <main class="flex-1 max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
     <!-- Title Section -->
     <div class="space-y-4 pb-8 border-b border-zinc-800">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-400">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-zinc-200">
+        <span class="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.85)]"></span>
         <span>Google Play & Chrome Web Store Policy Compliance</span>
       </div>
       <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-zinc-50">
@@ -90,33 +90,33 @@
       </h1>
       <div class="flex flex-wrap items-center gap-4 text-xs font-mono text-zinc-400">
         <span>Application: <strong class="text-zinc-200">Arca</strong></span>
-        <span>Package Name: <strong class="text-emerald-400">com.pixra.arca</strong></span>
+        <span>Package Name: <strong class="text-zinc-200">com.pixra.arca</strong></span>
         <span>Effective Date: <strong class="text-zinc-200">November 2026</strong></span>
       </div>
     </div>
 
     <!-- Quick Play Store Summary Box -->
-    <div class="my-8 p-6 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-4 shadow-xl">
-      <div class="flex items-center gap-2.5 text-emerald-400 font-bold text-sm uppercase tracking-wide font-mono">
+    <div class="my-8 p-6 rounded-3xl bg-zinc-900/80 border border-zinc-800/90 space-y-4 shadow-xl">
+      <div class="flex items-center gap-2.5 text-zinc-200 font-bold text-sm uppercase tracking-wide font-mono">
         <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
         <span>Google Play Data Safety Summary</span>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-        <div class="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800/80 space-y-1">
+        <div class="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
           <div class="text-zinc-400 font-medium">Data Collected</div>
-          <div class="text-sm font-extrabold text-emerald-400">Zero (0)</div>
+          <div class="text-base font-extrabold text-white">Zero (0)</div>
           <p class="text-zinc-400">No telemetry, analytics, or personal identifiers.</p>
         </div>
-        <div class="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800/80 space-y-1">
+        <div class="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
           <div class="text-zinc-400 font-medium">Data Shared</div>
-          <div class="text-sm font-extrabold text-emerald-400">None (0)</div>
+          <div class="text-base font-extrabold text-white">None (0)</div>
           <p class="text-zinc-400">Never sold, rented, or shared with third parties.</p>
         </div>
-        <div class="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800/80 space-y-1">
+        <div class="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-1">
           <div class="text-zinc-400 font-medium">Encryption</div>
-          <div class="text-sm font-extrabold text-emerald-400">End-to-End Local</div>
+          <div class="text-base font-extrabold text-white">End-to-End Local</div>
           <p class="text-zinc-400">Argon2id + XChaCha20-Poly1305 hardware protected.</p>
         </div>
       </div>
@@ -128,10 +128,10 @@
       <!-- 1. Introduction -->
       <section class="space-y-3">
         <h2 class="text-xl font-bold text-zinc-50 flex items-center gap-2">
-          <span class="text-emerald-500 font-mono text-base">1.</span> Introduction & Core Philosophy
+          <span class="text-zinc-400 font-mono text-base">1.</span> Introduction & Core Philosophy
         </h2>
         <p>
-          Pixra Labs ("we", "us", "our") develops <strong>Arca</strong> (<code class="font-mono text-emerald-400 text-xs px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">com.pixra.arca</code>), a 100% offline-first, zero-knowledge password manager and 2FA authenticator.
+          Pixra Labs ("we", "us", "our") develops <strong>Arca</strong> (<code class="font-mono text-zinc-200 text-xs px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800">com.pixra.arca</code>), a 100% offline-first, zero-knowledge password manager and 2FA authenticator.
         </p>
         <p>
           Our privacy architecture is governed by a fundamental cryptographic principle: <strong>what we cannot see, we cannot compromise</strong>. Arca requires no email registration, no account creation, no cloud signup, and communicates with zero tracking or telemetry servers.
@@ -141,7 +141,7 @@
       <!-- 2. Data We Do NOT Collect -->
       <section class="space-y-3">
         <h2 class="text-xl font-bold text-zinc-50 flex items-center gap-2">
-          <span class="text-emerald-500 font-mono text-base">2.</span> Data We Do NOT Collect
+          <span class="text-zinc-400 font-mono text-base">2.</span> Data We Do NOT Collect
         </h2>
         <p>Unlike conventional password managers, Arca does not operate a centralized user database:</p>
         <ul class="list-disc list-inside space-y-1.5 text-zinc-400 pl-2">
@@ -156,45 +156,45 @@
       <!-- 3. Local-First Cryptographic Security -->
       <section class="space-y-3">
         <h2 class="text-xl font-bold text-zinc-50 flex items-center gap-2">
-          <span class="text-emerald-500 font-mono text-base">3.</span> Local Storage & Cryptographic Security
+          <span class="text-zinc-400 font-mono text-base">3.</span> Local Storage & Cryptographic Security
         </h2>
         <p>
           All your credentials and sensitive assets are encrypted locally on your device prior to being stored in the local SQLite/IndexedDB database:
         </p>
-        <div class="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 font-mono text-xs text-zinc-300 space-y-2">
-          <div><strong class="text-emerald-400">Key Derivation:</strong> Argon2id (Memory: 64 MiB, Iterations: t=3, Parallelism: p=4)</div>
-          <div><strong class="text-emerald-400">Cipher:</strong> XChaCha20-Poly1305-IETF with random 192-bit nonces</div>
-          <div><strong class="text-emerald-400">Metadata Defense:</strong> ISO/IEC 7816-4 padding to constant 256-byte blocks to prevent traffic analysis</div>
-          <div><strong class="text-emerald-400">Database Hardening:</strong> SQLite WAL mode with <code>PRAGMA secure_delete = ON</code></div>
+        <div class="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 font-mono text-xs text-zinc-300 space-y-2">
+          <div><strong class="text-zinc-200">Key Derivation:</strong> Argon2id (Memory: 64 MiB, Iterations: t=3, Parallelism: p=4)</div>
+          <div><strong class="text-zinc-200">Cipher:</strong> XChaCha20-Poly1305-IETF with random 192-bit nonces</div>
+          <div><strong class="text-zinc-200">Metadata Defense:</strong> ISO/IEC 7816-4 padding to constant 256-byte blocks to prevent traffic analysis</div>
+          <div><strong class="text-zinc-200">Database Hardening:</strong> SQLite WAL mode with <code>PRAGMA secure_delete = ON</code></div>
         </div>
       </section>
 
       <!-- 4. Device Permissions -->
       <section class="space-y-3">
         <h2 class="text-xl font-bold text-zinc-50 flex items-center gap-2">
-          <span class="text-emerald-500 font-mono text-base">4.</span> Android Device Permissions Explained
+          <span class="text-zinc-400 font-mono text-base">4.</span> Android Device Permissions Explained
         </h2>
         <p>
           To deliver core functionality without compromising security, the Android application requests only the following permissions:
         </p>
         
         <div class="space-y-3 pt-2">
-          <div class="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-            <div class="font-mono text-xs font-semibold text-emerald-400">android.permission.INTERNET</div>
+          <div class="p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800">
+            <div class="font-mono text-xs font-semibold text-white">android.permission.INTERNET</div>
             <p class="text-xs sm:text-sm text-zinc-300 mt-1">
               <strong>Purpose:</strong> Strictly utilized when you explicitly enable optional multi-device synchronization with a self-hosted or trusted Blind Relay server. When sync is disabled, the app operates 100% offline and initiates zero network requests.
             </p>
           </div>
 
-          <div class="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-            <div class="font-mono text-xs font-semibold text-emerald-400">android.permission.USE_BIOMETRIC & USE_FINGERPRINT</div>
+          <div class="p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800">
+            <div class="font-mono text-xs font-semibold text-white">android.permission.USE_BIOMETRIC & USE_FINGERPRINT</div>
             <p class="text-xs sm:text-sm text-zinc-300 mt-1">
               <strong>Purpose:</strong> Allows you to unlock your local vault conveniently using Android BiometricPrompt (fingerprint or face unlock). Biometric verification occurs strictly inside the device hardware (StrongBox / Secure Enclave). Arca never receives or stores raw biometric data.
             </p>
           </div>
 
-          <div class="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-            <div class="font-mono text-xs font-semibold text-emerald-400">Autofill Service (android.service.autofill.AutofillService)</div>
+          <div class="p-5 rounded-2xl bg-zinc-900/70 border border-zinc-800">
+            <div class="font-mono text-xs font-semibold text-white">Autofill Service (android.service.autofill.AutofillService)</div>
             <p class="text-xs sm:text-sm text-zinc-300 mt-1">
               <strong>Purpose:</strong> Enables the native Android Autofill framework to detect login input fields and suggest your stored credentials. Field matching is computed entirely offline on your device, and no screen contents or visited URLs are transmitted.
             </p>
@@ -205,7 +205,7 @@
       <!-- 5. Optional Blind Sync & One-Time Sharing -->
       <section class="space-y-3">
         <h2 class="text-xl font-bold text-zinc-50 flex items-center gap-2">
-          <span class="text-emerald-500 font-mono text-base">5.</span> Optional Blind Sync & Ephemeral Sharing
+          <span class="text-zinc-400 font-mono text-base">5.</span> Optional Blind Sync & Ephemeral Sharing
         </h2>
         <p>
           If you opt into cross-device sync:
@@ -219,7 +219,7 @@
       <!-- 6. Data Retention and Deletion -->
       <section class="space-y-3">
         <h2 class="text-xl font-bold text-zinc-50 flex items-center gap-2">
-          <span class="text-emerald-500 font-mono text-base">6.</span> Data Retention & User Deletion Rights
+          <span class="text-zinc-400 font-mono text-base">6.</span> Data Retention & User Deletion Rights
         </h2>
         <p>
           You retain complete and exclusive ownership of your data at all times:
@@ -233,7 +233,7 @@
       <!-- 7. Children's Privacy -->
       <section class="space-y-3">
         <h2 class="text-xl font-bold text-zinc-50 flex items-center gap-2">
-          <span class="text-emerald-500 font-mono text-base">7.</span> Children's Privacy (COPPA Compliance)
+          <span class="text-zinc-400 font-mono text-base">7.</span> Children's Privacy (COPPA Compliance)
         </h2>
         <p>
           Arca is a general-purpose security utility and does not target or knowingly collect data from children under the age of 13. Because our service collects zero personal information, no child data is ever processed or stored.
@@ -243,7 +243,7 @@
       <!-- 8. Open Source & Auditability -->
       <section class="space-y-3">
         <h2 class="text-xl font-bold text-zinc-50 flex items-center gap-2">
-          <span class="text-emerald-500 font-mono text-base">8.</span> Open Source Verification & Reproducibility
+          <span class="text-zinc-400 font-mono text-base">8.</span> Open Source Verification & Reproducibility
         </h2>
         <p>
           Arca is free software licensed under the <strong>GNU Affero General Public License v3.0 (AGPL-3.0)</strong>. Every line of source code, cryptographic primitive, and build script is publicly inspectable and verifiable on GitHub at:
@@ -253,7 +253,7 @@
             href="https://github.com/pixralabs/arca"
             target="_blank"
             rel="noopener noreferrer"
-            class="inline-flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-mono text-xs sm:text-sm underline underline-offset-4"
+            class="inline-flex items-center gap-1.5 text-white hover:text-zinc-300 font-mono text-xs sm:text-sm underline underline-offset-4"
           >
             https://github.com/pixralabs/arca
           </a>
@@ -263,17 +263,17 @@
       <!-- 9. Contact -->
       <section class="space-y-3 pt-4 border-t border-zinc-800">
         <h2 class="text-xl font-bold text-zinc-50 flex items-center gap-2">
-          <span class="text-emerald-500 font-mono text-base">9.</span> Developer Contact Information
+          <span class="text-zinc-400 font-mono text-base">9.</span> Developer Contact Information
         </h2>
         <p>
           For any privacy inquiries, security reports, or technical questions regarding this policy, please contact:
         </p>
-        <div class="p-4 rounded-xl bg-zinc-900 border border-zinc-800 space-y-1 text-xs sm:text-sm text-zinc-300 font-mono">
+        <div class="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 space-y-1.5 text-xs sm:text-sm text-zinc-300 font-mono">
           <div><strong>Developer / Organization:</strong> Pixra Labs</div>
           <div><strong>Project:</strong> Arca Password Manager</div>
-          <div><strong>Official Repository:</strong> <a href="https://github.com/pixralabs/arca" class="text-emerald-400 hover:underline">github.com/pixralabs/arca</a></div>
-          <div><strong>Website:</strong> <a href="https://getarca.pages.dev" class="text-emerald-400 hover:underline">getarca.pages.dev</a></div>
-          <div><strong>Security Email:</strong> <a href="mailto:security@pixra.dev" class="text-emerald-400 hover:underline">security@pixra.dev</a></div>
+          <div><strong>Official Repository:</strong> <a href="https://github.com/pixralabs/arca" class="text-white hover:underline">github.com/pixralabs/arca</a></div>
+          <div><strong>Website:</strong> <a href="https://getarca.pages.dev" class="text-white hover:underline">getarca.pages.dev</a></div>
+          <div><strong>Security Email:</strong> <a href="mailto:security@pixra.dev" class="text-white hover:underline">security@pixra.dev</a></div>
         </div>
       </section>
 
@@ -290,7 +290,7 @@
       <div class="flex items-center gap-6 font-medium">
         <a href="index.html" class="hover:text-zinc-50 transition-colors">Home</a>
         <a href="https://github.com/pixralabs/arca" target="_blank" rel="noopener noreferrer" class="hover:text-zinc-50 transition-colors">GitHub</a>
-        <a href="privacy.html" class="text-emerald-400 font-semibold">Privacy Policy</a>
+        <a href="privacy.html" class="text-white font-semibold">Privacy Policy</a>
         <a href="delete-account.html" class="text-zinc-400 hover:text-rose-400 transition-colors">Delete Account</a>
       </div>
     </div>

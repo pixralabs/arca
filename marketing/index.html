@@ -41,16 +41,17 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Restrained Minimal Floating Glassmorphic Navbar */
+    /* Ultra-Refined Curved Pill Floating Glassmorphic Navbar */
     .glass-navbar {
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      background: rgba(9, 9, 11, 0.72);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.85), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(10, 10, 12, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.85), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
     }
 
-    /* Smooth Nav Link Underline Slide */
+    /* Smooth Nav Link Underline Slide (Monochrome Silver/White) */
     .nav-link {
       position: relative;
       color: #a1a1aa;
@@ -64,7 +65,7 @@
       bottom: 0;
       width: 100%;
       height: 1.5px;
-      background: linear-gradient(90deg, #fafafa, #34d399);
+      background: linear-gradient(90deg, #ffffff, #a1a1aa);
       border-radius: 9999px;
       transform: scaleX(0);
       transform-origin: right;
@@ -78,21 +79,23 @@
       transform-origin: left;
     }
 
-    /* Sleek Glassmorphic Trust Badge (Minimal Obsidian + Micro Emerald Accent) */
+    /* Sleek Glassmorphic Trust Badge (Monochrome Curved Pill) */
     .trust-badge {
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       background: rgba(24, 24, 27, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
       transition: all 0.25s ease;
     }
     .trust-badge:hover {
-      border-color: rgba(16, 185, 129, 0.35);
-      background: rgba(24, 24, 27, 0.85);
+      border-color: rgba(255, 255, 255, 0.35);
+      background: rgba(39, 39, 42, 0.8);
+      box-shadow: 0 6px 24px -4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 255, 255, 0.08);
     }
 
-    /* Massive Headline Gradient (Crisp White to Subtle Silver/Emerald Mist) */
+    /* Massive Headline Gradient (Crisp White to Subtle Silver) */
     .hero-gradient-text {
       background: linear-gradient(180deg, #ffffff 0%, #f4f4f5 65%, #a1a1aa 100%);
       -webkit-background-clip: text;
@@ -100,48 +103,55 @@
       color: transparent;
     }
     .hero-subgradient-text {
-      background: linear-gradient(135deg, #ffffff 0%, #e4e4e7 55%, #6ee7b7 100%);
+      background: linear-gradient(135deg, #ffffff 0%, #e4e4e7 55%, #a1a1aa 100%);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
     }
 
-    /* Refined Primary CTA Button (Subtle Emerald Glow on Hover) */
+    /* Refined Primary CTA Button (Curved Pill, Pure White Luxury Sheen) */
     .btn-primary-glow {
-      background: #10b981;
+      background: #ffffff;
       color: #09090b;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      border-radius: 9999px;
+      font-weight: 600;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 24px rgba(255, 255, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.85);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .btn-primary-glow:hover {
-      background: #34d399;
+      background: #f4f4f5;
+      color: #000000;
       transform: translateY(-1.5px);
-      box-shadow: 0 0 28px rgba(16, 185, 129, 0.38), 0 8px 20px -6px rgba(16, 185, 129, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      box-shadow: 0 0 32px rgba(255, 255, 255, 0.4), 0 8px 24px -4px rgba(255, 255, 255, 0.28), inset 0 1px 0 #ffffff;
     }
     .btn-primary-glow:active {
       transform: translateY(0);
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
     }
 
-    /* Secondary Ghost/Outline Button */
+    /* Secondary Ghost/Outline Button (Curved Pill) */
     .btn-ghost-outline {
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      background: rgba(24, 24, 27, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      background: rgba(24, 24, 27, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 9999px;
+      color: #e4e4e7;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .btn-ghost-outline:hover {
-      border-color: rgba(255, 255, 255, 0.28);
-      background: rgba(39, 39, 42, 0.65);
+      border-color: rgba(255, 255, 255, 0.35);
+      background: rgba(39, 39, 42, 0.7);
       color: #ffffff;
       transform: translateY(-1.5px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.08);
     }
 
-    /* Minimal Bento Cards with Restrained Emerald Border & Spotlight */
+    /* Minimal Bento Cards with Restrained Monochrome Border & Spotlight */
     .bento-card {
       position: relative;
-      background: linear-gradient(180deg, rgba(24, 24, 27, 0.52) 0%, rgba(9, 9, 11, 0.82) 100%);
-      border: 1px solid rgba(16, 185, 129, 0.16);
+      background: linear-gradient(180deg, rgba(24, 24, 27, 0.55) 0%, rgba(9, 9, 11, 0.85) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
@@ -151,14 +161,14 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: radial-gradient(460px circle at var(--mouse-x, 50%) var(--mouse-y, 0%), rgba(255, 255, 255, 0.045), rgba(16, 185, 129, 0.045), transparent 50%);
+      background: radial-gradient(460px circle at var(--mouse-x, 50%) var(--mouse-y, 0%), rgba(255, 255, 255, 0.055), transparent 50%);
       opacity: 0;
       transition: opacity 0.35s ease;
       pointer-events: none;
     }
     .bento-card:hover {
-      border-color: rgba(16, 185, 129, 0.32);
-      box-shadow: 0 20px 45px -20px rgba(0, 0, 0, 0.9), 0 0 24px -8px rgba(16, 185, 129, 0.12);
+      border-color: rgba(255, 255, 255, 0.24);
+      box-shadow: 0 20px 45px -20px rgba(0, 0, 0, 0.9), 0 0 28px -8px rgba(255, 255, 255, 0.08);
       transform: translateY(-2px);
     }
     .bento-card:hover::before {
@@ -184,7 +194,7 @@
       background: rgba(24, 24, 27, 0.6);
     }
     .faq-item[data-open="true"] {
-      border-color: rgba(16, 185, 129, 0.28);
+      border-color: rgba(255, 255, 255, 0.24);
       background: rgba(24, 24, 27, 0.75);
     }
     .faq-answer {
@@ -216,34 +226,34 @@
 
     /* Custom Range Slider */
     input[type="range"] {
-      accent-color: #10b981;
+      accent-color: #ffffff;
     }
   </style>
 </head>
-<body class="bg-[#09090b] text-zinc-50 antialiased selection:bg-emerald-500/30 selection:text-emerald-200 min-h-screen flex flex-col">
+<body class="bg-[#09090b] text-zinc-50 antialiased selection:bg-white/20 selection:text-white min-h-screen flex flex-col">
 
   <!-- Subtle Ambient Minimal Background + Particle Network -->
   <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
     <canvas id="particle-canvas" class="absolute inset-0 w-full h-full opacity-55"></canvas>
-    <div class="absolute -top-56 left-1/2 -translate-x-1/2 w-[820px] h-[380px] bg-emerald-500/[0.045] blur-[150px] rounded-full"></div>
-    <div class="absolute top-[40%] -right-40 w-[460px] h-[460px] bg-zinc-400/[0.03] blur-[150px] rounded-full"></div>
+    <div class="absolute -top-56 left-1/2 -translate-x-1/2 w-[820px] h-[380px] bg-white/[0.035] blur-[160px] rounded-full"></div>
+    <div class="absolute top-[40%] -right-40 w-[460px] h-[460px] bg-zinc-400/[0.025] blur-[150px] rounded-full"></div>
     <div class="absolute inset-0 bg-grid-pattern opacity-60"></div>
     <div class="absolute inset-0 bg-gradient-to-b from-transparent via-[#09090b]/35 to-[#09090b]"></div>
   </div>
 
-  <!-- FLOATING GLASSMORPHIC NAVBAR -->
+  <!-- FLOATING GLASSMORPHIC NAVBAR (CURVED PILL DESIGN) -->
   <div class="fixed top-4 inset-x-0 z-40 px-4 sm:px-6 pointer-events-none">
-    <header class="max-w-6xl mx-auto rounded-2xl glass-navbar px-4 sm:px-6 h-16 flex items-center justify-between gap-4 pointer-events-auto">
+    <header class="max-w-5xl mx-auto rounded-full glass-navbar px-5 sm:px-6 h-16 flex items-center justify-between gap-4 pointer-events-auto">
       
       <!-- Brand Logo (Official Arca Padlock Icon from marketing/favicon.png) -->
       <a href="#top" id="brand-home-link" class="flex items-center gap-2.5 group focus:outline-none">
         <img
           src="favicon.png"
           alt="Arca"
-          class="w-8 h-8 object-contain drop-shadow-[0_2px_10px_rgba(16,185,129,0.22)] group-hover:scale-105 transition-transform"
+          class="w-8 h-8 object-contain drop-shadow-[0_2px_12px_rgba(255,255,255,0.2)] group-hover:scale-105 transition-transform"
         />
         <span class="text-base font-bold tracking-tight text-zinc-100 group-hover:text-white transition-colors">Arca</span>
-        <span class="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800">v0.4.1</span>
+        <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800">v0.4.1</span>
       </a>
 
       <!-- Clean Navigation Links -->
@@ -260,7 +270,7 @@
         <button
           id="nav-cmd-btn"
           type="button"
-          class="hidden lg:inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-mono text-zinc-400 hover:text-zinc-100 bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-800/90 transition-colors cursor-pointer"
+          class="hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono text-zinc-400 hover:text-zinc-100 bg-zinc-900/70 hover:bg-zinc-800/80 border border-zinc-800/90 transition-colors cursor-pointer"
           title="Jump to Interactive Vault Sandbox (⌘K)"
         >
           <span>Try Vault</span>
@@ -271,7 +281,7 @@
           href="https://github.com/pixralabs/arca"
           target="_blank"
           rel="noopener noreferrer"
-          class="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900/80 transition-colors"
+          class="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-900/80 transition-colors"
           title="GitHub Repository"
           aria-label="GitHub Repository"
         >
@@ -283,7 +293,7 @@
         <button
           id="nav-download-btn"
           type="button"
-          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold btn-primary-glow cursor-pointer"
+          class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold btn-primary-glow cursor-pointer"
         >
           <span>Download</span>
         </button>
@@ -292,9 +302,9 @@
           id="mobile-menu-btn"
           type="button"
           aria-label="Toggle Navigation Menu"
-          class="md:hidden p-2 rounded-xl text-zinc-400 hover:text-white bg-zinc-900/80 border border-zinc-800 transition-colors cursor-pointer"
+          class="md:hidden p-2 rounded-full text-zinc-400 hover:text-white bg-zinc-900/80 border border-zinc-800 transition-colors cursor-pointer"
         >
-          <svg id="mobile-menu-icon-open" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><defs><linearGradient id="g"></linearGradient></defs>
+          <svg id="mobile-menu-icon-open" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
         </button>
@@ -304,15 +314,15 @@
     <!-- Mobile Navigation Drawer -->
     <div
       id="mobile-menu-panel"
-      class="hidden md:hidden max-w-6xl mx-auto mt-2 rounded-2xl glass-navbar p-3 pointer-events-auto"
+      class="hidden md:hidden max-w-5xl mx-auto mt-2 rounded-3xl glass-navbar p-3 pointer-events-auto"
     >
       <div class="grid grid-cols-2 gap-1.5 text-xs font-medium">
-        <a href="#features" class="mobile-nav-item px-3 py-2 rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800/70">Features</a>
-        <a href="#how-it-works" class="mobile-nav-item px-3 py-2 rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800/70">How It Works</a>
-        <a href="#specs" class="mobile-nav-item px-3 py-2 rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800/70">Security</a>
-        <a href="#faq" class="mobile-nav-item px-3 py-2 rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800/70">FAQ</a>
-        <a href="#privacy" class="mobile-nav-item px-3 py-2 rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-800/70">Privacy Policy</a>
-        <a href="#delete-account" class="mobile-nav-item px-3 py-2 rounded-xl text-zinc-400 hover:text-rose-300 hover:bg-zinc-800/70">Delete Account</a>
+        <a href="#features" class="mobile-nav-item px-3 py-2 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-800/70 text-center">Features</a>
+        <a href="#how-it-works" class="mobile-nav-item px-3 py-2 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-800/70 text-center">How It Works</a>
+        <a href="#specs" class="mobile-nav-item px-3 py-2 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-800/70 text-center">Security</a>
+        <a href="#faq" class="mobile-nav-item px-3 py-2 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-800/70 text-center">FAQ</a>
+        <a href="#privacy" class="mobile-nav-item px-3 py-2 rounded-full text-zinc-300 hover:text-white hover:bg-zinc-800/70 text-center">Privacy Policy</a>
+        <a href="#delete-account" class="mobile-nav-item px-3 py-2 rounded-full text-zinc-400 hover:text-rose-300 hover:bg-zinc-800/70 text-center">Delete Account</a>
       </div>
     </div>
   </div>
@@ -333,13 +343,13 @@
               href="#specs"
               class="trust-badge inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-xs font-medium text-zinc-300 group"
             >
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.85)]"></span>
               <span class="text-zinc-100 font-semibold">Zero-Knowledge</span>
               <span class="text-zinc-600">&bull;</span>
               <span class="text-zinc-300">Open Source</span>
               <span class="text-zinc-600">&bull;</span>
               <span class="text-zinc-300">Audited</span>
-              <svg class="w-3.5 h-3.5 text-zinc-400 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg class="w-3.5 h-3.5 text-zinc-400 group-hover:text-white group-hover:translate-x-0.5 transition-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
               </svg>
             </a>
@@ -361,7 +371,7 @@
             <button
               id="hero-download-btn"
               type="button"
-              class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl text-sm font-semibold btn-primary-glow cursor-pointer"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full text-sm font-semibold btn-primary-glow cursor-pointer"
             >
               <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -375,7 +385,7 @@
               href="https://github.com/pixralabs/arca"
               target="_blank"
               rel="noopener noreferrer"
-              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-sm font-medium text-zinc-200 btn-ghost-outline"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-medium text-zinc-200 btn-ghost-outline"
             >
               <svg class="w-4 h-4 text-zinc-300" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
@@ -388,31 +398,31 @@
           <!-- INTERACTIVE ARCA VAULT & SECURITY SANDBOX (4 LIVE MODES)        -->
           <!-- =============================================================== -->
           <div id="interactive-sandbox" class="pt-10 max-w-4xl mx-auto text-left">
-            <div class="rounded-2xl border border-zinc-800/90 bg-zinc-950/90 backdrop-blur-2xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.9)] overflow-hidden">
+            <div class="rounded-3xl border border-zinc-800/90 bg-zinc-950/90 backdrop-blur-2xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.9)] overflow-hidden">
               
               <!-- Sandbox Window Header + Interactive Mode Switcher -->
               <div class="px-4 py-3 border-b border-zinc-800/80 bg-zinc-900/50 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2.5">
                   <img src="favicon.png" alt="Arca" class="w-4 h-4 object-contain" />
                   <span class="text-xs font-semibold text-zinc-200">Arca Interactive Vault</span>
-                  <span class="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    StrongBox Locked/Unlocked
+                  <span class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono text-zinc-400 bg-zinc-900 border border-zinc-800">
+                    <span class="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)]"></span>
+                    StrongBox Active
                   </span>
                 </div>
 
                 <!-- 4 Interactive Mode Tabs -->
-                <div class="flex flex-wrap items-center gap-1 bg-zinc-950/80 p-1 rounded-xl border border-zinc-800/80 text-xs">
-                  <button type="button" data-sandbox-tab="vault" data-active="true" class="sandbox-tab px-2.5 py-1 rounded-lg font-medium text-zinc-400 hover:text-zinc-200 border border-transparent transition-all cursor-pointer">
+                <div class="flex flex-wrap items-center gap-1 bg-zinc-950/90 p-1 rounded-full border border-zinc-800/80 text-xs">
+                  <button type="button" data-sandbox-tab="vault" data-active="true" class="sandbox-tab px-3 py-1 rounded-full font-medium text-zinc-400 hover:text-zinc-200 border border-transparent transition-all cursor-pointer">
                     1. Vault Explorer
                   </button>
-                  <button type="button" data-sandbox-tab="generator" data-active="false" class="sandbox-tab px-2.5 py-1 rounded-lg font-medium text-zinc-400 hover:text-zinc-200 border border-transparent transition-all cursor-pointer">
+                  <button type="button" data-sandbox-tab="generator" data-active="false" class="sandbox-tab px-3 py-1 rounded-full font-medium text-zinc-400 hover:text-zinc-200 border border-transparent transition-all cursor-pointer">
                     2. Password Gen
                   </button>
-                  <button type="button" data-sandbox-tab="totp" data-active="false" class="sandbox-tab px-2.5 py-1 rounded-lg font-medium text-zinc-400 hover:text-zinc-200 border border-transparent transition-all cursor-pointer">
+                  <button type="button" data-sandbox-tab="totp" data-active="false" class="sandbox-tab px-3 py-1 rounded-full font-medium text-zinc-400 hover:text-zinc-200 border border-transparent transition-all cursor-pointer">
                     3. Live 2FA
                   </button>
-                  <button type="button" data-sandbox-tab="cipher" data-active="false" class="sandbox-tab px-2.5 py-1 rounded-lg font-medium text-zinc-400 hover:text-zinc-200 border border-transparent transition-all cursor-pointer">
+                  <button type="button" data-sandbox-tab="cipher" data-active="false" class="sandbox-tab px-3 py-1 rounded-full font-medium text-zinc-400 hover:text-zinc-200 border border-transparent transition-all cursor-pointer">
                     4. 256B Cipher Inspector
                   </button>
                 </div>
@@ -428,7 +438,7 @@
                       id="vault-search-input"
                       type="text"
                       placeholder="Filter local vault (⌘K)..."
-                      class="w-full pl-8 pr-3 py-2 rounded-xl bg-zinc-900/90 border border-zinc-800 focus:border-zinc-600 focus:outline-none text-xs text-zinc-100 placeholder:text-zinc-500"
+                      class="w-full pl-9 pr-4 py-2 rounded-full bg-zinc-900/90 border border-zinc-800 focus:border-zinc-600 focus:outline-none text-xs text-zinc-100 placeholder:text-zinc-500"
                     />
                   </div>
                   <div id="vault-items-list" class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
@@ -442,19 +452,19 @@
                     <div>
                       <div class="flex items-center gap-2">
                         <h3 id="vault-detail-title" class="text-base font-bold text-white">GitHub Production</h3>
-                        <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-800 text-zinc-300">256B Padded</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-zinc-800 text-zinc-300">256B Padded</span>
                       </div>
                       <p id="vault-detail-url" class="text-xs font-mono text-zinc-400 mt-0.5">https://github.com</p>
                     </div>
                     <button
                       id="copy-totp-btn"
                       type="button"
-                      class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/40 transition-colors cursor-pointer"
+                      class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-white/30 transition-colors cursor-pointer"
                       title="Copy Live 2FA Code"
                     >
                       <div class="text-right">
                         <div class="text-[10px] font-mono text-zinc-400">2FA TOTP (<span id="totp-Remaining">24</span>s)</div>
-                        <div id="live-totp-code" class="text-xs font-mono font-bold text-emerald-400">492 817</div>
+                        <div id="live-totp-code" class="text-xs font-mono font-bold text-white">492 817</div>
                       </div>
                       <svg class="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                     </button>
@@ -466,7 +476,7 @@
                         <div class="text-[10px] font-mono uppercase text-zinc-500">Username / Identity</div>
                         <div id="vault-detail-user" class="font-mono text-zinc-200 mt-0.5">security@pixra.dev</div>
                       </div>
-                      <button id="vault-copy-user-btn" type="button" class="px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 font-mono text-[11px] cursor-pointer">
+                      <button id="vault-copy-user-btn" type="button" class="px-3 py-1 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 font-mono text-[11px] cursor-pointer">
                         Copy
                       </button>
                     </div>
@@ -477,10 +487,10 @@
                         <div id="vault-detail-pass" class="font-mono text-zinc-200 mt-0.5 tracking-wider">••••••••••••••••••••</div>
                       </div>
                       <div class="flex items-center gap-1.5">
-                        <button id="vault-toggle-pass-btn" type="button" class="px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 font-mono text-[11px] cursor-pointer">
+                        <button id="vault-toggle-pass-btn" type="button" class="px-3 py-1 rounded-full bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 font-mono text-[11px] cursor-pointer">
                           Reveal
                         </button>
-                        <button id="vault-copy-pass-btn" type="button" class="px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-emerald-400 border border-zinc-800 font-mono text-[11px] cursor-pointer">
+                        <button id="vault-copy-pass-btn" type="button" class="px-3 py-1 rounded-full bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 font-mono text-[11px] cursor-pointer">
                           Copy
                         </button>
                       </div>
@@ -500,17 +510,17 @@
                   <div class="space-y-1 overflow-hidden">
                     <div class="flex items-center gap-2 text-[11px] font-mono text-zinc-400">
                       <span>CSPRNG Output (window.crypto.getRandomValues)</span>
-                      <span id="gen-entropy-badge" class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">157.3 bits · High Entropy</span>
+                      <span id="gen-entropy-badge" class="px-2.5 py-0.5 rounded-full bg-white/10 text-zinc-200 border border-white/15">157.3 bits · High Entropy</span>
                     </div>
                     <div id="gen-output-text" class="text-sm sm:text-base font-mono font-bold text-white break-all select-all">
                       k9#mP2$vL8@xQ4!zR7&amp;wN5^tB3
                     </div>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
-                    <button id="gen-refresh-btn" type="button" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 cursor-pointer transition-colors">
+                    <button id="gen-refresh-btn" type="button" class="px-4 py-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-200 cursor-pointer transition-colors">
                       Regenerate
                     </button>
-                    <button id="gen-copy-btn" type="button" class="px-3.5 py-2 rounded-xl text-xs font-semibold btn-primary-glow cursor-pointer">
+                    <button id="gen-copy-btn" type="button" class="px-4 py-2 rounded-full text-xs font-semibold btn-primary-glow cursor-pointer">
                       Copy Password
                     </button>
                   </div>
@@ -520,26 +530,26 @@
                   <div class="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/80 space-y-2">
                     <div class="flex justify-between font-mono">
                       <label for="gen-length-slider" class="text-zinc-300">Password Length</label>
-                      <span id="gen-length-val" class="text-emerald-400 font-bold">24 chars</span>
+                      <span id="gen-length-val" class="text-white font-bold">24 chars</span>
                     </div>
                     <input id="gen-length-slider" type="range" min="12" max="48" value="24" class="w-full cursor-pointer" />
                   </div>
 
                   <div class="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex flex-wrap items-center gap-3 font-mono">
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                      <input id="gen-chk-upper" type="checkbox" checked class="rounded accent-emerald-500" />
+                      <input id="gen-chk-upper" type="checkbox" checked class="rounded accent-white" />
                       <span class="text-zinc-300">A-Z</span>
                     </label>
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                      <input id="gen-chk-num" type="checkbox" checked class="rounded accent-emerald-500" />
+                      <input id="gen-chk-num" type="checkbox" checked class="rounded accent-white" />
                       <span class="text-zinc-300">0-9</span>
                     </label>
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                      <input id="gen-chk-sym" type="checkbox" checked class="rounded accent-emerald-500" />
+                      <input id="gen-chk-sym" type="checkbox" checked class="rounded accent-white" />
                       <span class="text-zinc-300">!@#$%</span>
                     </label>
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                      <input id="gen-chk-words" type="checkbox" class="rounded accent-emerald-500" />
+                      <input id="gen-chk-words" type="checkbox" class="rounded accent-white" />
                       <span class="text-zinc-300">Passphrase Mode</span>
                     </label>
                   </div>
@@ -550,10 +560,10 @@
               <div id="sandbox-panel-totp" class="hidden p-5 sm:p-6 space-y-4">
                 <div class="flex items-center justify-between text-xs text-zinc-400">
                   <span>RFC 6238 HMAC-SHA1 / SHA256 · Click any token to copy</span>
-                  <span class="font-mono text-zinc-300">Window rotates in <strong id="totp-panel-timer" class="text-emerald-400">24s</strong></span>
+                  <span class="font-mono text-zinc-300">Window rotates in <strong id="totp-panel-timer" class="text-white">24s</strong></span>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                  <button type="button" data-totp-card="0" class="totp-copy-card p-4 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/35 text-left space-y-2 transition-all cursor-pointer">
+                  <button type="button" data-totp-card="0" class="totp-copy-card p-4 rounded-2xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 hover:border-white/30 text-left space-y-2 transition-all cursor-pointer">
                     <div class="flex items-center justify-between text-xs">
                       <span class="font-bold text-zinc-200">GitHub</span>
                       <span class="font-mono text-[10px] text-zinc-500">6-Digit</span>
@@ -562,7 +572,7 @@
                     <div class="text-[11px] font-mono text-zinc-500">security@pixra.dev</div>
                   </button>
 
-                  <button type="button" data-totp-card="1" class="totp-copy-card p-4 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/35 text-left space-y-2 transition-all cursor-pointer">
+                  <button type="button" data-totp-card="1" class="totp-copy-card p-4 rounded-2xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 hover:border-white/30 text-left space-y-2 transition-all cursor-pointer">
                     <div class="flex items-center justify-between text-xs">
                       <span class="font-bold text-zinc-200">Cloudflare</span>
                       <span class="font-mono text-[10px] text-zinc-500">6-Digit</span>
@@ -571,7 +581,7 @@
                     <div class="text-[11px] font-mono text-zinc-500">dns-admin@pixra.dev</div>
                   </button>
 
-                  <button type="button" data-totp-card="2" class="totp-copy-card p-4 rounded-xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 hover:border-emerald-500/35 text-left space-y-2 transition-all cursor-pointer">
+                  <button type="button" data-totp-card="2" class="totp-copy-card p-4 rounded-2xl bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 hover:border-white/30 text-left space-y-2 transition-all cursor-pointer">
                     <div class="flex items-center justify-between text-xs">
                       <span class="font-bold text-zinc-200">AWS Root</span>
                       <span class="font-mono text-[10px] text-zinc-500">8-Digit</span>
@@ -602,7 +612,7 @@
                     </div>
                     <div class="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800">
                       <span class="text-zinc-500 block">Padded Output</span>
-                      <span id="cipher-byte-badge" class="text-emerald-400 font-bold">256 Bytes (Fixed Block)</span>
+                      <span id="cipher-byte-badge" class="text-white font-bold">256 Bytes (Fixed Block)</span>
                     </div>
                   </div>
                 </div>
@@ -647,7 +657,7 @@
             <article class="bento-card md:col-span-6 lg:col-span-7 p-6 sm:p-8 rounded-3xl flex flex-col justify-between gap-6">
               <div class="space-y-4">
                 <div class="flex items-center justify-between gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-emerald-400">
+                  <div class="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white">
                     <!-- Lucide RefreshCw Icon -->
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -679,7 +689,7 @@
                     <div class="text-[10px] text-zinc-500">Argon2id Vault</div>
                   </div>
                   <div id="sync-relay-node" class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 transition-all">
-                    <div class="text-emerald-400 font-semibold">Blind Relay</div>
+                    <div class="text-zinc-100 font-semibold">Blind Relay</div>
                     <div id="sync-status-label" class="text-[10px] text-zinc-400">256B Blob Verified</div>
                   </div>
                   <div class="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
@@ -718,7 +728,7 @@
                 <button
                   id="bento-rotate-totp-btn"
                   type="button"
-                  class="px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                  class="px-3.5 py-1.5 rounded-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white transition-colors cursor-pointer"
                 >
                   Next Code &rarr;
                 </button>
@@ -729,7 +739,7 @@
             <article class="bento-card md:col-span-6 lg:col-span-5 p-6 sm:p-8 rounded-3xl flex flex-col justify-between gap-6">
               <div class="space-y-4">
                 <div class="flex items-center justify-between gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-emerald-400">
+                  <div class="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-white">
                     <!-- Lucide Fingerprint Icon -->
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
@@ -791,11 +801,11 @@
               </div>
 
               <div id="dom-guard-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-[11px]">
-                <div class="dom-check-pill p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800 text-center text-zinc-300">1. Bounds ✓</div>
-                <div class="dom-check-pill p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800 text-center text-zinc-300">2. Opacity ✓</div>
-                <div class="dom-check-pill p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800 text-center text-zinc-300">3. Visible ✓</div>
-                <div class="dom-check-pill p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800 text-center text-zinc-300">4. Z-Index ✓</div>
-                <div class="dom-check-pill col-span-2 sm:col-span-1 p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800 text-center text-emerald-400">5. Origin ✓</div>
+                <div class="dom-check-pill p-2.5 rounded-full bg-zinc-950/80 border border-zinc-800 text-center text-zinc-300">1. Bounds ✓</div>
+                <div class="dom-check-pill p-2.5 rounded-full bg-zinc-950/80 border border-zinc-800 text-center text-zinc-300">2. Opacity ✓</div>
+                <div class="dom-check-pill p-2.5 rounded-full bg-zinc-950/80 border border-zinc-800 text-center text-zinc-300">3. Visible ✓</div>
+                <div class="dom-check-pill p-2.5 rounded-full bg-zinc-950/80 border border-zinc-800 text-center text-zinc-300">4. Z-Index ✓</div>
+                <div class="dom-check-pill col-span-2 sm:col-span-1 p-2.5 rounded-full bg-zinc-950/80 border border-zinc-800 text-center text-zinc-200">5. Origin ✓</div>
               </div>
             </article>
 
@@ -821,11 +831,11 @@
             <button
               type="button"
               data-step-btn="0"
-              class="step-selector bento-card p-6 rounded-2xl text-left space-y-3 cursor-pointer"
+              class="step-selector bento-card p-6 sm:p-7 rounded-3xl text-left space-y-3 cursor-pointer"
             >
               <div class="flex items-center justify-between">
-                <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-zinc-100 text-zinc-950 font-mono font-bold text-xs">1</span>
-                <span class="text-[11px] font-mono text-emerald-400">Argon2id (64 MiB)</span>
+                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white text-zinc-950 font-mono font-bold text-xs shadow-[0_0_8px_rgba(255,255,255,0.7)]">1</span>
+                <span class="text-[11px] font-mono text-zinc-300 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800">Argon2id (64 MiB)</span>
               </div>
               <h3 class="text-base font-bold text-zinc-100">Create Vault</h3>
               <p class="text-sm text-zinc-400 leading-relaxed">
@@ -837,11 +847,11 @@
             <button
               type="button"
               data-step-btn="1"
-              class="step-selector bento-card p-6 rounded-2xl text-left space-y-3 cursor-pointer"
+              class="step-selector bento-card p-6 sm:p-7 rounded-3xl text-left space-y-3 cursor-pointer"
             >
               <div class="flex items-center justify-between">
-                <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-zinc-800 text-zinc-200 font-mono font-bold text-xs">2</span>
-                <span class="text-[11px] font-mono text-zinc-400">5-Point DOM Guard</span>
+                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-zinc-800 text-zinc-200 font-mono font-bold text-xs border border-zinc-700">2</span>
+                <span class="text-[11px] font-mono text-zinc-400 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800">5-Point DOM Guard</span>
               </div>
               <h3 class="text-base font-bold text-zinc-100">Add Passwords</h3>
               <p class="text-sm text-zinc-400 leading-relaxed">
@@ -853,11 +863,11 @@
             <button
               type="button"
               data-step-btn="2"
-              class="step-selector bento-card p-6 rounded-2xl text-left space-y-3 cursor-pointer"
+              class="step-selector bento-card p-6 sm:p-7 rounded-3xl text-left space-y-3 cursor-pointer"
             >
               <div class="flex items-center justify-between">
-                <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-zinc-800 text-zinc-200 font-mono font-bold text-xs">3</span>
-                <span class="text-[11px] font-mono text-zinc-400">Ed25519 + HLC</span>
+                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-zinc-800 text-zinc-200 font-mono font-bold text-xs border border-zinc-700">3</span>
+                <span class="text-[11px] font-mono text-zinc-400 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-800">Ed25519 + HLC</span>
               </div>
               <h3 class="text-base font-bold text-zinc-100">Sync via Blind Relay</h3>
               <p class="text-sm text-zinc-400 leading-relaxed">
@@ -872,7 +882,7 @@
               <div id="step-console-title" class="text-zinc-200 font-semibold">Step 01 · Local Key Derivation Trace</div>
               <div id="step-console-code" class="text-zinc-400">KDF = Argon2id(password, salt_128b, m=65536 KiB, t=3, p=4) &rarr; Unwraps 256-bit Master DEK in RAM</div>
             </div>
-            <span class="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-emerald-400 shrink-0">0 Network Packets Sent</span>
+            <span class="px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 font-mono shrink-0">0 Network Packets Sent</span>
           </div>
         </div>
       </section>
@@ -893,7 +903,7 @@
           <button
             id="bottom-download-btn"
             type="button"
-            class="shrink-0 px-6 py-3 rounded-xl text-sm font-semibold btn-primary-glow cursor-pointer"
+            class="shrink-0 px-7 py-3 rounded-full text-sm font-semibold btn-primary-glow cursor-pointer"
           >
             Download Arca
           </button>
@@ -917,7 +927,7 @@
             <div class="faq-item rounded-2xl" data-open="true">
               <button type="button" class="faq-trigger w-full px-6 py-4 text-left flex items-center justify-between gap-4 cursor-pointer focus:outline-none" aria-expanded="true">
                 <span class="text-sm sm:text-base font-semibold text-zinc-100">What makes Arca different from cloud password managers?</span>
-                <span class="faq-icon shrink-0 w-6 h-6 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                <span class="faq-icon shrink-0 w-6 h-6 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                 </span>
               </button>
@@ -932,7 +942,7 @@
             <div class="faq-item rounded-2xl" data-open="false">
               <button type="button" class="faq-trigger w-full px-6 py-4 text-left flex items-center justify-between gap-4 cursor-pointer focus:outline-none" aria-expanded="false">
                 <span class="text-sm sm:text-base font-semibold text-zinc-100">How does Blind Relay Sync prevent traffic and metadata analysis?</span>
-                <span class="faq-icon shrink-0 w-6 h-6 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                <span class="faq-icon shrink-0 w-6 h-6 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                 </span>
               </button>
@@ -947,7 +957,7 @@
             <div class="faq-item rounded-2xl" data-open="false">
               <button type="button" class="faq-trigger w-full px-6 py-4 text-left flex items-center justify-between gap-4 cursor-pointer focus:outline-none" aria-expanded="false">
                 <span class="text-sm sm:text-base font-semibold text-zinc-100">How do I recover my vault if I lose my device?</span>
-                <span class="faq-icon shrink-0 w-6 h-6 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                <span class="faq-icon shrink-0 w-6 h-6 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                 </span>
               </button>
@@ -962,7 +972,7 @@
             <div class="faq-item rounded-2xl" data-open="false">
               <button type="button" class="faq-trigger w-full px-6 py-4 text-left flex items-center justify-between gap-4 cursor-pointer focus:outline-none" aria-expanded="false">
                 <span class="text-sm sm:text-base font-semibold text-zinc-100">Can I self-host the Rust Blind Relay server or audit the build?</span>
-                <span class="faq-icon shrink-0 w-6 h-6 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+                <span class="faq-icon shrink-0 w-6 h-6 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                 </span>
               </button>
@@ -983,7 +993,7 @@
     <!-- ===================================================================== -->
     <section id="view-privacy" class="hidden pt-32 pb-20 px-4 sm:px-6 max-w-4xl mx-auto space-y-8">
       <div class="flex items-center justify-between">
-        <a href="#top" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
+        <a href="#top" class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
           <span>&larr; Back to Home</span>
         </a>
         <span class="text-xs font-mono text-zinc-400">Package: com.pixra.arca</span>
@@ -991,7 +1001,7 @@
 
       <div class="space-y-4 pb-6 border-b border-zinc-800">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)]"></span>
           <span>Google Play &amp; Chrome Web Store Policy Compliance</span>
         </div>
         <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-zinc-50">Privacy Policy</h1>
@@ -1015,7 +1025,7 @@
         </div>
         <div class="p-4 rounded-2xl bento-card space-y-1">
           <div class="text-zinc-400 font-medium">Encryption</div>
-          <div class="text-base font-extrabold text-emerald-400">End-to-End Local</div>
+          <div class="text-base font-extrabold text-white">End-to-End Local</div>
           <p class="text-zinc-400">Argon2id + XChaCha20-Poly1305 hardware protected.</p>
         </div>
       </div>
@@ -1027,7 +1037,7 @@
         </div>
         <div class="p-6 rounded-2xl bento-card space-y-2">
           <h2 class="text-lg font-bold text-white">2. Local Storage, Permissions &amp; Open-Source Verification</h2>
-          <p class="text-zinc-400">All vault records are encrypted locally using <code class="font-mono text-zinc-200">Argon2id (64 MiB, t=3, p=4)</code> and <code class="font-mono text-zinc-200">XChaCha20-Poly1305</code> with 256-byte block padding (<code class="font-mono text-zinc-200">ISO/IEC 7816-4</code>). Contact: <a href="mailto:security@pixra.dev" class="text-emerald-400 hover:underline font-mono">security@pixra.dev</a>.</p>
+          <p class="text-zinc-400">All vault records are encrypted locally using <code class="font-mono text-zinc-200">Argon2id (64 MiB, t=3, p=4)</code> and <code class="font-mono text-zinc-200">XChaCha20-Poly1305</code> with 256-byte block padding (<code class="font-mono text-zinc-200">ISO/IEC 7816-4</code>). Contact: <a href="mailto:security@pixra.dev" class="text-white hover:underline font-mono">security@pixra.dev</a>.</p>
         </div>
       </div>
     </section>
@@ -1037,7 +1047,7 @@
     <!-- ===================================================================== -->
     <section id="view-delete-account" class="hidden pt-32 pb-20 px-4 sm:px-6 max-w-4xl mx-auto space-y-8">
       <div class="flex items-center justify-between">
-        <a href="#top" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
+        <a href="#top" class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors">
           <span>&larr; Back to Home</span>
         </a>
         <span class="text-xs font-mono text-rose-400">Zero-Trace Purge Protocol</span>
@@ -1077,7 +1087,7 @@
   <section class="border-t border-zinc-900 bg-zinc-950/40 py-9 px-4 sm:px-6">
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
       <div class="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-zinc-500">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.8)]"></span>
         <span>Built with:</span>
       </div>
 
@@ -1122,7 +1132,7 @@
 
         <!-- AGPL-3.0 -->
         <div class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-zinc-900/50 border border-zinc-800/80 hover:border-zinc-700 transition-colors">
-          <svg class="w-4 h-4 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="w-4 h-4 text-white shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
             <path d="m9 12 2 2 4-4"/>
           </svg>
@@ -1145,22 +1155,22 @@
     aria-labelledby="install-modal-title"
     class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-zinc-950/85 backdrop-blur-md"
   >
-    <div class="w-full max-w-lg rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl space-y-4">
+    <div class="w-full max-w-lg rounded-3xl border border-zinc-800 bg-zinc-900/95 backdrop-blur-2xl p-6 sm:p-7 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
         <div class="flex items-center gap-2.5">
           <img src="favicon.png" alt="Arca" class="w-5 h-5 object-contain" />
           <h3 id="install-modal-title" class="text-base font-bold text-zinc-50">Install Arca</h3>
         </div>
-        <button id="close-install-modal" type="button" class="px-2.5 py-1 rounded-lg text-xs font-mono text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 cursor-pointer">ESC</button>
+        <button id="close-install-modal" type="button" class="px-3 py-1 rounded-full text-xs font-mono text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 cursor-pointer">ESC</button>
       </div>
       <div class="space-y-3 text-xs sm:text-sm text-zinc-300">
-        <p>Unzip <code class="font-mono text-emerald-400">arca-extension-ready.zip</code> and load it in Chrome:</p>
+        <p>Unzip <code class="font-mono text-zinc-200">arca-extension-ready.zip</code> and load it in Chrome:</p>
         <div class="relative">
           <pre id="unzip-cmd-text" class="p-3 rounded-xl bg-zinc-950 border border-zinc-800 font-mono text-xs text-zinc-200 overflow-x-auto pr-16">unzip -o arca-extension-ready.zip -d ~/Downloads/arca-extension-ready</pre>
           <button
             id="copy-cmd-btn"
             type="button"
-            class="absolute top-2 right-2 px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-[11px] font-mono text-zinc-200 border border-zinc-700 cursor-pointer"
+            class="absolute top-2 right-2 px-3 py-1 rounded-full bg-zinc-800 hover:bg-zinc-700 text-[11px] font-mono text-zinc-200 border border-zinc-700 cursor-pointer"
           >
             Copy
           </button>
@@ -1168,8 +1178,8 @@
         <p class="text-xs text-zinc-400">Then open <code class="font-mono text-zinc-200">chrome://extensions</code>, enable <strong>Developer mode</strong>, click <strong>Load unpacked</strong>, and select <code class="font-mono text-zinc-200">~/Downloads/arca-extension-ready</code>.</p>
       </div>
       <div class="flex justify-end gap-2 pt-2">
-        <a href="https://github.com/pixralabs/arca" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl text-xs font-bold btn-primary-glow">View on GitHub</a>
-        <button id="done-install-modal" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 cursor-pointer">Close</button>
+        <a href="https://github.com/pixralabs/arca" target="_blank" rel="noopener noreferrer" class="px-5 py-2 rounded-full text-xs font-bold btn-primary-glow">View on GitHub</a>
+        <button id="done-install-modal" type="button" class="px-5 py-2 rounded-full text-xs font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 cursor-pointer">Close</button>
       </div>
     </div>
   </div>
@@ -1177,9 +1187,9 @@
   <!-- Copy Notification Toast -->
   <div
     id="copy-toast"
-    class="fixed bottom-5 right-5 z-50 hidden items-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs font-mono text-zinc-100 shadow-2xl"
+    class="fixed bottom-5 right-5 z-50 hidden items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900/90 backdrop-blur-xl border border-zinc-700 text-xs font-mono text-zinc-100 shadow-2xl"
   >
-    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+    <span class="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)]"></span>
     <span id="copy-toast-msg">Copied to clipboard</span>
   </div>
 
@@ -1208,7 +1218,7 @@
   <!-- ===================================================================== -->
   <script>
     (function () {
-      // 1. Restrained Minimal Particle Network (Subtle Silver + Micro Emerald Nodes)
+      // 1. Restrained Minimal Particle Network (Subtle Silver + Diamond-White Nodes)
       var canvas = document.getElementById('particle-canvas');
       var animFrameId = null;
       if (canvas && canvas.getContext) {
@@ -1251,7 +1261,7 @@
 
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = p.accent ? 'rgba(16, 185, 129, 0.5)' : 'rgba(161, 161, 170, 0.35)';
+            ctx.fillStyle = p.accent ? 'rgba(255, 255, 255, 0.75)' : 'rgba(161, 161, 170, 0.35)';
             ctx.fill();
 
             for (var j = i + 1; j < particles.length; j++) {
@@ -1278,7 +1288,7 @@
               ctx.beginPath();
               ctx.moveTo(p.x, p.y);
               ctx.lineTo(mouse.x, mouse.y);
-              ctx.strokeStyle = 'rgba(16, 185, 129, ' + mAlpha.toFixed(3) + ')';
+              ctx.strokeStyle = 'rgba(255, 255, 255, ' + mAlpha.toFixed(3) + ')';
               ctx.lineWidth = 0.8;
               ctx.stroke();
             }
@@ -1408,7 +1418,7 @@
           btn.className = 'w-full px-3 py-2.5 rounded-xl text-left flex items-center justify-between transition-colors cursor-pointer ' +
             (isSel ? 'bg-zinc-800/90 border border-zinc-700 text-white' : 'bg-zinc-900/40 hover:bg-zinc-900 border border-zinc-800/60 text-zinc-300');
           btn.innerHTML = '<div><div class="text-xs font-semibold">' + item.title + '</div><div class="text-[11px] font-mono text-zinc-400">' + item.user + '</div></div>' +
-            '<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-950 text-emerald-400 border border-zinc-800">2FA</span>';
+            '<span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-950 text-zinc-300 border border-zinc-800">2FA</span>';
           btn.addEventListener('click', function () {
             selectedVaultIdx = idx;
             passRevealed = false;
@@ -1578,12 +1588,12 @@
       if (simSyncBtn) {
         simSyncBtn.addEventListener('click', function () {
           hlcCounter++;
-          if (syncRelayNode) syncRelayNode.classList.add('border-emerald-500/50');
+          if (syncRelayNode) syncRelayNode.classList.add('border-white/50');
           if (syncStatusLabel) syncStatusLabel.textContent = 'Syncing 256B Delta...';
           setTimeout(function () {
             if (syncStatusLabel) syncStatusLabel.textContent = 'Ed25519 Verified ✓';
             if (syncClockLabel) syncClockLabel.textContent = 'HLC #00' + hlcCounter;
-            if (syncRelayNode) syncRelayNode.classList.remove('border-emerald-500/50');
+            if (syncRelayNode) syncRelayNode.classList.remove('border-white/50');
             showToast('Synced 256-byte padded blob via HLC #00' + hlcCounter);
           }, 450);
         });
@@ -1608,9 +1618,9 @@
           var pills = document.querySelectorAll('.dom-check-pill');
           pills.forEach(function (pill, i) {
             setTimeout(function () {
-              pill.classList.add('border-emerald-500/40', 'text-emerald-300');
+              pill.classList.add('border-white/50', 'text-white', 'bg-white/10');
               setTimeout(function () {
-                pill.classList.remove('border-emerald-500/40');
+                pill.classList.remove('border-white/50', 'text-white', 'bg-white/10');
               }, 700);
             }, i * 90);
           });
