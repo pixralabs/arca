@@ -1,6 +1,6 @@
 {
   "name": "arca-monorepo",
-  "version": "0.5.0",
+  "version": "0.5.3",
   "private": true,
   "description": "Arca by Pixra — Zero-Knowledge Offline-First Password Manager Monorepo",
   "scripts": {
