@@ -131,6 +131,15 @@ function App() {
     };
   }, []);
 
+  // Notify CodePush that application is ready without using the React 18/17 HOC decorator
+  useEffect(() => {
+    try {
+      codePush?.notifyAppReady?.();
+    } catch {
+      // Safe no-op
+    }
+  }, []);
+
   // Safe Background CodePush Sync: never blocks startup or crashes if network is offline
   useEffect(() => {
     let cpTimer: NodeJS.Timeout | null = null;
@@ -289,17 +298,7 @@ function App() {
   );
 }
 
-let RootComponent: React.ComponentType = App;
-try {
-  if (typeof codePush === 'function') {
-    RootComponent = codePush(codePushOptions)(App);
-  }
-} catch (e) {
-  console.warn('[CodePush] Root wrapper caught safely:', e);
-  RootComponent = App;
-}
-
-export default RootComponent;
+export default App;
 
 const styles = StyleSheet.create({
   container: {

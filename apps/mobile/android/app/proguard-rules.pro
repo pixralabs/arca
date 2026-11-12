@@ -46,6 +46,12 @@
 -dontwarn com.facebook.hermes.**
 -keep class com.facebook.jni.** { *; }
 
+# SoLoader & Merged So Mapping
+-keep class com.facebook.soloader.** { *; }
+-dontwarn com.facebook.soloader.**
+-keep class com.facebook.react.soloader.** { *; }
+-keepclassmembers class com.facebook.react.soloader.** { *; }
+
 # Okio / OkHttp
 -keep class sun.misc.Unsafe { *; }
 -dontwarn java.nio.file.*
