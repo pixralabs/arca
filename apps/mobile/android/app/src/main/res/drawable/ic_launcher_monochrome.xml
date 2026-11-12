@@ -4,20 +4,28 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- U-Shackle -->
+    <!-- U-Shackle (Ultra-Sleek Geometric Arch) -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="6"
+        android:strokeWidth="2.5"
         android:strokeLineCap="round"
-        android:pathData="M 43,50 V 39 C 43,32.9 47.9,28 54,28 C 60.1,28 65,32.9 65,39 V 50" />
+        android:strokeLineJoin="round"
+        android:pathData="M 44.5,51 V 42 A 9.5,9.5 0 0,1 63.5,42 V 51" />
 
-    <!-- Padlock Body with Keyhole Cutout (EvenOdd) -->
+    <!-- Padlock Body (Delicate Outline Rounded Capsule) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineJoin="round"
+        android:pathData="M 41,51 H 67 A 6,6 0 0,1 73,57 V 69.5 A 6,6 0 0,1 67,75.5 H 41 A 6,6 0 0,1 35,69.5 V 57 A 6,6 0 0,1 41,51 Z" />
+
+    <!-- Minimalist Keyhole (Pinhead & Slit) -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="
-            M 39,49 H 69 C 74.5,49 79,53.5 79,59 V 71 C 79,76.5 74.5,81 69,81 H 39 C 33.5,81 29,76.5 29,71 V 59 C 29,53.5 33.5,49 39,49 Z
-            M 54,58.5 A 3.5,3.5 0 1,1 54,65.5 A 3.5,3.5 0 1,1 54,58.5 Z
-            M 52.8,63.5 L 51.6,71.5 C 51.4,72.6 52.2,73.5 53.3,73.5 H 54.7 C 55.8,73.5 56.6,72.6 56.4,71.5 L 55.2,63.5 Z" />
+        android:pathData="M 54,58.8 A 2.2,2.2 0 1,1 54,63.2 A 2.2,2.2 0 1,1 54,58.8 Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:pathData="M 54,62 V 66" />
 </vector>
-
