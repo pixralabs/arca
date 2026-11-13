@@ -196,16 +196,35 @@ export async function retrieveBiometricSlotKey(
       },
     };
 
-    const credentials = await Keychain.getGenericPassword(getOptions);
+    let credentials: Keychain.UserCredentials | null | false = null;
+    try {
+      credentials = await Keychain.getGenericPassword(getOptions);
+    } catch {
+      try {
+        credentials = await Keychain.getGenericPassword({ service });
+      } catch {
+        credentials = null;
+      }
+    }
+
     let storedPayload: string | null =
       credentials && credentials.password ? credentials.password : null;
 
     // Fallback check on base service for legacy migration
     if (!storedPayload && service !== BIOMETRIC_SERVICE_BASE) {
-      const fallback = await Keychain.getGenericPassword({
-        ...getOptions,
-        service: BIOMETRIC_SERVICE_BASE,
-      });
+      let fallback: Keychain.UserCredentials | null | false = null;
+      try {
+        fallback = await Keychain.getGenericPassword({
+          ...getOptions,
+          service: BIOMETRIC_SERVICE_BASE,
+        });
+      } catch {
+        try {
+          fallback = await Keychain.getGenericPassword({ service: BIOMETRIC_SERVICE_BASE });
+        } catch {
+          fallback = null;
+        }
+      }
       if (fallback && fallback.password) {
         storedPayload = fallback.password;
       }
