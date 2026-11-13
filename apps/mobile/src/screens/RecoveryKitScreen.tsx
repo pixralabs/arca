@@ -16,7 +16,7 @@ import {
   Share,
   Clipboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '../components/SafeAreaView';
 import ViewShot from 'react-native-view-shot';
 import Animated, {
   useSharedValue,
@@ -407,6 +407,7 @@ export function RecoveryKitScreen({
                     Word #{wordIndex + 1}
                   </Text>
                   <TextInput
+                    collapsable={false}
                     style={[
                       styles.quizInput,
                       {

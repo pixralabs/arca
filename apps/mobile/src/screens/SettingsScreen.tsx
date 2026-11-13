@@ -17,7 +17,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from '../components/SafeAreaView';
 import QRCode from 'react-native-qrcode-svg';
 import Animated, {
   useSharedValue,
@@ -751,6 +751,7 @@ export function SettingsScreen({
                   </Text>
 
                   <TextInput
+                    collapsable={false}
                     style={[
                       styles.confirmInput,
                       {

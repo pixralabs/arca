@@ -439,6 +439,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
         >
           {isRecoveryMode ? (
             <View
+              collapsable={false}
               style={[
                 styles.inputShell,
                 styles.multilineShell,
@@ -446,6 +447,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
               ]}
             >
               <TextInput
+                collapsable={false}
                 style={[styles.inputText, styles.multilineInput, { color: colors.text }]}
                 placeholder="Enter your 24-word recovery phrase..."
                 placeholderTextColor={colors.textDim}
@@ -461,9 +463,10 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
               />
             </View>
           ) : (
-            <View style={[styles.inputShell, inputShellStyle('password')]}>
+            <View collapsable={false} style={[styles.inputShell, inputShellStyle('password')]}>
               <TextInput
                 ref={passwordRef}
+                collapsable={false}
                 style={[styles.inputText, { color: colors.text }]}
                 placeholder={`Password for ${activeVault?.name || 'Vault'}`}
                 placeholderTextColor={colors.textDim}

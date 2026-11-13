@@ -187,19 +187,14 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
                 Secret Message or Password
               </Text>
               <TextInput
+                collapsable={false}
                 style={[
                   styles.input,
                   styles.multilineInput,
                   {
                     backgroundColor: colors.surfaceSubtle,
                     color: colors.text,
-                    borderColor: focused ? colors.primary : 'transparent',
-                  },
-                  focused && {
-                    shadowColor: colors.primary,
-                    shadowOpacity: 0.28,
-                    shadowRadius: 10,
-                    shadowOffset: { width: 0, height: 0 },
+                    borderColor: focused ? colors.primary : (isDark ? '#27272a' : colors.border),
                   },
                 ]}
                 placeholder="Paste password or secret here..."

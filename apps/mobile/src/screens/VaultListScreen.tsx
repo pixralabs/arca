@@ -347,25 +347,21 @@ export function VaultListScreen({
           </View>
         )}
 
-        {/* Soft Grey Search Input with Subtle Indigo Focus Glow */}
+        {/* Soft Grey Search Input with Subtle Focus Border */}
         <View style={styles.searchWrapper}>
           <View
+            collapsable={false}
             style={[
               styles.searchPill,
               {
                 backgroundColor: colors.surfaceSubtle,
-                borderColor: searchFocused ? colors.primary : 'transparent',
-              },
-              searchFocused && {
-                shadowColor: colors.primary,
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 0 },
+                borderColor: searchFocused ? colors.primary : (isDark ? '#27272a' : colors.border),
               },
             ]}
           >
             <Text style={styles.searchIcon}>🔍</Text>
             <TextInput
+              collapsable={false}
               style={[styles.searchInput, { color: colors.text }]}
               placeholder={`Search ${meta.title.toLowerCase()}...`}
               placeholderTextColor={colors.textDim}

@@ -284,6 +284,7 @@ export function ItemEditorScreen({
             Website or Service Label
           </Text>
           <TextInput
+            collapsable={false}
             style={[
               styles.sheetInput,
               {
@@ -305,6 +306,7 @@ export function ItemEditorScreen({
             Username or Email
           </Text>
           <TextInput
+            collapsable={false}
             style={[
               styles.sheetInput,
               {
@@ -327,6 +329,7 @@ export function ItemEditorScreen({
             Password
           </Text>
           <TextInput
+            collapsable={false}
             style={[
               styles.sheetInput,
               {
@@ -363,6 +366,7 @@ export function ItemEditorScreen({
             </TouchableOpacity>
           </View>
           <TextInput
+            collapsable={false}
             style={[
               styles.sheetInput,
               {

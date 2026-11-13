@@ -662,22 +662,18 @@ export function VaultScreen({
         ]}
       >
         <View
+          collapsable={false}
           style={[
             styles.bottomSearchPill,
             {
               backgroundColor: isDark ? '#18181b' : colors.surface,
-              borderColor: searchFocused ? '#6366f1' : (isDark ? '#27272a' : colors.border),
-            },
-            searchFocused && {
-              shadowColor: '#6366f1',
-              shadowOpacity: 0.28,
-              shadowRadius: 8,
-              shadowOffset: { width: 0, height: 0 },
+              borderColor: searchFocused ? colors.primary : (isDark ? '#27272a' : colors.border),
             },
           ]}
         >
           <Search size={18} color={colors.textDim} style={styles.bottomSearchIcon} />
           <TextInput
+            collapsable={false}
             style={[styles.bottomSearchInput, { color: colors.text }]}
             placeholder="Search passwords..."
             placeholderTextColor={colors.textDim}
@@ -790,6 +786,7 @@ export function VaultScreen({
             Paste CSV Data (Chrome, Bitwarden, or 1Password)
           </Text>
           <TextInput
+            collapsable={false}
             style={[
               styles.csvTextInput,
               {

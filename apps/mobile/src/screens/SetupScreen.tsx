@@ -208,17 +208,12 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
     }
   }, [vaultName, password, confirmPassword, strength, onVaultCreated]);
 
-  // Input shell focus styling
+  // Input shell focus styling (Crisp monochrome border without view-flattening elevation glitches)
   const inputShellStyle = (field: 'name' | 'pass' | 'confirm') => {
     const focused = focusedField === field;
     return {
       backgroundColor: colors.inputBackground,
-      borderColor: focused ? colors.primary : 'transparent',
-      shadowColor: focused ? colors.primary : 'transparent',
-      shadowOpacity: focused ? (isDark ? 0.2 : 0.15) : 0,
-      shadowRadius: focused ? 8 : 0,
-      shadowOffset: { width: 0, height: 0 },
-      elevation: focused ? 3 : 0,
+      borderColor: focused ? colors.primary : (isDark ? '#27272a' : '#e4e4e7'),
     };
   };
 
@@ -312,8 +307,9 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
           {/* 1. Vault Name Field */}
           <View style={styles.fieldBlock}>
             <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Vault Name</Text>
-            <View style={[styles.inputShell, inputShellStyle('name')]}>
+            <View collapsable={false} style={[styles.inputShell, inputShellStyle('name')]}>
               <TextInput
+                collapsable={false}
                 style={[styles.inputText, { color: colors.text }]}
                 placeholder="e.g. Personal Vault, Work, Finances"
                 placeholderTextColor={colors.textDim}
@@ -333,9 +329,10 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
           {/* 2. Master Password Field */}
           <View style={[styles.fieldBlock, { marginTop: spacing.md }]}>
             <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Master Password</Text>
-            <View style={[styles.inputShell, inputShellStyle('pass')]}>
+            <View collapsable={false} style={[styles.inputShell, inputShellStyle('pass')]}>
               <TextInput
                 ref={passwordRef}
+                collapsable={false}
                 style={[styles.inputText, { color: colors.text }]}
                 placeholder="Enter Master Password"
                 placeholderTextColor={colors.textDim}
@@ -418,9 +415,10 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
           {/* 3. Confirm Password Field */}
           <View style={[styles.fieldBlock, { marginTop: spacing.md }]}>
             <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>Confirm Master Password</Text>
-            <View style={[styles.inputShell, inputShellStyle('confirm')]}>
+            <View collapsable={false} style={[styles.inputShell, inputShellStyle('confirm')]}>
               <TextInput
                 ref={confirmRef}
+                collapsable={false}
                 style={[styles.inputText, { color: colors.text }]}
                 placeholder="Confirm Master Password"
                 placeholderTextColor={colors.textDim}
