@@ -191,7 +191,8 @@ export async function enrollBiometricDekForActiveSession(): Promise<boolean> {
 
 export async function mobileSetupVault(
   password: string,
-  vaultName: string = 'Personal Vault'
+  vaultName: string = 'Personal Vault',
+  onProgress?: (step: string) => void
 ): Promise<{
   mnemonic: string;
   session: MobileSession;
@@ -202,17 +203,33 @@ export async function mobileSetupVault(
   const vaultId =
     'vault_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
 
+  onProgress?.('Initializing crypto engine...');
+  await yieldToMainThread(16);
+
   // JSI sodium.ready is synchronous/instant
   const sodium = getSodium();
-  await sodium.ready;
+  try {
+    await sodium.ready;
+  } catch (err) {
+    console.warn('[mobileCrypto] sodium.ready best-effort fallback:', err);
+  }
 
   const pwBytes = new TextEncoder().encode(password);
   try {
+    onProgress?.('Deriving Master Key (Argon2id)...');
+    await yieldToMainThread(20);
+
     const { createVault, OWASP_MOBILE_KDF_PARAMS } = getCrypto();
     // Enforces OWASP Mobile Floor: m=19456 KiB (19 MiB), t=2, p=1
     const result = await createVault(pwBytes, undefined, OWASP_MOBILE_KDF_PARAMS);
 
+    onProgress?.('Encrypting Zero-Knowledge Envelope...');
+    await yieldToMainThread(16);
+
     const serialized = serializeHeader(result.header);
+
+    onProgress?.('Securing Isolated Database...');
+    await yieldToMainThread(16);
 
     await createVaultRecord(vaultId, cleanName, serialized);
     await AsyncStorage.setItem('@arca_vault_created', 'true').catch(() => {});
@@ -228,6 +245,9 @@ export async function mobileSetupVault(
     // Best-effort hardware-backed biometric DEK enrollment
     void enrollBiometricDekForActiveSession().catch(() => {});
 
+    onProgress?.('Finalizing Vault Setup...');
+    await yieldToMainThread(16);
+
     return {
       mnemonic: result.mnemonic,
       session: activeSession,
@@ -235,7 +255,11 @@ export async function mobileSetupVault(
       vaultName: cleanName,
     };
   } finally {
-    sodium.memzero(pwBytes);
+    try {
+      sodium.memzero(pwBytes);
+    } catch {
+      pwBytes.fill(0);
+    }
   }
 }
 

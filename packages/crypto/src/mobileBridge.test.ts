@@ -14,7 +14,7 @@ describe('Mobile Cryptographic Bridge & Helpers', () => {
     for (let i = 0; i < 32; i++) originalSecret[i] = (i * 7 + 13) % 256;
 
     // Split into 3 shares with threshold 2
-    const shares = await splitRecoveryEntropy(originalSecret, 3, 2);
+    const shares = await splitRecoveryEntropy(originalSecret);
     expect(shares).toHaveLength(3);
 
     // Any 2 shares must reconstruct the exact original secret

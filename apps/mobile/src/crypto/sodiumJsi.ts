@@ -33,10 +33,11 @@ function getNativeJsiBinding(): any {
     return global.__SodiumJSI;
   }
 
-  // Trigger native JSI installation via ReactNativeSodiumJsi / ArcaSecurity native module
+  // Trigger native JSI installation via ReactNativeSodiumJsi / Sodium / ArcaSecurity native module
   const nativeInstaller =
     NativeModules?.ReactNativeSodiumJsi ||
     NativeModules?.SodiumJsi ||
+    NativeModules?.Sodium ||
     NativeModules?.ArcaSecurityModule ||
     NativeModules?.ArcaSplashScreen;
 
@@ -50,6 +51,10 @@ function getNativeJsiBinding(): any {
 
   if (typeof global !== 'undefined' && global.__SodiumJSI) {
     return global.__SodiumJSI;
+  }
+
+  if (typeof global !== 'undefined' && typeof global.crypto_aead_xchacha20poly1305_ietf_encrypt === 'function') {
+    return global;
   }
 
   return nativeInstaller || null;
@@ -330,7 +335,7 @@ export function crypto_kdf_derive_from_key(
 }
 
 /**
- * Native C++ JSI XChaCha20-Poly1305-IETF Encryption.
+ * Native C++ JSI XChaCha20-Poly1305-IETF Encryption with Pure-JS @noble/ciphers Fallback.
  */
 export function crypto_aead_xchacha20poly1305_ietf_encrypt(
   message: Uint8Array | string,
@@ -340,28 +345,41 @@ export function crypto_aead_xchacha20poly1305_ietf_encrypt(
   key: Uint8Array
 ): Uint8Array {
   const msgBytes = ensureUint8Array(message);
-  const aadBytes = additionalData ? ensureUint8Array(additionalData) : null;
+  const aadBytes = additionalData ? ensureUint8Array(additionalData) : new Uint8Array(0);
   const nonceBytes = ensureUint8Array(publicNonce);
   const keyBytes = ensureUint8Array(key);
 
   const jsi = getNativeJsiBinding();
   if (jsi && typeof jsi.crypto_aead_xchacha20poly1305_ietf_encrypt === 'function') {
-    const res = jsi.crypto_aead_xchacha20poly1305_ietf_encrypt(
-      msgBytes,
-      aadBytes,
-      null,
-      nonceBytes,
-      keyBytes
-    );
-    if (res instanceof Uint8Array) return res;
-    if (res instanceof ArrayBuffer) return new Uint8Array(res);
-    if (typeof res === 'string') return from_base64(res, base64_variants.ORIGINAL);
+    try {
+      const res = jsi.crypto_aead_xchacha20poly1305_ietf_encrypt(
+        msgBytes,
+        aadBytes,
+        null,
+        nonceBytes,
+        keyBytes
+      );
+      if (res instanceof Uint8Array) return res;
+      if (res instanceof ArrayBuffer) return new Uint8Array(res);
+      if (typeof res === 'string') return from_base64(res, base64_variants.ORIGINAL);
+    } catch {
+      // Fall through to pure JS fallback
+    }
   }
-  throw new Error('Native JSI crypto_aead_xchacha20poly1305_ietf_encrypt not linked');
+
+  // Pure JS fallback via @noble/ciphers/chacha.js (100% bit-compatible with Libsodium)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { xchacha20poly1305 } = require('@noble/ciphers/chacha.js');
+    const cipher = xchacha20poly1305(keyBytes, nonceBytes, aadBytes);
+    return cipher.encrypt(msgBytes);
+  } catch (err: any) {
+    throw new Error(`XChaCha20-Poly1305 encryption failed: ${err?.message || 'unknown error'}`);
+  }
 }
 
 /**
- * Native C++ JSI XChaCha20-Poly1305-IETF Decryption.
+ * Native C++ JSI XChaCha20-Poly1305-IETF Decryption with Pure-JS @noble/ciphers Fallback.
  */
 export function crypto_aead_xchacha20poly1305_ietf_decrypt(
   _secretNonce: Uint8Array | null,
@@ -371,32 +389,47 @@ export function crypto_aead_xchacha20poly1305_ietf_decrypt(
   key: Uint8Array
 ): Uint8Array {
   const ctBytes = ensureUint8Array(ciphertext);
-  const aadBytes = additionalData ? ensureUint8Array(additionalData) : null;
+  const aadBytes = additionalData ? ensureUint8Array(additionalData) : new Uint8Array(0);
   const nonceBytes = ensureUint8Array(publicNonce);
   const keyBytes = ensureUint8Array(key);
 
   const jsi = getNativeJsiBinding();
   if (jsi && typeof jsi.crypto_aead_xchacha20poly1305_ietf_decrypt === 'function') {
-    const res = jsi.crypto_aead_xchacha20poly1305_ietf_decrypt(
-      null,
-      ctBytes,
-      aadBytes,
-      nonceBytes,
-      keyBytes
-    );
-    if (res instanceof Uint8Array) return res;
-    if (res instanceof ArrayBuffer) return new Uint8Array(res);
-    if (typeof res === 'string') return from_base64(res, base64_variants.ORIGINAL);
+    try {
+      const res = jsi.crypto_aead_xchacha20poly1305_ietf_decrypt(
+        null,
+        ctBytes,
+        aadBytes,
+        nonceBytes,
+        keyBytes
+      );
+      if (res instanceof Uint8Array) return res;
+      if (res instanceof ArrayBuffer) return new Uint8Array(res);
+      if (typeof res === 'string') return from_base64(res, base64_variants.ORIGINAL);
+    } catch {
+      // Fall through to pure JS fallback
+    }
   }
-  throw new Error('Native JSI crypto_aead_xchacha20poly1305_ietf_decrypt not linked');
+
+  // Pure JS fallback via @noble/ciphers/chacha.js
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { xchacha20poly1305 } = require('@noble/ciphers/chacha.js');
+    const cipher = xchacha20poly1305(keyBytes, nonceBytes, aadBytes);
+    return cipher.decrypt(ctBytes);
+  } catch (err: any) {
+    throw new Error(`XChaCha20-Poly1305 decryption failed: ${err?.message || 'unknown error'}`);
+  }
 }
 
 export function crypto_aead_xchacha20poly1305_ietf_keygen(): Uint8Array {
   const jsi = getNativeJsiBinding();
   if (jsi && typeof jsi.crypto_aead_xchacha20poly1305_ietf_keygen === 'function') {
-    const res = jsi.crypto_aead_xchacha20poly1305_ietf_keygen();
-    if (res instanceof Uint8Array) return res;
-    if (res instanceof ArrayBuffer) return new Uint8Array(res);
+    try {
+      const res = jsi.crypto_aead_xchacha20poly1305_ietf_keygen();
+      if (res instanceof Uint8Array) return res;
+      if (res instanceof ArrayBuffer) return new Uint8Array(res);
+    } catch {}
   }
   return randombytes_buf(32);
 }
@@ -410,10 +443,13 @@ export function crypto_generichash(
   const keyBytes = key ? ensureUint8Array(key) : undefined;
   const jsi = getNativeJsiBinding();
   if (jsi && typeof jsi.crypto_generichash === 'function') {
-    const res = jsi.crypto_generichash(hashLength, msgBytes, keyBytes ?? null);
-    if (res instanceof Uint8Array) return res;
-    if (res instanceof ArrayBuffer) return new Uint8Array(res);
+    try {
+      const res = jsi.crypto_generichash(hashLength, msgBytes, keyBytes ?? null);
+      if (res instanceof Uint8Array) return res;
+      if (res instanceof ArrayBuffer) return new Uint8Array(res);
+    } catch {}
   }
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { blake2b } = require('@noble/hashes/blake2b');
   return blake2b(msgBytes, { dkLen: hashLength, key: keyBytes });
 }
@@ -426,9 +462,22 @@ export function crypto_sign_seed_keypair(seed: Uint8Array): {
   const seedBytes = ensureUint8Array(seed);
   const jsi = getNativeJsiBinding();
   if (jsi && typeof jsi.crypto_sign_seed_keypair === 'function') {
-    return jsi.crypto_sign_seed_keypair(seedBytes);
+    try {
+      return jsi.crypto_sign_seed_keypair(seedBytes);
+    } catch {}
   }
-  throw new Error('Native JSI crypto_sign_seed_keypair not linked');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { ed25519 } = require('@noble/curves/ed25519.js');
+  const pub = ed25519.getPublicKey(seedBytes);
+  // Libsodium private key is 64 bytes: 32 bytes seed + 32 bytes pubkey
+  const sk = new Uint8Array(64);
+  sk.set(seedBytes, 0);
+  sk.set(pub, 32);
+  return {
+    publicKey: pub,
+    privateKey: sk,
+    keyType: 'ed25519',
+  };
 }
 
 export function crypto_sign_detached(
@@ -439,11 +488,16 @@ export function crypto_sign_detached(
   const skBytes = ensureUint8Array(privateKey);
   const jsi = getNativeJsiBinding();
   if (jsi && typeof jsi.crypto_sign_detached === 'function') {
-    const res = jsi.crypto_sign_detached(msgBytes, skBytes);
-    if (res instanceof Uint8Array) return res;
-    if (res instanceof ArrayBuffer) return new Uint8Array(res);
+    try {
+      const res = jsi.crypto_sign_detached(msgBytes, skBytes);
+      if (res instanceof Uint8Array) return res;
+      if (res instanceof ArrayBuffer) return new Uint8Array(res);
+    } catch {}
   }
-  throw new Error('Native JSI crypto_sign_detached not linked');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { ed25519 } = require('@noble/curves/ed25519.js');
+  const seed = skBytes.subarray(0, 32);
+  return ed25519.sign(msgBytes, seed);
 }
 
 export function crypto_sign_verify_detached(
@@ -456,9 +510,13 @@ export function crypto_sign_verify_detached(
   const pkBytes = ensureUint8Array(publicKey);
   const jsi = getNativeJsiBinding();
   if (jsi && typeof jsi.crypto_sign_verify_detached === 'function') {
-    return Boolean(jsi.crypto_sign_verify_detached(sigBytes, msgBytes, pkBytes));
+    try {
+      return Boolean(jsi.crypto_sign_verify_detached(sigBytes, msgBytes, pkBytes));
+    } catch {}
   }
-  throw new Error('Native JSI crypto_sign_verify_detached not linked');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { ed25519 } = require('@noble/curves/ed25519.js');
+  return ed25519.verify(sigBytes, msgBytes, pkBytes);
 }
 
 /**

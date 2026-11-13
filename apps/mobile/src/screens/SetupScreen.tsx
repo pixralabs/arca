@@ -112,6 +112,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [progressStep, setProgressStep] = useState('');
   const [focusedField, setFocusedField] = useState<'name' | 'pass' | 'confirm' | null>(null);
   const [mnemonicWords, setMnemonicWords] = useState<string[]>([]);
   const [createdVaultId, setCreatedVaultId] = useState<string>('');
@@ -184,10 +185,13 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
     }
 
     setLoading(true);
-    // Yield to the React Native event loop so the skeleton screen renders cleanly
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    setProgressStep('Deriving Master Key...');
+    // Yield to the React Native event loop so the UI updates cleanly
+    await new Promise((resolve) => setTimeout(resolve, 50));
     try {
-      const result = await mobileSetupVault(password, cleanName);
+      const result = await mobileSetupVault(password, cleanName, (step) => {
+        setProgressStep(step);
+      });
       triggerSuccessHaptic();
       setCreatedVaultId(result.vaultId);
       if (result?.mnemonic) {
@@ -197,6 +201,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
       }
     } catch (err: any) {
       setLoading(false);
+      setProgressStep('');
       Alert.alert('Setup Failed', err?.message || 'Could not initialize vault.');
     }
   }, [vaultName, password, confirmPassword, strength, onVaultCreated]);
@@ -214,28 +219,6 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
       elevation: focused ? 3 : 0,
     };
   };
-
-  // Loading skeleton screen
-  if (loading && mnemonicWords.length === 0) {
-    return (
-      <SafeAreaView
-        edges={['top', 'bottom']}
-        style={[styles.flex, { backgroundColor: colors.background }]}
-      >
-        <StatusBar
-          translucent
-          backgroundColor="transparent"
-          barStyle={isDark ? 'light-content' : 'dark-content'}
-        />
-        <View style={styles.loadingBanner}>
-          <Text style={[styles.loadingText, { color: colors.textMuted }]}>
-            Initializing zero-knowledge vault...
-          </Text>
-        </View>
-        <VaultSkeletonLoader />
-      </SafeAreaView>
-    );
-  }
 
   // Shamir 2-of-3 Recovery Kit & Backup screen
   if (mnemonicWords.length > 0) {
@@ -334,6 +317,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
                 placeholderTextColor={colors.textDim}
                 value={vaultName}
                 onChangeText={setVaultName}
+                editable={!loading}
                 autoCorrect={false}
                 returnKeyType="next"
                 blurOnSubmit={false}
@@ -355,6 +339,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
                 placeholderTextColor={colors.textDim}
                 value={password}
                 onChangeText={setPassword}
+                editable={!loading}
                 secureTextEntry={!showPassword}
                 autoCorrect={false}
                 autoCapitalize="none"
@@ -372,9 +357,11 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
                     {
                       backgroundColor: isDark ? '#27272a' : '#f4f4f5',
                       borderColor: isDark ? '#3f3f46' : '#e4e4e7',
+                      opacity: loading ? 0.4 : 1,
                     },
                   ]}
                   onPress={handleGenerate}
+                  disabled={loading}
                   hitSlop={HIT_SLOP}
                   activeOpacity={0.75}
                 >
@@ -384,6 +371,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
                 <TouchableOpacity
                   style={styles.iconBtn}
                   hitSlop={HIT_SLOP}
+                  disabled={loading}
                   onPress={() => {
                     triggerLightHaptic();
                     setShowPassword((v) => !v);
@@ -436,6 +424,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
                 placeholderTextColor={colors.textDim}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
+                editable={!loading}
                 secureTextEntry={!showConfirmPassword}
                 autoCorrect={false}
                 autoCapitalize="none"
@@ -448,6 +437,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
               <TouchableOpacity
                 style={styles.iconBtn}
                 hitSlop={HIT_SLOP}
+                disabled={loading}
                 onPress={() => {
                   triggerLightHaptic();
                   setShowConfirmPassword((v) => !v);
@@ -480,11 +470,32 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
           {/* Primary CTA */}
           <AnimatedPrimaryButton
             onPress={handleSetup}
-            disabled={!vaultName.trim() || !password || !confirmPassword}
-            label={existingVaults.length > 0 ? `Initialize "${vaultName.trim() || 'Vault'}"` : 'Initialize Zero-Knowledge Vault'}
+            disabled={loading || !vaultName.trim() || !password || !confirmPassword}
+            loading={loading}
+            label={
+              loading
+                ? (progressStep || 'Initializing...')
+                : existingVaults.length > 0
+                ? `Initialize "${vaultName.trim() || 'Vault'}"`
+                : 'Initialize Zero-Knowledge Vault'
+            }
             primaryColor={colors.primary}
             onPrimaryColor={colors.onPrimary}
           />
+
+          {loading && (
+            <View
+              style={[
+                styles.inlineProgressContainer,
+                { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' },
+              ]}
+            >
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.inlineProgressText, { color: colors.textMuted }]}>
+                {progressStep || 'Encrypting zero-knowledge envelope...'}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* ── Footer Link ── */}
@@ -663,6 +674,23 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
   },
   loadingText: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600' },
+
+  inlineProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.pill,
+  },
+  inlineProgressText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
 
   wordGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   wordBadge: {

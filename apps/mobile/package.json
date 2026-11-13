@@ -13,6 +13,8 @@
     "postinstall": "node patch-manifests.js"
   },
   "dependencies": {
+    "@noble/ciphers": "^2.4.0",
+    "@noble/curves": "^2.4.0",
     "@op-engineering/op-sqlite": "8.0.3",
     "@react-native-async-storage/async-storage": "^2.1.0",
     "@vaultguard/crypto": "workspace:*",
