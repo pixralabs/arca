@@ -273,8 +273,16 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
       onUnlocked();
     } catch (err: any) {
       setIsLoading(false);
+      const msg = err?.message || '';
+      if (
+        msg.toLowerCase().includes('cancel') ||
+        msg.toLowerCase().includes('user cancellation')
+      ) {
+        // User dismissed the biometric prompt to type password instead
+        return;
+      }
       triggerShakeAnimation();
-      setErrorMessage(err?.message || 'Biometric key invalid or authentication failed.');
+      setErrorMessage(msg || 'Biometric key invalid or authentication failed.');
     }
   };
 
@@ -307,8 +315,8 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const inputShellStyle = (field: 'password' | 'recovery') => {
     const focused = focusedField === field;
     return {
-      backgroundColor: colors.background,
-      borderColor: focused ? colors.primary : colors.border,
+      backgroundColor: isDark ? '#141417' : '#f4f4f5',
+      borderColor: focused ? (isDark ? '#ffffff' : '#000000') : colors.border,
     };
   };
 
@@ -365,13 +373,17 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
               <View
                 style={[
                   styles.vaultAvatar,
-                  { backgroundColor: colors.primary },
+                  {
+                    backgroundColor: isDark ? '#27272a' : '#e4e4e7',
+                    borderWidth: 1,
+                    borderColor: isDark ? '#3f3f46' : '#d4d4d8',
+                  },
                 ]}
               >
                 <Text
                   style={[
                     styles.vaultAvatarText,
-                    { color: colors.onPrimary },
+                    { color: isDark ? '#ffffff' : '#09090b' },
                   ]}
                 >
                   {(activeVault?.name || 'P').charAt(0).toUpperCase()}
@@ -506,8 +518,8 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
             onPress={handleUnlock}
             disabled={false}
             label={isRecoveryMode ? 'Restore Vault' : 'Unlock Vault'}
-            primaryColor={colors.primary}
-            onPrimaryColor={colors.onPrimary}
+            primaryColor={isDark ? '#ffffff' : '#000000'}
+            onPrimaryColor={isDark ? '#000000' : '#ffffff'}
             loading={isLoading}
           />
 

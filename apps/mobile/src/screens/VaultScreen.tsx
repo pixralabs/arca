@@ -17,7 +17,16 @@ import {
   StyleSheet,
   Alert,
   Clipboard,
+  Platform,
+  Keyboard,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   EllipsisVertical,
@@ -101,8 +110,51 @@ export function VaultScreen({
   const [deletedItems, setDeletedItems] = useState<MobileVaultItem[]>([]);
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<VaultCategoryFilter | null>(null);
+
+  // Smooth Reanimated Spring Physics for Floating Search & Collapsing Plus Button
+  const searchFocusAnim = useSharedValue(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow',
+      () => setKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide',
+      () => setKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleSearchFocus = () => {
+    setSearchFocused(true);
+    searchFocusAnim.value = withSpring(1, { damping: 20, stiffness: 220 });
+  };
+
+  const handleSearchBlur = () => {
+    setSearchFocused(false);
+    searchFocusAnim.value = withSpring(0, { damping: 20, stiffness: 220 });
+  };
+
+  const animatedPlusStyle = useAnimatedStyle(() => {
+    const p = searchFocusAnim.value;
+    return {
+      width: interpolate(p, [0, 1], [52, 0], Extrapolation.CLAMP),
+      height: 52,
+      marginLeft: interpolate(p, [0, 1], [10, 0], Extrapolation.CLAMP),
+      opacity: interpolate(p, [0, 0.35, 1], [1, 0.1, 0], Extrapolation.CLAMP),
+      transform: [
+        { scale: interpolate(p, [0, 1], [1, 0.3], Extrapolation.CLAMP) },
+      ],
+      overflow: 'hidden',
+    };
+  });
 
   // Sleek Bottom Sheet state for Menu actions (Generator, Import, Settings, Lock)
   const [showMenuSheet, setShowMenuSheet] = useState(false);
@@ -347,7 +399,7 @@ export function VaultScreen({
 
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       {/* Top Header Row: "Passwords" Heading + Minimalist Ellipsis Menu Icon */}
@@ -651,13 +703,14 @@ export function VaultScreen({
         </>
       )}
 
-      {/* Persistent Floating Bottom Bar (Wider Rounded Search Bar + Electric Indigo Circle Add Button) */}
+      {/* Persistent Floating Bottom Bar (Wider Minimalist Search Pill + Smooth Collapsing Plus Button) */}
       <View
         style={[
           styles.bottomBarContainer,
           {
-            backgroundColor: colors.floatingBar,
-            paddingBottom: Math.max(insets.bottom, 12) + 8,
+            backgroundColor: isDark ? 'rgba(10, 10, 12, 0.94)' : 'rgba(255, 255, 255, 0.94)',
+            borderTopColor: isDark ? '#27272a' : '#e4e4e7',
+            paddingBottom: keyboardVisible ? 10 : Math.max(insets.bottom, 12) + 6,
           },
         ]}
       >
@@ -666,21 +719,23 @@ export function VaultScreen({
           style={[
             styles.bottomSearchPill,
             {
-              backgroundColor: isDark ? '#18181b' : colors.surface,
-              borderColor: searchFocused ? colors.primary : (isDark ? '#27272a' : colors.border),
+              backgroundColor: isDark ? '#141417' : '#f4f4f5',
+              borderColor: searchFocused
+                ? (isDark ? '#ffffff' : '#000000')
+                : (isDark ? '#27272a' : '#e4e4e7'),
             },
           ]}
         >
-          <Search size={18} color={colors.textDim} style={styles.bottomSearchIcon} />
+          <Search size={18} color={isDark ? '#a1a1aa' : '#71717a'} style={styles.bottomSearchIcon} />
           <TextInput
             collapsable={false}
-            style={[styles.bottomSearchInput, { color: colors.text }]}
+            style={[styles.bottomSearchInput, { color: isDark ? '#ffffff' : '#000000' }]}
             placeholder="Search passwords..."
-            placeholderTextColor={colors.textDim}
+            placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
             value={search}
             onChangeText={setSearch}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
+            onFocus={handleSearchFocus}
+            onBlur={handleSearchBlur}
             autoCapitalize="none"
           />
           {search.length > 0 && (
@@ -692,23 +747,30 @@ export function VaultScreen({
               }}
               style={styles.bottomClearButton}
             >
-              <X size={16} color={colors.textMuted} />
+              <X size={16} color={isDark ? '#ffffff' : '#000000'} />
             </TouchableOpacity>
           )}
         </View>
 
-        <TouchableOpacity
-          style={styles.bottomAddCircleButton}
-          hitSlop={HIT_SLOP}
-          activeOpacity={0.85}
-          onPress={() => {
-            triggerLightHaptic();
-            setShowAddSheet(true);
-          }}
-          accessibilityLabel="Add new password"
-        >
-          <Plus size={24} color="#ffffff" strokeWidth={2.5} />
-        </TouchableOpacity>
+        <Animated.View style={animatedPlusStyle}>
+          <TouchableOpacity
+            style={[
+              styles.bottomAddCircleButton,
+              {
+                backgroundColor: isDark ? '#ffffff' : '#000000',
+              },
+            ]}
+            hitSlop={HIT_SLOP}
+            activeOpacity={0.85}
+            onPress={() => {
+              triggerLightHaptic();
+              setShowAddSheet(true);
+            }}
+            accessibilityLabel="Add new password"
+          >
+            <Plus size={24} color={isDark ? '#000000' : '#ffffff'} strokeWidth={2.5} />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       {/* Premium Item Editor Modal with Camera TOTP Scanner */}
@@ -1146,12 +1208,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    gap: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   bottomSearchPill: {
     flex: 1,
     height: 52,
-    borderRadius: 24, // 24px curvy corners
+    borderRadius: 26, // curved pill shape
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1167,20 +1229,15 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   bottomClearButton: {
-    padding: 4,
+    padding: 6,
+    borderRadius: 12,
   },
   bottomAddCircleButton: {
     width: 52,
     height: 52,
     borderRadius: 26, // perfect circle
-    backgroundColor: '#6366f1', // Electric Indigo accent
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6366f1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
   },
   /* Menu Bottom Sheet Styles */
   menuSheetHeader: {

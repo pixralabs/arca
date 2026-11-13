@@ -37,7 +37,7 @@ interface ShareScreenProps {
 }
 
 export function ShareScreen({ onBack }: ShareScreenProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [secretText, setSecretText] = useState('');
   const [expiryHours] = useState('24');
   const [loading, setLoading] = useState(false);

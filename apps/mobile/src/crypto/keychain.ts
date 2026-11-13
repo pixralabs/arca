@@ -159,6 +159,31 @@ export async function retrieveBiometricSlotKey(
   vaultId?: string
 ): Promise<string | null> {
   try {
+    // 1. Hardware Sensor Pre-check: Ensure physical biometric hardware is available & enrolled
+    const sensorCheck = await rnBiometrics.isSensorAvailable().catch(() => ({ available: false }));
+    if (!sensorCheck.available) {
+      return null;
+    }
+
+    // 2. Enforce Real OS BiometricPrompt (Samsung / Pixel / FaceID / TouchID)
+    // The hardware prompt MUST be presented and successfully passed before extracting any secret.
+    let promptResult: { success: boolean; error?: string };
+    try {
+      promptResult = await rnBiometrics.simplePrompt({
+        promptMessage,
+        cancelButtonText: 'Use Master Password',
+      });
+    } catch {
+      // User cancelled, fingerprint didn't match, or prompt was dismissed
+      return null;
+    }
+
+    if (!promptResult || !promptResult.success) {
+      // Physical authentication was NOT completed: immediately abort and withhold the key
+      return null;
+    }
+
+    // 3. Hardware verification succeeded: now retrieve wrapped DEK from Keystore
     const service = getServiceForVault(vaultId);
     const getOptions: Keychain.Options = {
       service,
@@ -203,6 +228,12 @@ export async function retrieveBiometricSlotKey(
 
 export async function hasBiometricSlotKey(vaultId?: string): Promise<boolean> {
   try {
+    // Check if biometric hardware and enrolled fingerprints/faces exist on this device
+    const sensorCheck = await rnBiometrics.isSensorAvailable().catch(() => ({ available: false }));
+    if (!sensorCheck.available) {
+      return false;
+    }
+
     const service = getServiceForVault(vaultId);
     const services = await Keychain.getAllGenericPasswordServices();
     if (services && services.includes(service)) return true;

@@ -30,8 +30,8 @@ import { Check, Plus, X } from 'lucide-react-native';
 import { useTheme, spacing, radii, HIT_SLOP, triggerLightHaptic } from '../theme/theme';
 import type { VaultRecord } from '../storage/db';
 
-const INDIGO_ACCENT = '#6366f1';
-const INDIGO_GLOW = 'rgba(99, 102, 241, 0.12)';
+const MONOCHROME_ACTIVE_BG_DARK = '#27272a';
+const MONOCHROME_ACTIVE_BG_LIGHT = '#f4f4f5';
 
 export interface VaultSwitcherModalProps {
   visible: boolean;
@@ -185,10 +185,10 @@ export function VaultSwitcherModal({
                     styles.vaultCard,
                     {
                       backgroundColor: isSelected
-                        ? (isDark ? '#1a1b26' : INDIGO_GLOW)
+                        ? (isDark ? MONOCHROME_ACTIVE_BG_DARK : MONOCHROME_ACTIVE_BG_LIGHT)
                         : (isDark ? '#18181b' : '#ffffff'),
                       borderColor: isSelected
-                        ? INDIGO_ACCENT
+                        ? (isDark ? '#ffffff' : '#000000')
                         : (isDark ? '#27272a' : '#e4e4e7'),
                       borderWidth: isSelected ? 1.5 : 1,
                     },
@@ -205,7 +205,7 @@ export function VaultSwitcherModal({
                         styles.vaultAvatar,
                         {
                           backgroundColor: isSelected
-                            ? INDIGO_ACCENT
+                            ? (isDark ? '#ffffff' : '#000000')
                             : (isDark ? '#27272a' : '#f4f4f5'),
                         },
                       ]}
@@ -215,7 +215,7 @@ export function VaultSwitcherModal({
                           styles.vaultAvatarText,
                           {
                             color: isSelected
-                              ? '#ffffff'
+                              ? (isDark ? '#000000' : '#ffffff')
                               : (isDark ? '#ffffff' : '#18181b'),
                             fontWeight: '700',
                           },
@@ -241,7 +241,7 @@ export function VaultSwitcherModal({
                           styles.vaultMetaText,
                           {
                             color: isSelected
-                              ? (isDark ? '#a5b4fc' : INDIGO_ACCENT)
+                              ? (isDark ? '#ffffff' : '#000000')
                               : colors.textDim,
                           },
                         ]}
@@ -252,8 +252,17 @@ export function VaultSwitcherModal({
                   </View>
 
                   {isSelected && (
-                    <View style={[styles.checkBadge, { backgroundColor: INDIGO_ACCENT }]}>
-                      <Check size={14} color="#ffffff" strokeWidth={2.5} />
+                    <View
+                      style={[
+                        styles.checkBadge,
+                        { backgroundColor: isDark ? '#ffffff' : '#000000' },
+                      ]}
+                    >
+                      <Check
+                        size={14}
+                        color={isDark ? '#000000' : '#ffffff'}
+                        strokeWidth={2.5}
+                      />
                     </View>
                   )}
                 </TouchableOpacity>

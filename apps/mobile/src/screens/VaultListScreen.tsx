@@ -92,7 +92,7 @@ export function VaultListScreen({
   onRestoreItem,
   onItemUpdated,
 }: VaultListScreenProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [searchFocused, setSearchFocused] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);

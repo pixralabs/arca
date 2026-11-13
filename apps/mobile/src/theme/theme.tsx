@@ -89,11 +89,12 @@ export const darkColors: ThemeColors = {
   border: '#27272a',          // Subtle Zinc-800
   borderSubtle: '#3f3f46',    // Zinc-700
 
-  primary: '#6366f1',         // Electric Indigo (Selective Action Accent)
-  primaryHover: '#4f46e5',    // Indigo-600
-  primaryGlow: 'rgba(99, 102, 241, 0.16)',
-  primaryBorderGlow: 'rgba(99, 102, 241, 0.40)',
-  onPrimary: '#ffffff',
+  // Primary Brand Accent: Ultra-Clean Monochrome High-Contrast
+  primary: '#ffffff',         // Pure White High Contrast
+  primaryHover: '#e4e4e7',    // Zinc-200
+  primaryGlow: 'rgba(255, 255, 255, 0.14)',
+  primaryBorderGlow: 'rgba(255, 255, 255, 0.35)',
+  onPrimary: '#000000',       // Deep Black on White CTA
 
   text: '#ffffff',            // Pure White
   textHeading: '#ffffff',     // Pure White
@@ -108,13 +109,13 @@ export const darkColors: ThemeColors = {
   success: '#10b981',
   successGlow: 'rgba(16, 185, 129, 0.16)',
 
-  accentIndigo: '#6366f1',
-  accentIndigoGlow: 'rgba(99, 102, 241, 0.18)',
-  accentViolet: '#8b5cf6',
-  accentVioletGlow: 'rgba(139, 92, 246, 0.16)',
+  accentIndigo: '#ffffff',
+  accentIndigoGlow: 'rgba(255, 255, 255, 0.14)',
+  accentViolet: '#d4d4d8',
+  accentVioletGlow: 'rgba(212, 212, 216, 0.14)',
   accentZinc: '#a1a1aa',
   accentZincGlow: 'rgba(161, 161, 170, 0.16)',
-  floatingBar: 'rgba(18, 18, 18, 0.94)',
+  floatingBar: 'rgba(10, 10, 12, 0.94)',
   backdrop: 'rgba(0, 0, 0, 0.88)',
 
   skeletonBase: '#121212',
@@ -131,11 +132,11 @@ export const lightColors: ThemeColors = {
   border: '#e4e4e7',
   borderSubtle: '#d4d4d8',
 
-  primary: '#6366f1',
-  primaryHover: '#4f46e5',
-  primaryGlow: 'rgba(99, 102, 241, 0.12)',
-  primaryBorderGlow: 'rgba(99, 102, 241, 0.40)',
-  onPrimary: '#ffffff',
+  primary: '#09090b',         // Deep Black High Contrast
+  primaryHover: '#18181b',    // Zinc-900
+  primaryGlow: 'rgba(9, 9, 11, 0.08)',
+  primaryBorderGlow: 'rgba(9, 9, 11, 0.25)',
+  onPrimary: '#ffffff',       // Pure White on Black CTA
 
   text: '#09090b',
   textHeading: '#09090b',
@@ -150,10 +151,10 @@ export const lightColors: ThemeColors = {
   success: '#10b981',
   successGlow: 'rgba(16, 185, 129, 0.12)',
 
-  accentIndigo: '#6366f1',
-  accentIndigoGlow: 'rgba(99, 102, 241, 0.14)',
-  accentViolet: '#8b5cf6',
-  accentVioletGlow: 'rgba(139, 92, 246, 0.12)',
+  accentIndigo: '#09090b',
+  accentIndigoGlow: 'rgba(9, 9, 11, 0.08)',
+  accentViolet: '#27272a',
+  accentVioletGlow: 'rgba(39, 39, 42, 0.08)',
   accentZinc: '#71717a',
   accentZincGlow: 'rgba(113, 113, 122, 0.12)',
   floatingBar: 'rgba(255, 255, 255, 0.94)',
