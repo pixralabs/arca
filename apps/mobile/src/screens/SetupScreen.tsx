@@ -16,6 +16,7 @@ import {
   Alert,
   StatusBar,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from '../components/SafeAreaView';
 import Animated, {
@@ -165,6 +166,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
   }, []);
 
   const handleSetup = useCallback(async () => {
+    Keyboard.dismiss();
     triggerLightHaptic();
     const cleanName = vaultName.trim();
     if (!cleanName) {

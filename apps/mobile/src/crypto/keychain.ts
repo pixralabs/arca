@@ -113,27 +113,7 @@ export async function storeBiometricSlotKey(
 ): Promise<boolean> {
   try {
     const service = getServiceForVault(vaultId);
-    let payloadToStore = wrappedKeyHex;
-
-    // On Android, if native StrongBox + CryptoObject module is available,
-    // pre-wrap with the StrongBox-backed KeyGenParameterSpec (`setIsStrongBoxBacked(true)`).
-    if (
-      Platform.OS === 'android' &&
-      nativeSecurity &&
-      typeof nativeSecurity.wrapWithStrongBoxCryptoObject === 'function'
-    ) {
-      try {
-        const hwWrapped = await nativeSecurity.wrapWithStrongBoxCryptoObject(
-          service,
-          wrappedKeyHex
-        );
-        if (typeof hwWrapped === 'string' && hwWrapped.length > 0) {
-          payloadToStore = hwWrapped;
-        }
-      } catch {
-        // Fallback to standard keychain payload if StrongBox wrapping is rejected/unavailable
-      }
-    }
+    const payloadToStore = wrappedKeyHex;
 
     const hardwareOptions: Keychain.Options = {
       service,
@@ -210,24 +190,9 @@ export async function retrieveBiometricSlotKey(
       return null;
     }
 
-    // On Android, if wrapped with StrongBox CryptoObject envelope (`SBX1:...`),
-    // unwrap strictly through the hardware-bound BiometricPrompt.CryptoObject(cipher).
-    if (
-      Platform.OS === 'android' &&
-      storedPayload.startsWith('SBX1:') &&
-      nativeSecurity &&
-      typeof nativeSecurity.unwrapWithStrongBoxCryptoObject === 'function'
-    ) {
-      try {
-        const unwrapped = await nativeSecurity.unwrapWithStrongBoxCryptoObject(
-          service,
-          storedPayload,
-          promptMessage
-        );
-        return typeof unwrapped === 'string' && unwrapped.length > 0 ? unwrapped : null;
-      } catch {
-        return null;
-      }
+    // Ignore any corrupted/legacy SBX1 payload so it re-enrolls cleanly with Keychain
+    if (storedPayload.startsWith('SBX1:')) {
+      return null;
     }
 
     return storedPayload;
