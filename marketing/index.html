@@ -1261,18 +1261,18 @@
         }
 
         function initStars() {
-          var starCount = Math.min(32, Math.max(20, Math.floor((width * height) / 36000)));
+          var starCount = Math.min(18, Math.max(10, Math.floor((width * height) / 60000)));
           stars = [];
           for (var i = 0; i < starCount; i++) {
             stars.push({
               x: Math.random() * width,
               y: Math.random() * height,
-              vx: (Math.random() - 0.5) * 0.3,
-              vy: (Math.random() - 0.5) * 0.3,
-              baseR: Math.random() * 1.0 + 1.2, // 1.2px - 2.2px crisp diamond micro-nodes
+              vx: (Math.random() - 0.5) * 0.18,
+              vy: (Math.random() - 0.5) * 0.18,
+              baseR: Math.random() * 0.4 + 0.65, // 0.65px - 1.05px subtle micro-specks
               phase: Math.random() * Math.PI * 2,
-              twinkleSpeed: Math.random() * 0.02 + 0.012,
-              baseAlpha: Math.random() * 0.35 + 0.55
+              twinkleSpeed: Math.random() * 0.015 + 0.008,
+              baseAlpha: Math.random() * 0.20 + 0.15 // Normalized soft ambient brightness
             });
           }
         }
@@ -1290,18 +1290,18 @@
           targetMouse.y = y;
           targetMouse.active = true;
 
-          // Tactile square trail: ignite hovered box and immediate neighbors
+          // Light & classy square trail: gently activate hovered box and immediate neighbors
           var col = Math.floor(x / cellSize);
           var row = Math.floor(y / cellSize);
-          activateCell(col, row, 1.0);
-          activateCell(col - 1, row, 0.45);
-          activateCell(col + 1, row, 0.45);
-          activateCell(col, row - 1, 0.45);
-          activateCell(col, row + 1, 0.45);
-          activateCell(col - 1, row - 1, 0.22);
-          activateCell(col + 1, row - 1, 0.22);
-          activateCell(col - 1, row + 1, 0.22);
-          activateCell(col + 1, row + 1, 0.22);
+          activateCell(col, row, 0.70);
+          activateCell(col - 1, row, 0.25);
+          activateCell(col + 1, row, 0.25);
+          activateCell(col, row - 1, 0.25);
+          activateCell(col, row + 1, 0.25);
+          activateCell(col - 1, row - 1, 0.10);
+          activateCell(col + 1, row - 1, 0.10);
+          activateCell(col - 1, row + 1, 0.10);
+          activateCell(col + 1, row + 1, 0.10);
         }
 
         function render(timestamp) {
@@ -1314,8 +1314,8 @@
               smoothMouse.x = targetMouse.x;
               smoothMouse.y = targetMouse.y;
             } else {
-              smoothMouse.x += (targetMouse.x - smoothMouse.x) * 0.16;
-              smoothMouse.y += (targetMouse.y - smoothMouse.y) * 0.16;
+              smoothMouse.x += (targetMouse.x - smoothMouse.x) * 0.13;
+              smoothMouse.y += (targetMouse.y - smoothMouse.y) * 0.13;
             }
           }
 
@@ -1323,17 +1323,17 @@
           if (glowEl) {
             if (targetMouse.active && smoothMouse.x > -1000) {
               glowEl.style.transform = 'translate3d(' + smoothMouse.x + 'px, ' + smoothMouse.y + 'px, 0) translate(-50%, -50%)';
-              if (glowEl.style.opacity !== '1') glowEl.style.opacity = '1';
+              if (glowEl.style.opacity !== '0.6') glowEl.style.opacity = '0.6';
             } else if (!targetMouse.active && glowEl.style.opacity !== '0') {
               glowEl.style.opacity = '0';
             }
           }
 
           // ===================================================================
-          // LAYER 1: BASE ARCHITECTURAL SQUARE MESH GRID
+          // LAYER 1: BASE ARCHITECTURAL SQUARE MESH GRID (LIGHT & CLASSY)
           // ===================================================================
           ctx.beginPath();
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.075)';
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
           ctx.lineWidth = 1;
           for (var c = 0; c <= cols; c++) {
             var gx = c * cellSize + 0.5;
@@ -1347,18 +1347,18 @@
           }
           ctx.stroke();
 
-          // Ambient intersection ticks (luxury blueprint styling)
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+          // Ambient intersection ticks (delicate luxury blueprint styling)
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.065)';
           for (var ac = 0; ac <= cols; ac += 2) {
             for (var ar = 0; ar <= rows; ar += 2) {
               var ax = ac * cellSize + 0.5;
               var ay = ar * cellSize + 0.5;
-              ctx.fillRect(ax - 1.5, ay - 1.5, 3, 3);
+              ctx.fillRect(ax - 1, ay - 1, 2, 2);
             }
           }
 
           // ===================================================================
-          // LAYER 2: INTERACTIVE TRAILING SQUARE TILES (CURSOR MEMORY / WAKE)
+          // LAYER 2: INTERACTIVE TRAILING SQUARE TILES (SOFT FROSTED SHEEN)
           // ===================================================================
           if (activeCells.size > 0) {
             activeCells.forEach(function (cell, key) {
@@ -1366,24 +1366,24 @@
               var cellY = cell.row * cellSize;
               var a = cell.intensity;
 
-              // Translucent frosted glass square tile fill
-              ctx.fillStyle = 'rgba(255, 255, 255, ' + (a * 0.18).toFixed(4) + ')';
+              // Translucent frosted glass square tile fill (whisper-soft)
+              ctx.fillStyle = 'rgba(255, 255, 255, ' + (a * 0.05).toFixed(4) + ')';
               ctx.fillRect(cellX + 1, cellY + 1, cellSize - 1, cellSize - 1);
 
               // Luminous illuminated square box border
-              ctx.strokeStyle = 'rgba(255, 255, 255, ' + (a * 0.65).toFixed(4) + ')';
+              ctx.strokeStyle = 'rgba(255, 255, 255, ' + (a * 0.22).toFixed(4) + ')';
               ctx.lineWidth = 1;
               ctx.strokeRect(cellX + 0.5, cellY + 0.5, cellSize, cellSize);
 
               // Corner micro-tick accents
-              ctx.fillStyle = 'rgba(255, 255, 255, ' + (a * 0.90).toFixed(4) + ')';
-              ctx.fillRect(cellX - 1.5, cellY - 1.5, 4, 4);
-              ctx.fillRect(cellX + cellSize - 1.5, cellY - 1.5, 4, 4);
-              ctx.fillRect(cellX - 1.5, cellY + cellSize - 1.5, 4, 4);
-              ctx.fillRect(cellX + cellSize - 1.5, cellY + cellSize - 1.5, 4, 4);
+              ctx.fillStyle = 'rgba(255, 255, 255, ' + (a * 0.38).toFixed(4) + ')';
+              ctx.fillRect(cellX - 1, cellY - 1, 2, 2);
+              ctx.fillRect(cellX + cellSize - 1, cellY - 1, 2, 2);
+              ctx.fillRect(cellX - 1, cellY + cellSize - 1, 2, 2);
+              ctx.fillRect(cellX + cellSize - 1, cellY + cellSize - 1, 2, 2);
 
-              // Smooth decay over ~700ms
-              cell.intensity *= 0.932;
+              // Smooth decay over ~750ms
+              cell.intensity *= 0.938;
               if (cell.intensity < 0.008) {
                 activeCells.delete(key);
               }
@@ -1391,9 +1391,9 @@
           }
 
           // ===================================================================
-          // LAYER 3: CURSOR PROXIMITY SPOTLIGHT ON SQUARE MESH
+          // LAYER 3: CURSOR PROXIMITY SPOTLIGHT ON SQUARE MESH (RESTRAINED LUXURY)
           // ===================================================================
-          var spotRadius = 260;
+          var spotRadius = 240;
           if (targetMouse.active && smoothMouse.x > -1000) {
             var smX = smoothMouse.x;
             var smY = smoothMouse.y;
@@ -1410,39 +1410,39 @@
                 var dist = Math.hypot(cellCenterX - smX, cellCenterY - smY);
 
                 if (dist < spotRadius) {
-                  var factor = Math.pow(1 - dist / spotRadius, 1.4);
+                  var factor = Math.pow(1 - dist / spotRadius, 1.8);
                   var bx = sc * cellSize;
                   var by = sr * cellSize;
 
-                  // High-contrast glowing frosted square tile fill
-                  ctx.fillStyle = 'rgba(255, 255, 255, ' + (factor * 0.16).toFixed(4) + ')';
+                  // Refined frosted square tile fill
+                  ctx.fillStyle = 'rgba(255, 255, 255, ' + (factor * 0.045).toFixed(4) + ')';
                   ctx.fillRect(bx + 1, by + 1, cellSize - 1, cellSize - 1);
 
-                  // High-contrast illuminated square border
-                  ctx.strokeStyle = 'rgba(255, 255, 255, ' + (factor * 0.60).toFixed(4) + ')';
+                  // Refined illuminated square border
+                  ctx.strokeStyle = 'rgba(255, 255, 255, ' + (factor * 0.22).toFixed(4) + ')';
                   ctx.lineWidth = 1;
                   ctx.strokeRect(bx + 0.5, by + 0.5, cellSize, cellSize);
 
                   // Precision intersection crosshairs (+) at grid vertices
                   var vx = bx + 0.5;
                   var vy = by + 0.5;
-                  ctx.fillStyle = 'rgba(255, 255, 255, ' + (factor * 0.95).toFixed(4) + ')';
-                  ctx.fillRect(vx - 3, vy - 0.5, 7, 1);
-                  ctx.fillRect(vx - 0.5, vy - 3, 1, 7);
+                  ctx.fillStyle = 'rgba(255, 255, 255, ' + (factor * 0.45).toFixed(4) + ')';
+                  ctx.fillRect(vx - 2.5, vy - 0.5, 5, 1);
+                  ctx.fillRect(vx - 0.5, vy - 2.5, 1, 5);
                 }
               }
             }
 
-            // Direct hovered square box focus (solid white high-luminance accent)
+            // Direct hovered square box focus (refined silver accent, not glaring)
             var directCol = Math.floor(smX / cellSize);
             var directRow = Math.floor(smY / cellSize);
             if (directCol >= 0 && directCol < cols && directRow >= 0 && directRow < rows) {
               var dirX = directCol * cellSize;
               var dirY = directRow * cellSize;
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
               ctx.fillRect(dirX + 1, dirY + 1, cellSize - 1, cellSize - 1);
-              ctx.strokeStyle = 'rgba(255, 255, 255, 1.0)';
-              ctx.lineWidth = 1.5;
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.42)';
+              ctx.lineWidth = 1.2;
               ctx.strokeRect(dirX + 0.5, dirY + 0.5, cellSize, cellSize);
             }
           }
@@ -1460,11 +1460,11 @@
               continue;
             }
 
-            // Expanding wave ring
+            // Expanding wave ring (subtle)
             ctx.beginPath();
             ctx.arc(rip.x, rip.y, rip.radius, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(255, 255, 255, ' + (rip.alpha * 0.50).toFixed(4) + ')';
-            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(255, 255, 255, ' + (rip.alpha * 0.25).toFixed(4) + ')';
+            ctx.lineWidth = 1.2;
             ctx.stroke();
 
             // Illuminate square boxes touched by the wave ring
@@ -1483,9 +1483,9 @@
                   var waveFactor = (1 - waveDiff / (cellSize * 0.85)) * rip.alpha;
                   var wbx = wc * cellSize;
                   var wby = wr * cellSize;
-                  ctx.fillStyle = 'rgba(255, 255, 255, ' + (waveFactor * 0.20).toFixed(4) + ')';
+                  ctx.fillStyle = 'rgba(255, 255, 255, ' + (waveFactor * 0.06).toFixed(4) + ')';
                   ctx.fillRect(wbx + 1, wby + 1, cellSize - 1, cellSize - 1);
-                  ctx.strokeStyle = 'rgba(255, 255, 255, ' + (waveFactor * 0.65).toFixed(4) + ')';
+                  ctx.strokeStyle = 'rgba(255, 255, 255, ' + (waveFactor * 0.25).toFixed(4) + ')';
                   ctx.lineWidth = 1;
                   ctx.strokeRect(wbx + 0.5, wby + 0.5, cellSize, cellSize);
                 }
@@ -1494,15 +1494,15 @@
           }
 
           // ===================================================================
-          // LAYER 5: AMBIENT CELESTIAL STARDUST (PURE AMBIENT, ZERO CURSOR LINES)
+          // LAYER 5: AMBIENT CELESTIAL STARDUST (NORMALIZED, CALM, ZERO CURSOR LINES)
           // ===================================================================
           for (var sIdx = 0; sIdx < stars.length; sIdx++) {
             var st = stars[sIdx];
-            var twinkle = st.baseAlpha * (0.68 + 0.32 * Math.sin(time * st.twinkleSpeed + st.phase));
+            var twinkle = st.baseAlpha * (0.75 + 0.25 * Math.sin(time * st.twinkleSpeed + st.phase));
 
-            // Organic slow ambient celestial drift (no cursor tethering)
-            st.x += st.vx + 0.08 * Math.sin(st.phase + time * 0.0006);
-            st.y += st.vy + 0.08 * Math.cos(st.phase + time * 0.0006);
+            // Gentle slow ambient celestial drift (no cursor interaction)
+            st.x += st.vx + 0.04 * Math.sin(st.phase + time * 0.0004);
+            st.y += st.vy + 0.04 * Math.cos(st.phase + time * 0.0004);
 
             // Screen boundary wrapping
             if (st.x < -20) st.x = width + 20;
@@ -1510,11 +1510,11 @@
             if (st.y < -20) st.y = height + 20;
             if (st.y > height + 20) st.y = -20;
 
-            // Star Radiant Bloom (Soft outer glowing halo)
-            var haloR = st.baseR * 3.2;
+            // Star Radiant Bloom (Soft, faint outer glowing halo)
+            var haloR = st.baseR * 2.4;
             var starGrad = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, haloR);
-            starGrad.addColorStop(0, 'rgba(255, 255, 255, ' + (twinkle * 0.85).toFixed(3) + ')');
-            starGrad.addColorStop(0.4, 'rgba(255, 255, 255, ' + (twinkle * 0.25).toFixed(3) + ')');
+            starGrad.addColorStop(0, 'rgba(255, 255, 255, ' + (twinkle * 0.40).toFixed(3) + ')');
+            starGrad.addColorStop(0.4, 'rgba(255, 255, 255, ' + (twinkle * 0.10).toFixed(3) + ')');
             starGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
             ctx.fillStyle = starGrad;
@@ -1523,9 +1523,9 @@
             ctx.fill();
 
             // Star Pinpoint Core
-            ctx.fillStyle = 'rgba(255, 255, 255, ' + (twinkle * 0.90).toFixed(3) + ')';
+            ctx.fillStyle = 'rgba(255, 255, 255, ' + (twinkle * 0.55).toFixed(3) + ')';
             ctx.beginPath();
-            ctx.arc(st.x, st.y, st.baseR * 0.75, 0, Math.PI * 2);
+            ctx.arc(st.x, st.y, st.baseR * 0.70, 0, Math.PI * 2);
             ctx.fill();
           }
 
@@ -1560,17 +1560,17 @@
             x: e.clientX,
             y: e.clientY,
             radius: 0,
-            maxRadius: Math.max(width, height) * 0.45,
-            speed: 12,
-            alpha: 0.85
+            maxRadius: Math.max(width, height) * 0.35,
+            speed: 9,
+            alpha: 0.65
           });
 
-          // Burst-activate clicked square box and neighboring 8 boxes
+          // Gently activate clicked square box and immediate neighbors
           var col = Math.floor(e.clientX / cellSize);
           var row = Math.floor(e.clientY / cellSize);
           for (var dc = -1; dc <= 1; dc++) {
             for (var dr = -1; dr <= 1; dr++) {
-              activateCell(col + dc, row + dr, 1.0);
+              activateCell(col + dc, row + dr, 0.60);
             }
           }
         });
