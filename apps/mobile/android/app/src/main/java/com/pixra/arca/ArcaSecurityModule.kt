@@ -2,6 +2,7 @@ package com.pixra.arca
 
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import android.view.WindowManager
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -103,6 +104,7 @@ class ArcaSecurityModule(private val reactContext: ReactApplicationContext) :
     parallelism: Int,
     keyLength: Int
   ): String {
+    val startTime = System.currentTimeMillis()
     val passwordBytes = hexToBytes(passwordHex)
     val saltBytes = hexToBytes(saltHex)
     try {
@@ -119,6 +121,7 @@ class ArcaSecurityModule(private val reactContext: ReactApplicationContext) :
       generator.generateBytes(passwordBytes, result, 0, result.size)
       val outHex = bytesToHex(result)
       result.fill(0)
+      Log.d("ArcaSecurity", "Native Argon2id derivation completed in ${System.currentTimeMillis() - startTime}ms (m=${memoryKiB}KiB, t=$iterations)")
       return outHex
     } finally {
       passwordBytes.fill(0)
@@ -162,8 +165,9 @@ class ArcaSecurityModule(private val reactContext: ReactApplicationContext) :
           keyLength
         )
         promise.resolve(outHex)
-      } catch (e: Exception) {
-        promise.reject("ERR_ARGON2_FAILED", e.message, e)
+      } catch (t: Throwable) {
+        Log.e("ArcaSecurity", "Native Argon2id derivation failed: ${t.message}", t)
+        promise.reject("ERR_ARGON2_FAILED", t.message ?: "Argon2 derivation failed", t)
       }
     }.start()
   }

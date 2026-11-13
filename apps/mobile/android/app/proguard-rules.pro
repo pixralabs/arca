@@ -86,6 +86,11 @@
 -dontwarn com.standardnotes.sodium.**
 -keepclassmembers class * { native <methods>; }
 
+# BouncyCastle Cryptographic Provider & Argon2 Generators
+-keep class org.bouncycastle.** { *; }
+-dontwarn org.bouncycastle.**
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
+
 # Vision Camera
 -keep class com.mrousavy.camera.** { *; }
 -keepclassmembers class com.mrousavy.camera.** { *; }

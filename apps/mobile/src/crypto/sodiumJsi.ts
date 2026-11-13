@@ -13,6 +13,9 @@
  */
 
 import { NativeModules } from 'react-native';
+import { xchacha20poly1305 } from '@noble/ciphers/chacha.js';
+import { blake2b } from '@noble/hashes/blake2b';
+import { ed25519 } from '@noble/curves/ed25519.js';
 
 declare const global: any;
 
@@ -379,7 +382,6 @@ export function crypto_kdf_derive_from_key(
     if (res instanceof Uint8Array) return res;
     if (res instanceof ArrayBuffer) return new Uint8Array(res);
   }
-  const { blake2b } = require('@noble/hashes/blake2b');
   const salt = new Uint8Array(16);
   const view = new DataView(salt.buffer);
   view.setUint32(0, subkeyId >>> 0, true);
@@ -430,8 +432,6 @@ export function crypto_aead_xchacha20poly1305_ietf_encrypt(
 
   // Pure JS fallback via @noble/ciphers/chacha.js (100% bit-compatible with Libsodium)
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { xchacha20poly1305 } = require('@noble/ciphers/chacha.js');
     const cipher = xchacha20poly1305(keyBytes, nonceBytes, aadBytes);
     return cipher.encrypt(msgBytes);
   } catch (err: any) {
@@ -474,8 +474,6 @@ export function crypto_aead_xchacha20poly1305_ietf_decrypt(
 
   // Pure JS fallback via @noble/ciphers/chacha.js
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { xchacha20poly1305 } = require('@noble/ciphers/chacha.js');
     const cipher = xchacha20poly1305(keyBytes, nonceBytes, aadBytes);
     return cipher.decrypt(ctBytes);
   } catch (err: any) {
@@ -510,8 +508,6 @@ export function crypto_generichash(
       if (res instanceof ArrayBuffer) return new Uint8Array(res);
     } catch {}
   }
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { blake2b } = require('@noble/hashes/blake2b');
   return blake2b(msgBytes, { dkLen: hashLength, key: keyBytes });
 }
 
@@ -527,8 +523,6 @@ export function crypto_sign_seed_keypair(seed: Uint8Array): {
       return jsi.crypto_sign_seed_keypair(seedBytes);
     } catch {}
   }
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { ed25519 } = require('@noble/curves/ed25519.js');
   const pub = ed25519.getPublicKey(seedBytes);
   // Libsodium private key is 64 bytes: 32 bytes seed + 32 bytes pubkey
   const sk = new Uint8Array(64);
@@ -555,8 +549,6 @@ export function crypto_sign_detached(
       if (res instanceof ArrayBuffer) return new Uint8Array(res);
     } catch {}
   }
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { ed25519 } = require('@noble/curves/ed25519.js');
   const seed = skBytes.subarray(0, 32);
   return ed25519.sign(msgBytes, seed);
 }
@@ -575,8 +567,6 @@ export function crypto_sign_verify_detached(
       return Boolean(jsi.crypto_sign_verify_detached(sigBytes, msgBytes, pkBytes));
     } catch {}
   }
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { ed25519 } = require('@noble/curves/ed25519.js');
   return ed25519.verify(sigBytes, msgBytes, pkBytes);
 }
 
