@@ -380,7 +380,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
 
               <View style={styles.vaultTextGroup}>
                 <Text style={[styles.vaultUnlockingLabel, { color: colors.textDim }]}>
-                  Unlocking
+                  {isLoading ? 'Unlocking' : 'Active Vault'}
                 </Text>
                 <View style={styles.vaultNameRow}>
                   <Text

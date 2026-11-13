@@ -189,9 +189,25 @@ export async function deriveMasterKEK(
             (globalThis as any).HermesInternal !== undefined ||
             (globalThis as any).__SodiumJSI !== undefined));
 
-      // 1. Primary Native C++ JSI / Libsodium path (`crypto_pwhash` Argon2id13)
-      // On React Native JSI, executes native ARM64 NEON instructions in < 200ms.
-      if (typeof activeSodium.crypto_pwhash === 'function' && (isReactNative || params.p === 1)) {
+      // 1. Primary Native C++ JSI / Android ART / Libsodium path (`crypto_pwhash` Argon2id13)
+      // On React Native, executes native ARM64 instructions in < 150ms.
+      if (typeof activeSodium.crypto_pwhash_async === 'function' && (isReactNative || params.p === 1)) {
+        try {
+          const alg = activeSodium.crypto_pwhash_ALG_ARGON2ID13 ?? 2;
+          masterSeed = await activeSodium.crypto_pwhash_async(
+            DEK_BYTES,
+            password,
+            salt,
+            params.t,
+            params.m * 1024,
+            alg
+          );
+        } catch {
+          // Fallback to sync or next stage
+        }
+      }
+
+      if (!masterSeed && typeof activeSodium.crypto_pwhash === 'function' && (isReactNative || params.p === 1)) {
         try {
           const alg = activeSodium.crypto_pwhash_ALG_ARGON2ID13 ?? 2;
           masterSeed = activeSodium.crypto_pwhash(

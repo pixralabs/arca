@@ -104,7 +104,7 @@ export function VaultListScreen({
     () => ({
       all: {
         title: 'All Passwords',
-        subtitle: 'Decrypted in RAM • XChaCha20-Poly1305',
+        subtitle: 'Decrypted in RAM • End-to-End Encrypted',
         accentColor: colors.primary,
         glowColor: colors.primaryGlow,
       },

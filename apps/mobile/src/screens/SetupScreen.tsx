@@ -296,7 +296,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
             {existingVaults.length > 0 ? 'Create New Vault' : 'Create Master Password'}
           </Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            Encrypted with Argon2id + XChaCha20-Poly1305.{'\n'}Each vault is completely isolated.
+            Zero-Knowledge Architecture · Hardware-Bound Security.{'\n'}Each vault is completely isolated.
           </Text>
         </View>
 
@@ -474,7 +474,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
             loading={loading}
             label={
               loading
-                ? (progressStep || 'Initializing...')
+                ? 'Creating Vault...'
                 : existingVaults.length > 0
                 ? `Initialize "${vaultName.trim() || 'Vault'}"`
                 : 'Initialize Zero-Knowledge Vault'

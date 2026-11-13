@@ -216,7 +216,7 @@ export async function mobileSetupVault(
 
   const pwBytes = new TextEncoder().encode(password);
   try {
-    onProgress?.('Deriving Master Key (Argon2id)...');
+    onProgress?.('Deriving Master Key...');
     await yieldToMainThread(20);
 
     const { createVault, OWASP_MOBILE_KDF_PARAMS } = getCrypto();

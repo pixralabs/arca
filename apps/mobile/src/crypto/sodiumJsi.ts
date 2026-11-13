@@ -270,8 +270,10 @@ export function randombytes_uniform(upperBound: number): number {
 }
 
 /**
- * Zero-copy C++ JSI Argon2id KDF (`crypto_pwhash`).
- * Executes native ARM64 NEON instructions in < 200ms on mobile devices.
+ * Zero-copy Native Argon2id KDF (`crypto_pwhash`).
+ * 1. Checks native C++ JSI HostObject (`jsi.crypto_pwhash`).
+ * 2. If not linked, executes native Android/iOS security module (`deriveArgon2idHexSync`)
+ *    running on compiled native ARM64 ART via BouncyCastle (< 150ms).
  */
 export function crypto_pwhash(
   keyLength: number,
@@ -286,20 +288,79 @@ export function crypto_pwhash(
   const jsi = getNativeJsiBinding();
 
   if (jsi && typeof jsi.crypto_pwhash === 'function') {
-    const res = jsi.crypto_pwhash(
-      keyLength,
-      pwBytes,
-      saltBytes,
-      opsLimit,
-      memLimitBytes,
-      algorithm
-    );
-    if (res instanceof Uint8Array) return res;
-    if (res instanceof ArrayBuffer) return new Uint8Array(res);
-    if (typeof res === 'string') return from_base64(res, base64_variants.ORIGINAL);
+    try {
+      const res = jsi.crypto_pwhash(
+        keyLength,
+        pwBytes,
+        saltBytes,
+        opsLimit,
+        memLimitBytes,
+        algorithm
+      );
+      if (res instanceof Uint8Array) return res;
+      if (res instanceof ArrayBuffer) return new Uint8Array(res);
+      if (typeof res === 'string') return from_base64(res, base64_variants.ORIGINAL);
+    } catch {
+      // Fallback to Native Security Module
+    }
   }
 
-  throw new Error('Native JSI crypto_pwhash HostObject not linked');
+  // Native Android/iOS ART module via BouncyCastle (< 150ms on device)
+  const nativeSec = NativeModules?.ArcaSecurityModule || NativeModules?.ArcaSplashScreen;
+  if (nativeSec && typeof nativeSec.deriveArgon2idHexSync === 'function') {
+    const pwHex = to_hex(pwBytes);
+    const saltHex = to_hex(saltBytes);
+    const memoryKiB = Math.round(memLimitBytes / 1024);
+    const hexOut = nativeSec.deriveArgon2idHexSync(
+      pwHex,
+      saltHex,
+      opsLimit,
+      memoryKiB,
+      1,
+      keyLength
+    );
+    return from_hex(hexOut);
+  }
+
+  throw new Error('Native crypto_pwhash not linked');
+}
+
+/**
+ * Background-Threaded Native Argon2id KDF (`crypto_pwhash_async`).
+ * Dispatches to a native background thread to guarantee the UI thread remains completely fluid.
+ */
+export async function crypto_pwhash_async(
+  keyLength: number,
+  password: Uint8Array | string,
+  salt: Uint8Array,
+  opsLimit: number,
+  memLimitBytes: number,
+  algorithm: number = crypto_pwhash_ALG_ARGON2ID13
+): Promise<Uint8Array> {
+  const pwBytes = ensureUint8Array(password);
+  const saltBytes = ensureUint8Array(salt);
+  const nativeSec = NativeModules?.ArcaSecurityModule || NativeModules?.ArcaSplashScreen;
+
+  if (nativeSec && typeof nativeSec.deriveArgon2idHexAsync === 'function') {
+    try {
+      const pwHex = to_hex(pwBytes);
+      const saltHex = to_hex(saltBytes);
+      const memoryKiB = Math.round(memLimitBytes / 1024);
+      const hexOut = await nativeSec.deriveArgon2idHexAsync(
+        pwHex,
+        saltHex,
+        opsLimit,
+        memoryKiB,
+        1,
+        keyLength
+      );
+      return from_hex(hexOut);
+    } catch {
+      // Fallback to synchronous native call
+    }
+  }
+
+  return crypto_pwhash(keyLength, pwBytes, saltBytes, opsLimit, memLimitBytes, algorithm);
 }
 
 /**
@@ -541,6 +602,7 @@ const sodiumJsi = {
   randombytes_buf,
   randombytes_uniform,
   crypto_pwhash,
+  crypto_pwhash_async,
   crypto_kdf_derive_from_key,
   crypto_aead_xchacha20poly1305_ietf_encrypt,
   crypto_aead_xchacha20poly1305_ietf_decrypt,

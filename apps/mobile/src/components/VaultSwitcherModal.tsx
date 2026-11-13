@@ -246,7 +246,7 @@ export function VaultSwitcherModal({
                           },
                         ]}
                       >
-                        Argon2id + XChaCha20-Poly1305
+                        Hardware-Bound End-to-End Encryption
                       </Text>
                     </View>
                   </View>

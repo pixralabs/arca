@@ -7,7 +7,7 @@ import com.facebook.react.uimanager.ViewManager
 
 class ArcaSecurityPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> =
-    listOf(ArcaSecurityModule(reactContext))
+    listOf(ArcaSecurityModule(reactContext), ArcaSplashScreenModule(reactContext))
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> =
     emptyList()
