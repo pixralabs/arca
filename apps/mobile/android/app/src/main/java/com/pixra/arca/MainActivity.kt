@@ -2,6 +2,7 @@ package com.pixra.arca
 
 import android.os.Bundle
 import android.view.WindowManager
+import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -22,6 +23,7 @@ class MainActivity : ReactActivity() {
   override fun getMainComponentName(): String = "ArcaMobile"
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    enableEdgeToEdge()
     installSplashScreen()
     // Enable FLAG_SECURE prior to super.onCreate to block screenshots, screen recording,
     // and Android Recents thumbnail capture from frame 0.
