@@ -69,4 +69,52 @@ describe('Vault Cryptography & Envelopes', () => {
     const words = phrase.split('-');
     expect(words).toHaveLength(5);
   });
+
+  it('should reject wrong master password and throw ERR_WRONG_PASSWORD', async () => {
+    const correctPassword = new TextEncoder().encode('CorrectPassword_123!');
+    const wrongPassword = new TextEncoder().encode('WrongPassword_9999!');
+    const vault = await createVault(correctPassword);
+
+    await expect(unlockWithMaster(vault.header, wrongPassword)).rejects.toThrow();
+  });
+
+  it('should reject corrupted encrypted records or tampered ciphertext', async () => {
+    const password = new TextEncoder().encode('SecurePass123!@#');
+    const vault = await createVault(password);
+
+    const testItem = {
+      title: 'Banking Portal',
+      username: 'bankuser',
+      password: 'SuperSecretBankPassword456$',
+    };
+
+    const sealed = await sealItem(vault.dek, 'item_corrupt_test', 1, testItem);
+
+    // Tamper with ciphertext by flipping bits
+    const tamperedCiphertext = new Uint8Array(sealed.ciphertext);
+    tamperedCiphertext[0] ^= 0xff;
+
+    const corruptedRecord = {
+      ...sealed,
+      ciphertext: tamperedCiphertext,
+    };
+
+    await expect(unsealItem(vault.dek, corruptedRecord)).rejects.toThrow();
+  });
+
+  it('should reject unseal when item revision or AAD is mismatched', async () => {
+    const password = new TextEncoder().encode('SecurePass123!@#');
+    const vault = await createVault(password);
+
+    const testItem = { title: 'Test', password: 'Secret' };
+    const sealed = await sealItem(vault.dek, 'item_aad_test', 1, testItem);
+
+    // Attempt to unseal with wrong revision (AAD mismatch)
+    const tamperedRevisionRecord = {
+      ...sealed,
+      revision: 2,
+    };
+
+    await expect(unsealItem(vault.dek, tamperedRevisionRecord)).rejects.toThrow();
+  });
 });

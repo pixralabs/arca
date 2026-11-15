@@ -35,7 +35,6 @@ import {
   storeBiometricSlotKey,
   retrieveBiometricSlotKey,
 } from './keychain';
-import { InteractionManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import sodiumJsi from './sodiumJsi';
 
@@ -557,16 +556,37 @@ export async function mobileDecryptItemOnDemand(
 }
 
 /**
- * Progressive Non-Blocking Background Decryption:
- * Decrypts items one by one during idle slices in the background.
- * Updates in-RAM cache and notifies callback so security health and search
- * are fully populated without ever blocking UI animations or transitions.
+ * Schedules background work during idle intervals, falling back to setTimeout
+ * when requestIdleCallback is unavailable in the JavaScript runtime.
  */
-export async function mobileStartBackgroundDecryption(
+function scheduleIdleWork(cb: () => void, timeoutMs = 250): { cancel: () => void } {
+  if (typeof (globalThis as any).requestIdleCallback === 'function') {
+    const handle = (globalThis as any).requestIdleCallback(cb, { timeout: timeoutMs });
+    return {
+      cancel: () => {
+        if (typeof (globalThis as any).cancelIdleCallback === 'function') {
+          (globalThis as any).cancelIdleCallback(handle);
+        }
+      },
+    };
+  }
+  const timer = setTimeout(cb, 60);
+  return {
+    cancel: () => clearTimeout(timer),
+  };
+}
+
+/**
+ * Progressive Non-Blocking Background Decryption:
+ * Decrypts items in bounded batches during idle slices in the background.
+ * Updates in-RAM cache and notifies callback so security health and search
+ * are populated while maintaining UI responsiveness.
+ */
+export function mobileStartBackgroundDecryption(
   onItemDecrypted?: (item: DecryptedVaultItem) => void,
   onComplete?: (allItems: DecryptedVaultItem[]) => void
-): Promise<void> {
-  if (!activeSession) return;
+): () => void {
+  if (!activeSession) return () => {};
   abortBackgroundDecryption();
 
   const currentAbort = { abort: false };
@@ -575,80 +595,83 @@ export async function mobileStartBackgroundDecryption(
   const currentDek = activeSession.dek;
   const currentVaultId = activeSession.vaultId;
 
-  // Defer background decryption until all UI transitions, Reanimated gestures,
-  // and screen navigation animations have completely finished (guarantees 60FPS).
-  InteractionManager.runAfterInteractions(() => {
-    setTimeout(async () => {
-      try {
-        const records = await getAllVaultItems(true, currentVaultId);
-        if (records.length === 0) return;
+  // Bounded batch decryption scheduled during idle intervals
+  const idleTask = scheduleIdleWork(async () => {
+    try {
+      const records = await getAllVaultItems(true, currentVaultId);
+      if (records.length === 0 || currentAbort.abort) return;
 
-        const sodium = getSodium();
-        await sodium.ready;
-        const { unsealItem } = getCrypto();
-        const allDecrypted: DecryptedVaultItem[] = [];
+      const sodium = getSodium();
+      await sodium.ready;
+      const { unsealItem } = getCrypto();
+      const allDecrypted: DecryptedVaultItem[] = [];
 
-        for (let i = 0; i < records.length; i++) {
-          if (currentAbort.abort || !activeSession || activeSession.dek !== currentDek) {
-            break;
-          }
+      const BATCH_SIZE = 2;
+      for (let i = 0; i < records.length; i++) {
+        if (currentAbort.abort || !activeSession || activeSession.dek !== currentDek) {
+          break;
+        }
 
-          const rec = records[i];
-          let item = decryptedItemCache.get(rec.id);
+        const rec = records[i];
+        let item = decryptedItemCache.get(rec.id);
 
-          if (!item || !item.isDecrypted) {
-            const recordPayload: VaultItemRecord = {
+        if (!item || !item.isDecrypted) {
+          const recordPayload: VaultItemRecord = {
+            id: rec.id,
+            schemaVersion: 1,
+            revision: 1,
+            ciphertext: rec.ciphertext,
+            nonce: rec.nonce,
+            createdAt: rec.updated_at,
+            updatedAt: rec.updated_at,
+            deletedAt: rec.is_deleted === 1 ? rec.updated_at : null,
+          };
+          try {
+            const plain = await unsealItem(currentDek, recordPayload);
+            const isTotp = Boolean(
+              rec.item_type === 'totp' ||
+              plain.totpSecret ||
+              plain.totpConfig ||
+              plain.type === 'totp'
+            );
+            const unsealed: DecryptedVaultItem = {
+              ...plain,
               id: rec.id,
-              schemaVersion: 1,
-              revision: 1,
-              ciphertext: rec.ciphertext,
-              nonce: rec.nonce,
-              createdAt: rec.updated_at,
+              type: isTotp ? 'totp' : ((rec.item_type as any) || plain.type || 'login'),
               updatedAt: rec.updated_at,
               deletedAt: rec.is_deleted === 1 ? rec.updated_at : null,
+              isDecrypted: true,
             };
-            try {
-              const plain = await unsealItem(currentDek, recordPayload);
-              const isTotp = Boolean(
-                rec.item_type === 'totp' ||
-                plain.totpSecret ||
-                plain.totpConfig ||
-                plain.type === 'totp'
-              );
-              const unsealed: DecryptedVaultItem = {
-                ...plain,
-                id: rec.id,
-                type: isTotp ? 'totp' : ((rec.item_type as any) || plain.type || 'login'),
-                updatedAt: rec.updated_at,
-                deletedAt: rec.is_deleted === 1 ? rec.updated_at : null,
-                isDecrypted: true,
-              };
-              item = unsealed;
-              decryptedItemCache.set(rec.id, unsealed);
-            } catch {
-              // Skip corrupted item
-            }
-          }
-
-          if (item) {
-            allDecrypted.push(item);
-            onItemDecrypted?.(item);
-          }
-
-          // Yield execution to React Native main loop every 2 items
-          if (i % 2 === 1) {
-            await yieldToMainThread(16);
+            item = unsealed;
+            decryptedItemCache.set(rec.id, unsealed);
+          } catch {
+            // Gracefully skip corrupted item
           }
         }
 
-        if (!currentAbort.abort && activeSession) {
-          onComplete?.(allDecrypted);
+        if (item) {
+          allDecrypted.push(item);
+          onItemDecrypted?.(item);
         }
-      } catch (err) {
-        console.warn('[mobileCrypto] Background decryption notice:', err);
+
+        // Yield execution to React Native main loop every batch
+        if (i % BATCH_SIZE === BATCH_SIZE - 1) {
+          await yieldToMainThread(16);
+        }
       }
-    }, 50);
-  });
+
+      if (!currentAbort.abort && activeSession) {
+        onComplete?.(allDecrypted);
+      }
+    } catch (err) {
+      console.warn('[mobileCrypto] Background decryption notice:', err);
+    }
+  }, 200);
+
+  return () => {
+    currentAbort.abort = true;
+    idleTask.cancel();
+  };
 }
 
 /**

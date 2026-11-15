@@ -84,6 +84,10 @@ export async function ensureDatabaseReady(): Promise<DB> {
       `);
 
       // 3. Vault items table (namespaced by vault_id)
+      // THREAT MODEL DECISION: `title` and `username` are retained as local SQLite columns
+      // for instant metadata rendering (< 5ms) and fast indexing in Android's private app sandbox
+      // (`/data/user/0/com.pixra.arca`), while sensitive credentials (passwords, TOTP, notes)
+      // are strictly sealed inside `ciphertext` + `nonce` with XChaCha20-Poly1305.
       await db.execute(`
         CREATE TABLE IF NOT EXISTS vault_items (
           id TEXT PRIMARY KEY,

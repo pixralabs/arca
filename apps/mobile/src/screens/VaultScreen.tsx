@@ -6,7 +6,7 @@
  * Shimmering Skeleton Loaders while Unlocking/Decrypting, >=48x48 Touch Targets, and Haptic Feedback.
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -55,6 +55,7 @@ import {
   mobileGetVaultMetadataItems,
   mobileDecryptItemOnDemand,
   mobileStartBackgroundDecryption,
+  abortBackgroundDecryption,
   mobileSaveItem,
   clearActiveSession,
   getActiveSession,
@@ -113,6 +114,7 @@ export function VaultScreen({
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<VaultCategoryFilter | null>(null);
+  const cancelDecryptionRef = useRef<(() => void) | null>(null);
 
   // Smooth Reanimated Spring Physics for Floating Search & Collapsing Plus Button
   const searchFocusAnim = useSharedValue(0);
@@ -190,7 +192,10 @@ export function VaultScreen({
       setLoading(false);
 
       // 2. Start progressive non-blocking background decryption for security score and search
-      void mobileStartBackgroundDecryption((decrypted) => {
+      if (cancelDecryptionRef.current) {
+        cancelDecryptionRef.current();
+      }
+      cancelDecryptionRef.current = mobileStartBackgroundDecryption((decrypted) => {
         setItems((prev) =>
           prev.map((it) => (it.id === decrypted.id ? ({ ...it, ...decrypted } as MobileVaultItem) : it))
         );
@@ -204,6 +209,12 @@ export function VaultScreen({
   useEffect(() => {
     setFlagSecure(true);
     void loadItems();
+    return () => {
+      if (cancelDecryptionRef.current) {
+        cancelDecryptionRef.current();
+      }
+      abortBackgroundDecryption();
+    };
   }, []);
 
   const combinedItems = useMemo(

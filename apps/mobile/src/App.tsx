@@ -133,28 +133,26 @@ function App() {
     };
   }, []);
 
-  // Notify CodePush that application is ready without using the React 18/17 HOC decorator
-  useEffect(() => {
-    try {
-      codePush?.notifyAppReady?.();
-    } catch {
-      // Safe no-op
-    }
-  }, []);
-
   // Auto-Lock Vault on Background Timeout & Memory Zeroization
   useEffect(() => {
     let backgroundTimestamp = 0;
-    const sub = AppState.addEventListener('change', (nextState) => {
+    const sub = AppState.addEventListener('change', async (nextState) => {
       if (nextState === 'background') {
         backgroundTimestamp = Date.now();
+        await AsyncStorage.setItem('@arca_bg_time', String(backgroundTimestamp)).catch(() => {});
       } else if (nextState === 'active') {
+        let lastBg = backgroundTimestamp;
+        if (!lastBg) {
+          const stored = await AsyncStorage.getItem('@arca_bg_time').catch(() => null);
+          if (stored) lastBg = parseInt(stored, 10);
+        }
         // Auto-lock vault if backgrounded for more than 3 minutes (180,000ms)
-        if (backgroundTimestamp > 0 && Date.now() - backgroundTimestamp > 180000) {
+        if (lastBg > 0 && Date.now() - lastBg > 180000) {
           clearActiveSession();
           setCurrentScreen('UNLOCK');
         }
         backgroundTimestamp = 0;
+        await AsyncStorage.removeItem('@arca_bg_time').catch(() => {});
       }
     });
     return () => sub.remove();
@@ -314,7 +312,13 @@ function App() {
         )}
         {/* Pre-warm VaultScreen in background while on UnlockScreen for Instant UI Transition */}
         {currentScreen === 'UNLOCK' && (
-          <View style={styles.prewarmedVault} pointerEvents="none">
+          <View
+            style={styles.prewarmedVault}
+            pointerEvents="none"
+            accessible={false}
+            aria-hidden={true}
+            importantForAccessibility="no-hide-descendants"
+          >
             <VaultScreen
               onLock={() => {}}
               onGoToGenerator={() => {}}
@@ -329,7 +333,7 @@ function App() {
   );
 }
 
-export default App;
+export default codePush(codePushOptions)(App);
 
 const styles = StyleSheet.create({
   container: {
