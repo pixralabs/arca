@@ -42,20 +42,13 @@ import { GeneratorScreen } from './screens/GeneratorScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { ShareScreen } from './screens/ShareScreen';
 import { RecoveryKitScreen } from './screens/RecoveryKitScreen';
-import codePush, { CodePushOptions } from 'react-native-code-push';
+import codePush from 'react-native-code-push';
 
 const { ArcaSplashScreen } = NativeModules;
 
 LogBox.ignoreAllLogs(true);
 
 type Screen = 'UNLOCK' | 'SETUP' | 'VAULT' | 'TOTP' | 'GENERATOR' | 'SETTINGS' | 'SHARE' | 'RECOVERY_KIT';
-
-const codePushOptions: CodePushOptions = {
-  checkFrequency: codePush.CheckFrequency.MANUAL,
-  installMode: codePush.InstallMode.ON_NEXT_RESUME,
-  mandatoryInstallMode: codePush.InstallMode.IMMEDIATE,
-  deploymentKey: 'HrZTHeXrYf5jDQbw6iXcWU-BksP8yZrN7mAIqTbThW', // <-- Ye aapki Staging Deployment Key hai
-};
 
 function App() {
   const { colors, isDark } = useTheme();
@@ -158,37 +151,31 @@ function App() {
     return () => sub.remove();
   }, []);
 
-  // Safe Background CodePush Sync: never blocks startup or crashes if network is offline
+  // Initialize CodePush Manually (Without HOC for React 19 Compatibility)
   useEffect(() => {
-    let cpTimer: NodeJS.Timeout | null = null;
-    try {
-      if (typeof codePush?.sync === 'function') {
-        cpTimer = setTimeout(() => {
-          try {
-            codePush.sync(
-              {
-                installMode: codePush.InstallMode.ON_NEXT_RESUME,
-                mandatoryInstallMode: codePush.InstallMode.IMMEDIATE,
-                deploymentKey: 'HrZTHeXrYf5jDQbw6iXcWU-BksP8yZrN7mAIqTbThW',
-              },
-              undefined,
-              undefined
-            ).catch((err: any) => {
-              // Gracefully handle network unavailability
-              console.warn('[CodePush] Sync caught safely:', err);
-            });
-          } catch (err) {
-            console.warn('[CodePush] Sync invocation caught safely:', err);
-          }
-        }, 3000);
+    const triggerSync = () => {
+      try {
+        codePush
+          .sync({
+            deploymentKey: 'HrZTHeXrYf5jDQbw6iXcWU-BksP8yZrN7mAIqTbThW',
+            installMode: codePush.InstallMode.ON_NEXT_RESUME,
+            mandatoryInstallMode: codePush.InstallMode.IMMEDIATE,
+          })
+          .catch((err: any) => console.log('CodePush Sync Error:', err));
+      } catch (err) {
+        console.log('CodePush Sync Error:', err);
       }
-    } catch (e) {
-      console.warn('[CodePush] Initialization caught safely:', e);
-    }
-
-    return () => {
-      if (cpTimer) clearTimeout(cpTimer);
     };
+
+    triggerSync();
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        triggerSync();
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
   // Show smooth shimmering skeleton loader while checking initial vault state
@@ -333,7 +320,7 @@ function App() {
   );
 }
 
-export default codePush(codePushOptions)(App);
+export default App;
 
 const styles = StyleSheet.create({
   container: {
