@@ -88,6 +88,9 @@
 
 # BouncyCastle Cryptographic Provider & Argon2 Generators
 -keep class org.bouncycastle.** { *; }
+-keep class org.bouncycastle.crypto.generators.Argon2BytesGenerator { *; }
+-keep class org.bouncycastle.crypto.params.Argon2Parameters { *; }
+-keep class org.bouncycastle.crypto.params.Argon2Parameters$Builder { *; }
 -dontwarn org.bouncycastle.**
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 

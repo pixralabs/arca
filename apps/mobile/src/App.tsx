@@ -15,6 +15,7 @@ import {
   Alert,
   LogBox,
   NativeModules,
+  AppState,
 } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { SafeAreaView } from './components/SafeAreaView';
@@ -32,6 +33,7 @@ import {
   setFlagSecure,
   SECURITY_COMPROMISED_WARNING,
 } from './crypto/securityGuard';
+import { clearActiveSession } from './crypto/mobileCrypto';
 import { SetupScreen } from './screens/SetupScreen';
 import { UnlockScreen } from './screens/UnlockScreen';
 import { VaultScreen } from './screens/VaultScreen';
@@ -138,6 +140,24 @@ function App() {
     } catch {
       // Safe no-op
     }
+  }, []);
+
+  // Auto-Lock Vault on Background Timeout & Memory Zeroization
+  useEffect(() => {
+    let backgroundTimestamp = 0;
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'background') {
+        backgroundTimestamp = Date.now();
+      } else if (nextState === 'active') {
+        // Auto-lock vault if backgrounded for more than 3 minutes (180,000ms)
+        if (backgroundTimestamp > 0 && Date.now() - backgroundTimestamp > 180000) {
+          clearActiveSession();
+          setCurrentScreen('UNLOCK');
+        }
+        backgroundTimestamp = 0;
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   // Safe Background CodePush Sync: never blocks startup or crashes if network is offline
@@ -292,6 +312,17 @@ function App() {
             </Text>
           </View>
         )}
+        {/* Pre-warm VaultScreen in background while on UnlockScreen for Instant UI Transition */}
+        {currentScreen === 'UNLOCK' && (
+          <View style={styles.prewarmedVault} pointerEvents="none">
+            <VaultScreen
+              onLock={() => {}}
+              onGoToGenerator={() => {}}
+              onGoToTotp={() => {}}
+              onGoToSettings={() => {}}
+            />
+          </View>
+        )}
         <AnimatedScreen key={currentScreen}>{renderScreen()}</AnimatedScreen>
       </View>
     </SafeAreaProvider>
@@ -306,6 +337,15 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  prewarmedVault: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0,
+    zIndex: -10,
   },
   compromisedBanner: {
     backgroundColor: '#dc2626',

@@ -35,6 +35,7 @@ import {
   storeBiometricSlotKey,
   retrieveBiometricSlotKey,
 } from './keychain';
+import { InteractionManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import sodiumJsi from './sodiumJsi';
 
@@ -316,8 +317,6 @@ export async function mobileUnlockVault(
     const { unlockWithMaster } = getCrypto();
     const dek = await unlockWithMaster(header, pwBytes);
 
-    await AsyncStorage.setItem('@arca_active_vault_id', vaultId).catch(() => {});
-
     activeSession = {
       dek,
       header,
@@ -325,8 +324,11 @@ export async function mobileUnlockVault(
       vaultName,
     };
 
-    // Enroll/refresh hardware-backed biometric wrapped DEK on successful master unlock
-    void enrollBiometricDekForActiveSession().catch(() => {});
+    // Asynchronously update storage and enroll biometric DEK without blocking unlock transition
+    setTimeout(() => {
+      AsyncStorage.setItem('@arca_active_vault_id', vaultId).catch(() => {});
+      void enrollBiometricDekForActiveSession().catch(() => {});
+    }, 10);
 
     return activeSession;
   } finally {
@@ -459,12 +461,20 @@ export async function mobileSaveItem(
  * without decrypting any DataEnvelopes, allowing VaultScreen to render instantaneously!
  */
 export async function mobileGetVaultMetadataItems(
-  includeDeleted = true
+  includeDeleted = true,
+  targetVaultId?: string
 ): Promise<DecryptedVaultItem[]> {
-  if (!activeSession) {
-    throw new Error('Vault is locked');
+  let currentVaultId = targetVaultId || activeSession?.vaultId;
+  if (!currentVaultId) {
+    const savedActiveId = await AsyncStorage.getItem('@arca_active_vault_id').catch(() => null);
+    if (savedActiveId) {
+      currentVaultId = savedActiveId;
+    } else {
+      const all = await getAllVaults();
+      currentVaultId = all[0]?.id || 'default_vault';
+    }
   }
-  const currentVaultId = activeSession.vaultId;
+
   const metaRows = await getVaultItemsMetadata(includeDeleted, currentVaultId);
 
   return metaRows.map((rec) => {
@@ -565,74 +575,80 @@ export async function mobileStartBackgroundDecryption(
   const currentDek = activeSession.dek;
   const currentVaultId = activeSession.vaultId;
 
-  setTimeout(async () => {
-    try {
-      const records = await getAllVaultItems(true, currentVaultId);
-      if (records.length === 0) return;
+  // Defer background decryption until all UI transitions, Reanimated gestures,
+  // and screen navigation animations have completely finished (guarantees 60FPS).
+  InteractionManager.runAfterInteractions(() => {
+    setTimeout(async () => {
+      try {
+        const records = await getAllVaultItems(true, currentVaultId);
+        if (records.length === 0) return;
 
-      const sodium = getSodium();
-      await sodium.ready;
-      const { unsealItem } = getCrypto();
-      const allDecrypted: DecryptedVaultItem[] = [];
+        const sodium = getSodium();
+        await sodium.ready;
+        const { unsealItem } = getCrypto();
+        const allDecrypted: DecryptedVaultItem[] = [];
 
-      for (let i = 0; i < records.length; i++) {
-        if (currentAbort.abort || !activeSession || activeSession.dek !== currentDek) {
-          break;
-        }
+        for (let i = 0; i < records.length; i++) {
+          if (currentAbort.abort || !activeSession || activeSession.dek !== currentDek) {
+            break;
+          }
 
-        const rec = records[i];
-        let item = decryptedItemCache.get(rec.id);
+          const rec = records[i];
+          let item = decryptedItemCache.get(rec.id);
 
-        if (!item || !item.isDecrypted) {
-          const recordPayload: VaultItemRecord = {
-            id: rec.id,
-            schemaVersion: 1,
-            revision: 1,
-            ciphertext: rec.ciphertext,
-            nonce: rec.nonce,
-            createdAt: rec.updated_at,
-            updatedAt: rec.updated_at,
-            deletedAt: rec.is_deleted === 1 ? rec.updated_at : null,
-          };
-          try {
-            const plain = await unsealItem(currentDek, recordPayload);
-            const isTotp = Boolean(
-              rec.item_type === 'totp' ||
-              plain.totpSecret ||
-              plain.totpConfig ||
-              plain.type === 'totp'
-            );
-            const unsealed: DecryptedVaultItem = {
-              ...plain,
+          if (!item || !item.isDecrypted) {
+            const recordPayload: VaultItemRecord = {
               id: rec.id,
-              type: isTotp ? 'totp' : ((rec.item_type as any) || plain.type || 'login'),
+              schemaVersion: 1,
+              revision: 1,
+              ciphertext: rec.ciphertext,
+              nonce: rec.nonce,
+              createdAt: rec.updated_at,
               updatedAt: rec.updated_at,
               deletedAt: rec.is_deleted === 1 ? rec.updated_at : null,
-              isDecrypted: true,
             };
-            item = unsealed;
-            decryptedItemCache.set(rec.id, unsealed);
-          } catch {
-            // Skip corrupted item
+            try {
+              const plain = await unsealItem(currentDek, recordPayload);
+              const isTotp = Boolean(
+                rec.item_type === 'totp' ||
+                plain.totpSecret ||
+                plain.totpConfig ||
+                plain.type === 'totp'
+              );
+              const unsealed: DecryptedVaultItem = {
+                ...plain,
+                id: rec.id,
+                type: isTotp ? 'totp' : ((rec.item_type as any) || plain.type || 'login'),
+                updatedAt: rec.updated_at,
+                deletedAt: rec.is_deleted === 1 ? rec.updated_at : null,
+                isDecrypted: true,
+              };
+              item = unsealed;
+              decryptedItemCache.set(rec.id, unsealed);
+            } catch {
+              // Skip corrupted item
+            }
+          }
+
+          if (item) {
+            allDecrypted.push(item);
+            onItemDecrypted?.(item);
+          }
+
+          // Yield execution to React Native main loop every 2 items
+          if (i % 2 === 1) {
+            await yieldToMainThread(16);
           }
         }
 
-        if (item) {
-          allDecrypted.push(item);
-          onItemDecrypted?.(item);
+        if (!currentAbort.abort && activeSession) {
+          onComplete?.(allDecrypted);
         }
-
-        // Yield 20ms between items so main thread stays 60fps
-        await yieldToMainThread(20);
+      } catch (err) {
+        console.warn('[mobileCrypto] Background decryption notice:', err);
       }
-
-      if (!currentAbort.abort && activeSession) {
-        onComplete?.(allDecrypted);
-      }
-    } catch (err) {
-      console.warn('[mobileCrypto] Background decryption notice:', err);
-    }
-  }, 120);
+    }, 50);
+  });
 }
 
 /**

@@ -51,6 +51,7 @@ import {
   mobileUnlockWithBiometrics,
   mobileUnlockWithRecovery,
   clearActiveSession,
+  yieldToMainThread,
 } from '../crypto/mobileCrypto';
 import {
   hasBiometricSlotKey,
@@ -144,6 +145,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const [focusedField, setFocusedField] = useState<'password' | 'recovery' | null>(null);
 
   const passwordRef = useRef<TextInput>(null);
+  const biometricAttemptsRef = useRef(0);
 
   // Enforce Android FLAG_SECURE on UnlockScreen to block screenshots and screen-recording malware
   useEffect(() => {
@@ -227,6 +229,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
 
     Keyboard.dismiss();
     setIsLoading(true);
+    await yieldToMainThread(16);
 
     try {
       if (isRecoveryMode) {
@@ -240,7 +243,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
       console.error('[UnlockScreen] unlock error:', err?.message || err);
       setIsLoading(false);
       triggerShakeAnimation();
-      setErrorMessage('Incorrect Master Password');
+      setErrorMessage(isRecoveryMode ? 'Invalid recovery phrase' : 'Incorrect Master Password');
       setTimeout(() => setErrorMessage(null), 3000);
     }
   };
@@ -269,20 +272,36 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
       setIsLoading(true);
 
       await mobileUnlockWithBiometrics(`Unlock "${vaultName}"`, vaultId);
+      biometricAttemptsRef.current = 0;
       triggerSuccessHaptic();
       onUnlocked();
     } catch (err: any) {
       setIsLoading(false);
+      biometricAttemptsRef.current += 1;
       const msg = err?.message || '';
       if (
         msg.toLowerCase().includes('cancel') ||
         msg.toLowerCase().includes('user cancellation')
       ) {
         // User dismissed the biometric prompt to type password instead
+        if (biometricAttemptsRef.current >= 3) {
+          setErrorMessage('Biometric prompt dismissed. Please enter your Master Password.');
+          passwordRef.current?.focus();
+        }
         return;
       }
       triggerShakeAnimation();
-      setErrorMessage(msg || 'Biometric key invalid or authentication failed.');
+      if (
+        biometricAttemptsRef.current >= 3 ||
+        msg.toLowerCase().includes('lockout') ||
+        msg.toLowerCase().includes('too many') ||
+        msg.toLowerCase().includes('denied')
+      ) {
+        setErrorMessage('Biometric attempts exceeded. Please unlock using your Master Password.');
+        passwordRef.current?.focus();
+      } else {
+        setErrorMessage(msg || 'Biometric key invalid or authentication failed.');
+      }
     }
   };
 

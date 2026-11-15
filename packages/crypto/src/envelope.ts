@@ -476,6 +476,14 @@ export async function unsealItem(
       return JSON.parse(jsonStr);
     } catch {
       return unpadded;
+    } finally {
+      if (unpadded) {
+        try {
+          sodium.memzero(unpadded);
+        } catch {
+          unpadded.fill(0);
+        }
+      }
     }
   } catch {
     throw new VaultGuardError('ERR_VAULT_CORRUPTED');

@@ -16,6 +16,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  AppState,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -66,6 +67,7 @@ export function QrScannerModal({
 
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualValue, setManualValue] = useState('');
+  const [isCameraActive, setIsCameraActive] = useState(true);
   const hasScannedRef = useRef(false);
 
   const laserY = useSharedValue(0);
@@ -76,6 +78,7 @@ export function QrScannerModal({
       // Enforce Android FLAG_SECURE while QR Scanner is open to block screen-recording malware
       setFlagSecure(true);
       hasScannedRef.current = false;
+      setIsCameraActive(true);
       setShowManualEntry(false);
       setManualValue('');
       sheetY.value = withSpring(0, { damping: 22, stiffness: 210 });
@@ -84,9 +87,25 @@ export function QrScannerModal({
         void requestPermission();
       }
     } else {
+      setIsCameraActive(false);
       sheetY.value = 600;
     }
   }, [visible, hasPermission, requestPermission, laserY, sheetY]);
+
+  // Clean up native VisionCamera session immediately on background/unmount
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState !== 'active') {
+        setIsCameraActive(false);
+      } else if (visible && !hasScannedRef.current && !showManualEntry) {
+        setIsCameraActive(true);
+      }
+    });
+    return () => {
+      sub.remove();
+      setIsCameraActive(false);
+    };
+  }, [visible, showManualEntry]);
 
   const laserAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: laserY.value }],
@@ -103,6 +122,7 @@ export function QrScannerModal({
       const rawValue = codes[0]?.value;
       if (rawValue) {
         hasScannedRef.current = true;
+        setIsCameraActive(false); // Instantly tear down camera session & background frame processing
         triggerSuccessHaptic();
         onCodeScanned(rawValue);
       }
@@ -161,6 +181,7 @@ export function QrScannerModal({
                 hitSlop={HIT_SLOP}
                 onPress={() => {
                   triggerLightHaptic();
+                  setIsCameraActive(false);
                   onClose();
                 }}
               >
@@ -174,7 +195,7 @@ export function QrScannerModal({
                 <Camera
                   style={StyleSheet.absoluteFill}
                   device={device}
-                  isActive={visible && !showManualEntry}
+                  isActive={visible && !showManualEntry && isCameraActive}
                   codeScanner={codeScanner}
                 />
                 {/* Corner Reticle & Indigo Laser */}

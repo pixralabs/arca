@@ -26,5 +26,13 @@ if (typeof globalThis.WebAssembly === 'undefined') {
 
 import { AppRegistry } from 'react-native';
 import App from './src/App';
+import codePush from 'react-native-code-push';
+
+// Ensure CodePush is notified immediately on initial JS bundle evaluation to prevent rollbacks
+try {
+  codePush?.notifyAppReady?.();
+} catch (_) {
+  // Safe no-op
+}
 
 AppRegistry.registerComponent('ArcaMobile', () => App);
