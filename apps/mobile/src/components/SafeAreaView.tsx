@@ -17,7 +17,7 @@ export interface SafeAreaViewProps {
 
 export function SafeAreaView({
   children,
-  edges = ['top', 'bottom'],
+  edges = ['top'],
   style,
 }: SafeAreaViewProps) {
   const insets = useSafeAreaInsets();

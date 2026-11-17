@@ -1,6 +1,12 @@
 <resources>
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
@@ -8,5 +14,11 @@
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
         <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 </resources>

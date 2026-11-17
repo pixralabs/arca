@@ -23,6 +23,8 @@ class MainActivity : ReactActivity() {
   override fun getMainComponentName(): String = "ArcaMobile"
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+    actionBar?.hide()
     enableEdgeToEdge()
     installSplashScreen()
     // FLAG_SECURE disabled to allow screenshots for user feedback and UI review
@@ -32,6 +34,7 @@ class MainActivity : ReactActivity() {
 
   override fun onResume() {
     super.onResume()
+    actionBar?.hide()
     // FLAG_SECURE disabled to allow screenshots for user feedback and UI review
     window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
   }

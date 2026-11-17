@@ -786,14 +786,13 @@ export function VaultScreen({
         </>
       )}
 
-      {/* Persistent Floating Bottom Bar (Wider Minimalist Search Pill + Smooth Collapsing Plus Button) */}
+      {/* Persistent Floating Bottom Bar (Minimalist Floating Search Pill + Add Button — No Solid Box / Clean Notch) */}
       <View
+        pointerEvents="box-none"
         style={[
           styles.bottomBarContainer,
           {
-            backgroundColor: isDark ? 'rgba(10, 10, 12, 0.94)' : 'rgba(255, 255, 255, 0.94)',
-            borderTopColor: isDark ? '#27272a' : '#e4e4e7',
-            paddingBottom: keyboardVisible ? 10 : Math.max(insets.bottom, 12) + 6,
+            bottom: keyboardVisible ? 12 : Math.max(insets.bottom, 12) + 6,
           },
         ]}
       >
@@ -1134,8 +1133,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingTop: 4,
+    paddingBottom: 6,
   },
   largeHeaderTitle: {
     fontFamily: 'Inter',
@@ -1284,14 +1283,13 @@ const styles = StyleSheet.create({
   /* Persistent Floating Bottom Bar */
   bottomBarContainer: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: spacing.lg,
+    right: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
+    zIndex: 20,
   },
   bottomSearchPill: {
     flex: 1,

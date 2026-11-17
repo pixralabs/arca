@@ -227,7 +227,7 @@ export function VaultListScreen({
 
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <KeyboardAvoidingView
