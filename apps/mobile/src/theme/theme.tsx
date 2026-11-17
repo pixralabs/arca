@@ -546,7 +546,10 @@ export function DraggableBottomSheet({
   if (!visible) return null;
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <View
+      style={[StyleSheet.absoluteFill, { zIndex: 999, elevation: 30 }]}
+      pointerEvents="box-none"
+    >
       <TouchableWithoutFeedback onPress={dismissSheet}>
         <Animated.View
           style={[

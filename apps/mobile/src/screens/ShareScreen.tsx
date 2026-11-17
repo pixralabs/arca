@@ -18,7 +18,7 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from '../components/SafeAreaView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   useTheme,
   spacing,
@@ -38,6 +38,7 @@ interface ShareScreenProps {
 
 export function ShareScreen({ onBack }: ShareScreenProps) {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [secretText, setSecretText] = useState('');
   const [expiryHours] = useState('24');
   const [loading, setLoading] = useState(false);
@@ -77,9 +78,15 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
   };
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.container, { backgroundColor: colors.background }]}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
     >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -227,7 +234,7 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

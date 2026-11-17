@@ -16,7 +16,7 @@ import {
   Share,
   Clipboard,
 } from 'react-native';
-import { SafeAreaView } from '../components/SafeAreaView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
 import Animated, {
   useSharedValue,
@@ -69,6 +69,7 @@ export function RecoveryKitScreen({
   onComplete,
 }: RecoveryKitScreenProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const viewShotRef = useRef<ViewShot>(null);
 
   const [shares, setShares] = useState<ShamirShareCardData[]>([]);
@@ -168,9 +169,14 @@ export function RecoveryKitScreen({
   };
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.container, { backgroundColor: colors.background }]}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+        },
+      ]}
     >
       <AnimatedScreen style={{ flex: 1 }}>
         <ScrollView
@@ -456,7 +462,7 @@ export function RecoveryKitScreen({
           )}
         </ScrollView>
       </AnimatedScreen>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Background Colors (Light Mode) -->
-    <color name="splash_background">#FFFFFF</color>
-    <color name="primary_dark">#09090b</color>
-    <color name="ic_launcher_background">#09090B</color>
+    <!-- Background Colors (Pure OLED Black) -->
+    <color name="splash_background">#000000</color>
+    <color name="primary_dark">#000000</color>
+    <color name="ic_launcher_background">#000000</color>
     <color name="ic_launcher_light_bg">#FFFFFF</color>
-    <color name="ic_launcher_dark_bg">#09090b</color>
+    <color name="ic_launcher_dark_bg">#000000</color>
 
     <!-- Flat Minimalist Padlock Foreground -->
     <color name="ic_lock_color">#09090B</color>

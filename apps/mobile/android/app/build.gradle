@@ -18,8 +18,8 @@ android {
         applicationId "com.pixra.arca"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
-        versionName "0.5.9"
+        versionCode 17
+        versionName "0.6.0"
 
         externalNativeBuild {
             cmake {

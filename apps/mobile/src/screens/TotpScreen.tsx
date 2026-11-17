@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Clipboard } from 'react-native';
-import { SafeAreaView } from '../components/SafeAreaView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -31,6 +31,7 @@ interface TotpScreenProps {
 
 export function TotpScreen({ item, onBack }: TotpScreenProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [code, setCode] = useState('000000');
   const [secondsRemaining, setSecondsRemaining] = useState(30);
   const [copied, setCopied] = useState(false);
@@ -79,9 +80,15 @@ export function TotpScreen({ item, onBack }: TotpScreenProps) {
   };
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.container, { backgroundColor: colors.background }]}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
     >
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
@@ -183,7 +190,7 @@ export function TotpScreen({ item, onBack }: TotpScreenProps) {
           </Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

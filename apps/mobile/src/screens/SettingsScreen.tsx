@@ -17,7 +17,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
-import { SafeAreaView } from '../components/SafeAreaView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import Animated, {
   useSharedValue,
@@ -107,6 +107,7 @@ export function SettingsScreen({
   onOpenRecoveryKit,
 }: SettingsScreenProps) {
   const { colors, isDark, themePreference, setThemePreference } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [syncEnabled, setSyncEnabled] = useState(false);
   const [syncStatus, setSyncStatus] = useState(
@@ -238,14 +239,19 @@ export function SettingsScreen({
   };
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.container, { backgroundColor: colors.background }]}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+        },
+      ]}
     >
       <AnimatedScreen style={[styles.container, { backgroundColor: colors.background }]}>
         <ScrollView
           style={styles.container}
-          contentContainerStyle={{ paddingBottom: spacing.xxl }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
           showsVerticalScrollIndicator={false}
         >
           <View
@@ -808,7 +814,7 @@ export function SettingsScreen({
           </TouchableWithoutFeedback>
         </Modal>
       </AnimatedScreen>
-    </SafeAreaView>
+    </View>
   );
 }
 

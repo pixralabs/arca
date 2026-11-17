@@ -39,7 +39,7 @@ import {
   Lock,
   ChevronRight,
 } from 'lucide-react-native';
-import { SafeAreaView } from '../components/SafeAreaView';
+// Native Safe Area Insets handled via useSafeAreaInsets()
 import {
   useTheme,
   spacing,
@@ -481,9 +481,14 @@ export function VaultScreen({
   }
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.container, { backgroundColor: colors.background }]}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+        },
+      ]}
     >
       {/* Top Header Row: "Passwords" Heading + Minimalist Ellipsis Menu Icon */}
       <View style={styles.headerTitleRow}>
@@ -786,74 +791,78 @@ export function VaultScreen({
         </>
       )}
 
-      {/* Persistent Floating Bottom Bar (Minimalist Floating Search Pill + Add Button — No Solid Box / Clean Notch) */}
-      <View
-        pointerEvents="box-none"
-        style={[
-          styles.bottomBarContainer,
-          {
-            bottom: keyboardVisible ? 12 : Math.max(insets.bottom, 12) + 6,
-          },
-        ]}
-      >
+      {/* Persistent Floating Bottom Bar (Hidden when bottom sheets/modals are open) */}
+      {!showMenuSheet && !showAddSheet && !showImportSheet && (
         <View
-          collapsable={false}
+          pointerEvents="box-none"
           style={[
-            styles.bottomSearchPill,
+            styles.bottomBarContainer,
             {
-              backgroundColor: isDark ? '#141417' : '#f4f4f5',
-              borderColor: searchFocused
-                ? (isDark ? '#ffffff' : '#000000')
-                : (isDark ? '#27272a' : '#e4e4e7'),
+              bottom: keyboardVisible ? 12 : Math.max(insets.bottom, 12) + 6,
             },
           ]}
         >
-          <Search size={18} color={isDark ? '#a1a1aa' : '#71717a'} style={styles.bottomSearchIcon} />
-          <TextInput
+          <View
             collapsable={false}
-            style={[styles.bottomSearchInput, { color: isDark ? '#ffffff' : '#000000' }]}
-            placeholder="Search passwords..."
-            placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
-            value={search}
-            onChangeText={setSearch}
-            onFocus={handleSearchFocus}
-            onBlur={handleSearchBlur}
-            autoCapitalize="none"
-          />
-          {search.length > 0 && (
-            <TouchableOpacity
-              hitSlop={HIT_SLOP}
-              onPress={() => {
-                triggerLightHaptic();
-                setSearch('');
-              }}
-              style={styles.bottomClearButton}
-            >
-              <X size={16} color={isDark ? '#ffffff' : '#000000'} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <Animated.View style={animatedPlusStyle}>
-          <TouchableOpacity
             style={[
-              styles.bottomAddCircleButton,
+              styles.bottomSearchPill,
               {
-                backgroundColor: isDark ? '#ffffff' : '#000000',
+                backgroundColor: isDark ? '#141417' : '#f4f4f5',
+                borderColor: searchFocused
+                  ? (isDark ? '#ffffff' : '#000000')
+                  : (isDark ? '#27272a' : '#e4e4e7'),
               },
             ]}
-            hitSlop={HIT_SLOP}
-            activeOpacity={0.85}
-            onPress={() => {
-              triggerLightHaptic();
-              setShowAddSheet(true);
-            }}
-            accessibilityLabel="Add new password"
           >
-            <Plus size={24} color={isDark ? '#000000' : '#ffffff'} strokeWidth={2.5} />
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
+            <Search size={18} color={isDark ? '#a1a1aa' : '#71717a'} style={styles.bottomSearchIcon} />
+            <TextInput
+              collapsable={false}
+              style={[styles.bottomSearchInput, { color: isDark ? '#ffffff' : '#000000' }]}
+              placeholder="Search passwords..."
+              placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
+              value={search}
+              onChangeText={setSearch}
+              onFocus={handleSearchFocus}
+              onBlur={handleSearchBlur}
+              autoCapitalize="none"
+            />
+            {search.length > 0 && (
+              <TouchableOpacity
+                hitSlop={HIT_SLOP}
+                onPress={() => {
+                  triggerLightHaptic();
+                  setSearch('');
+                }}
+                style={styles.bottomClearButton}
+              >
+                <X size={16} color={isDark ? '#ffffff' : '#000000'} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <Animated.View style={animatedPlusStyle}>
+            <TouchableOpacity
+              style={[
+                styles.bottomAddCircleButton,
+                {
+                  backgroundColor: isDark ? '#ffffff' : '#000000',
+                  borderColor: isDark ? '#ffffff' : '#000000',
+                  borderWidth: 0,
+                },
+              ]}
+              hitSlop={HIT_SLOP}
+              activeOpacity={0.85}
+              onPress={() => {
+                triggerLightHaptic();
+                setShowAddSheet(true);
+              }}
+              accessibilityLabel="Add new password"
+            >
+              <Plus size={24} color={isDark ? '#000000' : '#ffffff'} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      )}
 
       {/* Premium Item Editor Modal with Camera TOTP Scanner */}
       <ItemEditorScreen
@@ -1118,7 +1127,7 @@ export function VaultScreen({
           </TouchableOpacity>
         </View>
       </DraggableBottomSheet>
-    </SafeAreaView>
+    </View>
   );
 }
 

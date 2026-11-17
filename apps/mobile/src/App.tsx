@@ -18,7 +18,6 @@ import {
   AppState,
 } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
-import { SafeAreaView } from './components/SafeAreaView';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   useTheme,
@@ -190,10 +189,7 @@ function App() {
           barStyle={isDark ? 'light-content' : 'dark-content'}
           backgroundColor="transparent"
         />
-        <SafeAreaView
-          edges={['top']}
-          style={[styles.container, { backgroundColor: colors.background }]}
-        >
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
           {deviceCompromised && (
             <View style={styles.compromisedBanner}>
               <Text style={styles.compromisedBannerText}>
@@ -202,7 +198,7 @@ function App() {
             </View>
           )}
           <VaultSkeletonLoader />
-        </SafeAreaView>
+        </View>
       </SafeAreaProvider>
     );
   }

@@ -14,7 +14,7 @@ import {
   Clipboard,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from '../components/SafeAreaView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -38,6 +38,7 @@ interface GeneratorScreenProps {
 
 export function GeneratorScreen({ onBack }: GeneratorScreenProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [password, setPassword] = useState('');
   const [copied, setCopied] = useState(false);
   const [isPassphrase, setIsPassphrase] = useState(false);
@@ -93,9 +94,15 @@ export function GeneratorScreen({ onBack }: GeneratorScreenProps) {
   };
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.container, { backgroundColor: colors.background }]}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
     >
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
@@ -236,7 +243,7 @@ export function GeneratorScreen({ onBack }: GeneratorScreenProps) {
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

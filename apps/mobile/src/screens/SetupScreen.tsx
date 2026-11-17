@@ -18,7 +18,7 @@ import {
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
-import { SafeAreaView } from '../components/SafeAreaView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -105,6 +105,7 @@ function AnimatedPrimaryButton({
 // ─── Main SetupScreen ─────────────────────────────────────────────────────────
 export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [existingVaults, setExistingVaults] = useState<VaultRecord[]>([]);
   const [vaultName, setVaultName] = useState('Personal Vault');
@@ -236,10 +237,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
   const glassCardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.flex, { backgroundColor: colors.background }]}
-    >
+    <View style={[styles.flex, { backgroundColor: colors.background }]}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -247,7 +245,13 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: insets.top + spacing.lg,
+            paddingBottom: insets.bottom + spacing.xl,
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
@@ -512,7 +516,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

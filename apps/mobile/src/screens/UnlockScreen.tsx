@@ -21,7 +21,6 @@ import {
   Keyboard,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SafeAreaView } from '../components/SafeAreaView';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -342,10 +341,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   };
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.flex, { backgroundColor: colors.background }]}
-    >
+    <View style={[styles.flex, { backgroundColor: colors.background }]}>
       <StatusBar
         translucent
         backgroundColor="transparent"
@@ -356,7 +352,8 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingBottom: Math.max(insets.bottom, 24) + 20,
+            paddingTop: insets.top + spacing.lg,
+            paddingBottom: insets.bottom + spacing.xl,
           },
         ]}
         keyboardShouldPersistTaps="handled"
@@ -586,7 +583,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
         }}
         onClose={() => setShowSwitchSheet(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

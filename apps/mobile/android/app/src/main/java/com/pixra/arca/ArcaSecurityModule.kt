@@ -212,6 +212,28 @@ class ArcaSplashScreenModule(private val reactContext: ReactApplicationContext) 
 
   @ReactMethod
   fun setSystemBarsTheme(isDark: Boolean) {
-    // System bars theme hook
+    val activity = reactContext.currentActivity ?: return
+    activity.runOnUiThread {
+      val window = activity.window ?: return@runOnUiThread
+      androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+      window.statusBarColor = android.graphics.Color.TRANSPARENT
+      window.navigationBarColor = android.graphics.Color.TRANSPARENT
+
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        window.isNavigationBarContrastEnforced = false
+        window.isStatusBarContrastEnforced = false
+      }
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+        window.navigationBarDividerColor = android.graphics.Color.TRANSPARENT
+      }
+
+      window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION)
+      window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
+      window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+
+      val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+      controller.isAppearanceLightStatusBars = !isDark
+      controller.isAppearanceLightNavigationBars = !isDark
+    }
   }
 }

@@ -18,7 +18,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from '../components/SafeAreaView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
 import {
   useTheme,
@@ -94,6 +94,7 @@ export function VaultListScreen({
   onItemUpdated,
 }: VaultListScreenProps) {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [searchFocused, setSearchFocused] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
@@ -227,9 +228,14 @@ export function VaultListScreen({
   }, [items, category, searchQuery, securityFindingsMap]);
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={[styles.container, { backgroundColor: colors.background }]}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+        },
+      ]}
     >
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -604,7 +610,7 @@ export function VaultListScreen({
           }
         />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
