@@ -90,6 +90,14 @@ export type DecryptedVaultItem = VaultItemPlaintext & {
 let activeSession: MobileSession | null = null;
 const decryptedItemCache = new Map<string, DecryptedVaultItem>();
 let backgroundDecryptAbort: { abort: boolean } | null = null;
+let onClearSessionCallbacks: Array<() => void> = [];
+
+export function registerOnClearSession(cb: () => void): () => void {
+  onClearSessionCallbacks.push(cb);
+  return () => {
+    onClearSessionCallbacks = onClearSessionCallbacks.filter((c) => c !== cb);
+  };
+}
 
 export function abortBackgroundDecryption(): void {
   if (backgroundDecryptAbort) {
@@ -109,6 +117,13 @@ export function getActiveSession(): MobileSession | null {
 export function clearActiveSession(): void {
   abortBackgroundDecryption();
   decryptedItemCache.clear();
+  for (const cb of onClearSessionCallbacks) {
+    try {
+      cb();
+    } catch {
+      // Graceful no-op
+    }
+  }
   if (activeSession) {
     const sodium = getSodium();
     try {

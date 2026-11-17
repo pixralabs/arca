@@ -297,23 +297,6 @@ function App() {
             </Text>
           </View>
         )}
-        {/* Pre-warm VaultScreen in background while on UnlockScreen for Instant UI Transition */}
-        {currentScreen === 'UNLOCK' && (
-          <View
-            style={styles.prewarmedVault}
-            pointerEvents="none"
-            accessible={false}
-            aria-hidden={true}
-            importantForAccessibility="no-hide-descendants"
-          >
-            <VaultScreen
-              onLock={() => {}}
-              onGoToGenerator={() => {}}
-              onGoToTotp={() => {}}
-              onGoToSettings={() => {}}
-            />
-          </View>
-        )}
         <AnimatedScreen key={currentScreen}>{renderScreen()}</AnimatedScreen>
       </View>
     </SafeAreaProvider>
@@ -328,15 +311,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-  },
-  prewarmedVault: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0,
-    zIndex: -10,
   },
   compromisedBanner: {
     backgroundColor: '#dc2626',

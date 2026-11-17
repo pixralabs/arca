@@ -396,19 +396,17 @@ export interface AnimatedScreenProps {
 }
 
 export function AnimatedScreen({ children, style }: AnimatedScreenProps) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(18);
-  const scale = useSharedValue(0.985);
+  const opacity = useSharedValue(0.6);
+  const translateY = useSharedValue(6);
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 220 });
-    translateY.value = withSpring(0, { damping: 20, stiffness: 210, mass: 0.8 });
-    scale.value = withSpring(1, { damping: 20, stiffness: 210, mass: 0.8 });
-  }, [opacity, scale, translateY]);
+    opacity.value = withTiming(1, { duration: 90 });
+    translateY.value = withTiming(0, { duration: 90 });
+  }, [opacity, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    transform: [{ translateY: translateY.value }],
   }));
 
   return (

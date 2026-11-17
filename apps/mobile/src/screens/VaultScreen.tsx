@@ -59,6 +59,7 @@ import {
   mobileSaveItem,
   clearActiveSession,
   getActiveSession,
+  registerOnClearSession,
 } from '../crypto/mobileCrypto';
 import { softDeleteVaultItem } from '../storage/db';
 import { setFlagSecure } from '../crypto/securityGuard';
@@ -99,6 +100,16 @@ interface CategoryTileItem {
   subtitleBadge?: string;
 }
 
+let inMemoryCachedActive: MobileVaultItem[] = [];
+let inMemoryCachedDeleted: MobileVaultItem[] = [];
+
+export function clearVaultScreenCache(): void {
+  inMemoryCachedActive = [];
+  inMemoryCachedDeleted = [];
+}
+
+registerOnClearSession(clearVaultScreenCache);
+
 export function VaultScreen({
   onLock,
   onGoToGenerator,
@@ -107,14 +118,16 @@ export function VaultScreen({
 }: VaultScreenProps) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<MobileVaultItem[]>([]);
-  const [deletedItems, setDeletedItems] = useState<MobileVaultItem[]>([]);
+  const [items, setItems] = useState<MobileVaultItem[]>(inMemoryCachedActive);
+  const [deletedItems, setDeletedItems] = useState<MobileVaultItem[]>(inMemoryCachedDeleted);
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(inMemoryCachedActive.length === 0);
   const [activeCategory, setActiveCategory] = useState<VaultCategoryFilter | null>(null);
   const cancelDecryptionRef = useRef<(() => void) | null>(null);
+  const batchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingBatchRef = useRef<MobileVaultItem[]>([]);
 
   // Smooth Reanimated Spring Physics for Floating Search & Collapsing Plus Button
   const searchFocusAnim = useSharedValue(0);
@@ -184,6 +197,8 @@ export function VaultScreen({
           active.push(entry);
         }
       }
+      inMemoryCachedActive = active;
+      inMemoryCachedDeleted = tombstoned;
       setItems(active);
       if (tombstoned.length > 0) {
         setDeletedItems(tombstoned);
@@ -194,12 +209,47 @@ export function VaultScreen({
       // 2. Start progressive non-blocking background decryption for security score and search
       if (cancelDecryptionRef.current) {
         cancelDecryptionRef.current();
+        cancelDecryptionRef.current = null;
       }
-      cancelDecryptionRef.current = mobileStartBackgroundDecryption((decrypted) => {
-        setItems((prev) =>
-          prev.map((it) => (it.id === decrypted.id ? ({ ...it, ...decrypted } as MobileVaultItem) : it))
-        );
-      });
+      if (batchTimeoutRef.current) {
+        clearTimeout(batchTimeoutRef.current);
+        batchTimeoutRef.current = null;
+      }
+      pendingBatchRef.current = [];
+
+      const flushDecryptedBatch = () => {
+        if (pendingBatchRef.current.length === 0) return;
+        const currentBatch = pendingBatchRef.current;
+        pendingBatchRef.current = [];
+        setItems((prev) => {
+          const map = new Map(currentBatch.map((it) => [it.id, it]));
+          const updated = prev.map((it) => {
+            const dec = map.get(it.id);
+            return dec ? ({ ...it, ...dec } as MobileVaultItem) : it;
+          });
+          inMemoryCachedActive = updated;
+          return updated;
+        });
+      };
+
+      cancelDecryptionRef.current = mobileStartBackgroundDecryption(
+        (decrypted) => {
+          pendingBatchRef.current.push(decrypted as MobileVaultItem);
+          if (!batchTimeoutRef.current) {
+            batchTimeoutRef.current = setTimeout(() => {
+              batchTimeoutRef.current = null;
+              flushDecryptedBatch();
+            }, 120);
+          }
+        },
+        () => {
+          if (batchTimeoutRef.current) {
+            clearTimeout(batchTimeoutRef.current);
+            batchTimeoutRef.current = null;
+          }
+          flushDecryptedBatch();
+        }
+      );
     } catch {
       Alert.alert('Error', 'Failed to read vault items.');
       setLoading(false);
@@ -210,8 +260,13 @@ export function VaultScreen({
     setFlagSecure(true);
     void loadItems();
     return () => {
+      if (batchTimeoutRef.current) {
+        clearTimeout(batchTimeoutRef.current);
+        batchTimeoutRef.current = null;
+      }
       if (cancelDecryptionRef.current) {
         cancelDecryptionRef.current();
+        cancelDecryptionRef.current = null;
       }
       abortBackgroundDecryption();
     };
@@ -360,20 +415,37 @@ export function VaultScreen({
     } catch {
       // Ignore if in-memory session
     }
-    setItems((prev: MobileVaultItem[]) => prev.filter((i: MobileVaultItem) => i.id !== itemId));
-    setDeletedItems((prev: MobileVaultItem[]) => [{ ...target, deletedAt: now }, ...prev]);
+    setItems((prev: MobileVaultItem[]) => {
+      const filtered = prev.filter((i: MobileVaultItem) => i.id !== itemId);
+      inMemoryCachedActive = filtered;
+      return filtered;
+    });
+    setDeletedItems((prev: MobileVaultItem[]) => {
+      const updated = [{ ...target, deletedAt: now }, ...prev];
+      inMemoryCachedDeleted = updated;
+      return updated;
+    });
   };
 
   const handleRestoreDeleted = (itemId: string) => {
     triggerLightHaptic();
     const target = deletedItems.find((i: MobileVaultItem) => i.id === itemId);
     if (!target) return;
-    setDeletedItems((prev: MobileVaultItem[]) => prev.filter((i: MobileVaultItem) => i.id !== itemId));
-    setItems((prev: MobileVaultItem[]) => [{ ...target, deletedAt: null }, ...prev]);
+    setDeletedItems((prev: MobileVaultItem[]) => {
+      const filtered = prev.filter((i: MobileVaultItem) => i.id !== itemId);
+      inMemoryCachedDeleted = filtered;
+      return filtered;
+    });
+    setItems((prev: MobileVaultItem[]) => {
+      const updated = [{ ...target, deletedAt: null }, ...prev];
+      inMemoryCachedActive = updated;
+      return updated;
+    });
   };
 
   const handleLockVault = () => {
     triggerLightHaptic();
+    clearVaultScreenCache();
     clearActiveSession();
     onLock();
   };
