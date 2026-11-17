@@ -19,6 +19,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from '../components/SafeAreaView';
+import { ArrowLeft } from 'lucide-react-native';
 import {
   useTheme,
   spacing,
@@ -234,7 +235,7 @@ export function VaultListScreen({
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Navigation Header */}
+        {/* Clean Header Bar: Back Arrow + Section Title + Count Pill */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => {
@@ -244,11 +245,15 @@ export function VaultListScreen({
             style={styles.backButton}
             hitSlop={HIT_SLOP}
             activeOpacity={0.7}
+            accessibilityLabel="Back to Passwords"
           >
-            <Text style={[styles.backButtonText, { color: colors.primary }]}>
-              ‹ Passwords
-            </Text>
+            <ArrowLeft size={22} color={colors.textHeading} strokeWidth={2.4} />
           </TouchableOpacity>
+
+          <Text style={[styles.headerTitle, { color: colors.textHeading }]} numberOfLines={1}>
+            {meta.title}
+          </Text>
+
           <View
             style={[
               styles.headerCountPill,
@@ -257,20 +262,10 @@ export function VaultListScreen({
           >
             <Text style={[styles.headerCountText, { color: colors.textMuted }]}>
               {category === 'security'
-                ? `Score: ${securityScoreResult.score}%`
+                ? `${securityScoreResult.score}%`
                 : filteredItems.length}
             </Text>
           </View>
-        </View>
-
-        {/* Category Title */}
-        <View style={styles.titleSection}>
-          <Text style={[styles.largeTitle, { color: colors.textHeading }]}>
-            {meta.title}
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {meta.subtitle}
-          </Text>
         </View>
 
         {/* Security Health Scorecard Banner */}
@@ -619,50 +614,36 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xs,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
   backButton: {
-    minWidth: layout.minTouchTarget,
-    minHeight: layout.minTouchTarget,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
-    paddingRight: spacing.md,
+    alignItems: 'center',
+    marginRight: 12,
   },
-  backButtonText: {
+  headerTitle: {
+    flex: 1,
     fontFamily: 'Inter',
-    fontSize: 17,
-    fontWeight: '600',
-    letterSpacing: -0.3,
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.4,
   },
   headerCountPill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: radii.pill,
+    marginLeft: 8,
   },
   headerCountText: {
     fontFamily: 'Inter',
     fontSize: 13,
     fontWeight: '700',
-  },
-  titleSection: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.md,
-  },
-  largeTitle: {
-    fontFamily: 'Inter',
-    fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    marginTop: 4,
-    lineHeight: 18,
   },
   securityScoreCard: {
     marginHorizontal: spacing.lg,
