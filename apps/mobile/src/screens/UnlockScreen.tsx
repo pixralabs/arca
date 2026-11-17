@@ -3,7 +3,8 @@
  * @description Ultra-Premium Zero-Knowledge Vault Unlock Screen
  * Strict Monochrome (Black & White) Aesthetic — Native C++ JSI Argon2id (< 200ms),
  * Hardware-Backed Biometric Key Wrapping (StrongBox + CryptoObject / Secure Enclave),
- * OS-Level `FLAG_SECURE` Screenshot Protection, Multi-Vault Switcher, and Shake Error Feedback.
+ * Edge-to-Edge OLED Black Canvas with Floating Gesture Navigation, Minimalist Vault Pill,
+ * and Shake Error Feedback.
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
@@ -19,6 +20,7 @@ import {
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from '../components/SafeAreaView';
 import Animated, {
   useSharedValue,
@@ -132,6 +134,7 @@ function AnimatedPrimaryButton({
 /* ── Main UnlockScreen ── */
 export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const [vaults, setVaults] = useState<VaultRecord[]>([]);
   const [activeVault, setActiveVault] = useState<VaultRecord | null>(null);
   const [showSwitchSheet, setShowSwitchSheet] = useState(false);
@@ -147,9 +150,9 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const passwordRef = useRef<TextInput>(null);
   const biometricAttemptsRef = useRef(0);
 
-  // Enforce Android FLAG_SECURE on UnlockScreen to block screenshots and screen-recording malware
+  // Allow screenshots for user review & visual feedback
   useEffect(() => {
-    setFlagSecure(true);
+    setFlagSecure(false);
   }, []);
 
   const loadVaults = useCallback(async () => {
@@ -283,7 +286,6 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
         msg.toLowerCase().includes('cancel') ||
         msg.toLowerCase().includes('user cancellation')
       ) {
-        // User dismissed the biometric prompt to type password instead
         if (biometricAttemptsRef.current >= 3) {
           setErrorMessage('Biometric prompt dismissed. Please enter your Master Password.');
           passwordRef.current?.focus();
@@ -335,13 +337,13 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
     const focused = focusedField === field;
     return {
       backgroundColor: isDark ? '#141417' : '#f4f4f5',
-      borderColor: focused ? (isDark ? '#ffffff' : '#000000') : colors.border,
+      borderColor: focused ? (isDark ? '#ffffff' : '#000000') : (isDark ? '#27272a' : '#e4e4e7'),
     };
   };
 
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.flex, { backgroundColor: colors.background }]}
     >
       <StatusBar
@@ -351,92 +353,34 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingBottom: Math.max(insets.bottom, 24) + 20,
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header ── */}
+        {/* ── Brand & Screen Title ── */}
         <View style={styles.header}>
-          <ArcaBrandLogo isDark={isDark} size={80} />
-
-          <View
-            style={[
-              styles.badge,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <Text style={[styles.badgeText, { color: colors.text }]}>
-              {isRecoveryMode ? 'Account Recovery' : 'Zero-Knowledge Vault'}
-            </Text>
+          <View style={styles.logoContainer}>
+            <ArcaBrandLogo isDark={isDark} size={68} />
           </View>
 
           <Text style={[styles.title, { color: colors.textHeading }]}>
             {isRecoveryMode ? 'Account Recovery' : 'Unlock Vault'}
           </Text>
 
-          {/* Multi-Vault Identity Pill */}
-          <View
-            style={[
-              styles.vaultIdentityCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <View style={styles.vaultIdentityLeft}>
-              <View
-                style={[
-                  styles.vaultAvatar,
-                  {
-                    backgroundColor: isDark ? '#27272a' : '#e4e4e7',
-                    borderWidth: 1,
-                    borderColor: isDark ? '#3f3f46' : '#d4d4d8',
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.vaultAvatarText,
-                    { color: isDark ? '#ffffff' : '#09090b' },
-                  ]}
-                >
-                  {(activeVault?.name || 'P').charAt(0).toUpperCase()}
-                </Text>
-              </View>
-
-              <View style={styles.vaultTextGroup}>
-                <Text style={[styles.vaultUnlockingLabel, { color: colors.textDim }]}>
-                  {isLoading ? 'Unlocking' : 'Active Vault'}
-                </Text>
-                <View style={styles.vaultNameRow}>
-                  <Text
-                    style={[styles.vaultNameText, { color: colors.textHeading }]}
-                    numberOfLines={1}
-                  >
-                    {activeVault?.name || 'Personal Vault'}
-                  </Text>
-                  {isBioEnabledForActive && (
-                    <Fingerprint
-                      size={15}
-                      color={colors.textMuted}
-                      style={{ marginLeft: 6 }}
-                    />
-                  )}
-                </View>
-              </View>
-            </View>
-
+          {/* Minimalist Active Vault Pill */}
+          {!isRecoveryMode && (
             <TouchableOpacity
               style={[
-                styles.switchVaultButton,
+                styles.vaultPill,
                 {
-                  backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  backgroundColor: isDark ? '#141417' : '#f4f4f5',
+                  borderColor: isDark ? '#27272a' : '#e4e4e7',
                 },
               ]}
               onPress={() => {
@@ -446,25 +390,44 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
               hitSlop={HIT_SLOP}
               activeOpacity={0.75}
             >
-              <Text style={[styles.switchVaultButtonText, { color: colors.text }]}>
-                {vaults.length > 1 ? 'Switch' : 'Vaults'}
+              <Text
+                style={[styles.vaultPillText, { color: colors.text }]}
+                numberOfLines={1}
+              >
+                {activeVault?.name || 'Personal Vault'}
               </Text>
-              <ChevronDown size={14} color={colors.textMuted} style={{ marginLeft: 4 }} />
+              {isBioEnabledForActive && (
+                <Fingerprint
+                  size={14}
+                  color={colors.textMuted}
+                  style={{ marginLeft: 6 }}
+                />
+              )}
+              {vaults.length > 1 && (
+                <ChevronDown
+                  size={14}
+                  color={colors.textMuted}
+                  style={{ marginLeft: 4 }}
+                />
+              )}
             </TouchableOpacity>
-          </View>
+          )}
 
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {isRecoveryMode
-              ? 'Enter your 24-word recovery phrase to restore access.'
-              : 'Enter your Master Password to decrypt your zero-knowledge vault.'}
-          </Text>
+          {isRecoveryMode && (
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+              Enter your 24-word recovery phrase to restore your vault on this device.
+            </Text>
+          )}
         </View>
 
-        {/* ── Monochrome Card ── */}
+        {/* ── Main Input & Action Card ── */}
         <Animated.View
           style={[
-            styles.glassCard,
-            { backgroundColor: colors.surface, borderColor: colors.border },
+            styles.card,
+            {
+              backgroundColor: isDark ? '#121214' : '#ffffff',
+              borderColor: isDark ? '#27272a' : '#e4e4e7',
+            },
             shakeAnimatedStyle,
           ]}
         >
@@ -499,7 +462,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
                 ref={passwordRef}
                 collapsable={false}
                 style={[styles.inputText, { color: colors.text }]}
-                placeholder={`Password for ${activeVault?.name || 'Vault'}`}
+                placeholder="Master Password"
                 placeholderTextColor={colors.textDim}
                 value={password}
                 onChangeText={setPassword}
@@ -532,16 +495,6 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
             </View>
           )}
 
-          {/* Primary CTA */}
-          <AnimatedPrimaryButton
-            onPress={handleUnlock}
-            disabled={false}
-            label={isRecoveryMode ? 'Restore Vault' : 'Unlock Vault'}
-            primaryColor={isDark ? '#ffffff' : '#000000'}
-            onPrimaryColor={isDark ? '#000000' : '#ffffff'}
-            loading={isLoading}
-          />
-
           {/* Error Message Toast */}
           {errorMessage && (
             <View style={styles.errorToast}>
@@ -552,14 +505,24 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
             </View>
           )}
 
-          {/* Biometrics Button */}
+          {/* Primary CTA Button: Pure White Pill */}
+          <AnimatedPrimaryButton
+            onPress={handleUnlock}
+            disabled={false}
+            label={isRecoveryMode ? 'Restore Vault' : 'Unlock Vault'}
+            primaryColor={isDark ? '#ffffff' : '#000000'}
+            onPrimaryColor={isDark ? '#000000' : '#ffffff'}
+            loading={isLoading}
+          />
+
+          {/* Biometrics Secondary Button */}
           {!isRecoveryMode && (
             <TouchableOpacity
               style={[
                 styles.biometricBtn,
                 {
-                  backgroundColor: isDark ? '#27272a' : '#f4f4f5',
-                  borderColor: isDark ? '#3f3f46' : '#e4e4e7',
+                  backgroundColor: isDark ? '#1a1a1e' : '#f4f4f5',
+                  borderColor: isDark ? '#2e2e33' : '#e4e4e7',
                 },
               ]}
               onPress={handleBiometricUnlock}
@@ -579,7 +542,7 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
           )}
         </Animated.View>
 
-        {/* ── Footer Links ── */}
+        {/* ── Footer Links (Streamlined & Clean) ── */}
         <View style={styles.footerLinks}>
           <TouchableOpacity
             style={styles.linkBtn}
@@ -587,12 +550,13 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
             onPress={() => {
               triggerLightHaptic();
               setIsRecoveryMode((v) => !v);
+              setErrorMessage(null);
             }}
           >
             <Text style={[styles.linkText, { color: colors.text }]}>
               {isRecoveryMode
                 ? 'Back to Master Password'
-                : 'Lost password? Use Recovery Phrase'}
+                : 'Restore with Recovery Phrase'}
             </Text>
           </TouchableOpacity>
 
@@ -603,24 +567,10 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
               onPress={handleResetVault}
             >
               <Text style={[styles.dimLinkText, { color: colors.textMuted }]}>
-                Forgot Password?{' '}
-                <Text style={{ color: colors.text, fontWeight: '700' }}>Reset Vault</Text>
+                Reset Vault
               </Text>
             </TouchableOpacity>
           )}
-
-          <TouchableOpacity
-            style={styles.linkBtn}
-            hitSlop={HIT_SLOP}
-            onPress={() => {
-              triggerLightHaptic();
-              onGoToSetup();
-            }}
-          >
-            <Text style={[styles.dimLinkText, { color: colors.textMuted }]}>
-              + Create New Vault
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -646,18 +596,16 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxl,
   },
-  header: { alignItems: 'center', marginBottom: spacing.lg },
-  badge: {
-    borderWidth: 1,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    marginBottom: spacing.sm,
-    marginTop: spacing.md,
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
-  badgeText: { fontFamily: 'Inter', fontSize: 12, fontWeight: '600', letterSpacing: 0.3 },
+  logoContainer: {
+    marginBottom: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: {
     fontFamily: 'Inter',
     fontSize: 28,
@@ -666,68 +614,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
-  vaultIdentityCard: {
+  vaultPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    marginBottom: spacing.md,
-  },
-  vaultIdentityLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
-  },
-  vaultAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  vaultAvatarText: {
-    fontFamily: 'Inter',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  vaultTextGroup: {
-    flex: 1,
-  },
-  vaultUnlockingLabel: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    fontWeight: '500',
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  },
-  vaultNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  vaultNameText: {
-    fontFamily: 'Inter',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  switchVaultButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: radii.pill,
     borderWidth: 1,
+    marginTop: 4,
   },
-  switchVaultButtonText: {
+  vaultPillText: {
     fontFamily: 'Inter',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
+    letterSpacing: -0.1,
   },
   subtitle: {
     fontFamily: 'Inter',
@@ -735,19 +635,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: spacing.md,
     lineHeight: 19,
+    marginTop: spacing.xs,
   },
-  glassCard: {
+  card: {
     width: '100%',
     borderRadius: 24,
     padding: spacing.lg,
-    marginBottom: spacing.md,
     borderWidth: 1,
   },
   inputShell: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: radii.lg,
-    borderWidth: 1,
+    borderWidth: 1.2,
     minHeight: 52,
     overflow: 'hidden',
   },
@@ -826,13 +726,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.2,
   },
-  footerLinks: { alignItems: 'center', gap: spacing.xs },
+  footerLinks: {
+    alignItems: 'center',
+    marginTop: spacing.xl,
+    gap: 2,
+  },
   linkBtn: {
     minHeight: layout.minTouchTarget,
     paddingVertical: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  linkText: { fontFamily: 'Inter', fontSize: 14, fontWeight: '600' },
-  dimLinkText: { fontFamily: 'Inter', fontSize: 13, fontWeight: '600' },
+  linkText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  dimLinkText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+  },
 });

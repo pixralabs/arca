@@ -78,7 +78,7 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
 
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <KeyboardAvoidingView

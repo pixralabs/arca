@@ -191,7 +191,7 @@ function App() {
           backgroundColor="transparent"
         />
         <SafeAreaView
-          edges={['top', 'bottom']}
+          edges={['top']}
           style={[styles.container, { backgroundColor: colors.background }]}
         >
           {deviceCompromised && (

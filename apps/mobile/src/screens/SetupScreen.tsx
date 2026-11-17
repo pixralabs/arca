@@ -237,7 +237,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
 
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.flex, { backgroundColor: colors.background }]}
     >
       <StatusBar

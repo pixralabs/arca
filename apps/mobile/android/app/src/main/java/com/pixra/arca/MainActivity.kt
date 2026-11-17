@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.Window
 import android.view.WindowManager
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -19,6 +20,8 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate
  * Security Hardening & Edge-to-Edge:
  * - Completely transparent status bar and navigation bar with NO dark contrast scrims
  *   (enforceNavigationBarContrast = false) for seamless edge-to-edge floating gesture controls.
+ * - SystemBarStyle.dark(Color.TRANSPARENT) explicitly passed to enableEdgeToEdge() to eliminate
+ *   the default 0x801b1b1b AndroidX dark grey scrim behind the navigation bar.
  * - Enforces zero-flash splash loading via installSplashScreen().
  */
 class MainActivity : ReactActivity() {
@@ -28,7 +31,10 @@ class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     requestWindowFeature(Window.FEATURE_NO_TITLE)
     actionBar?.hide()
-    enableEdgeToEdge()
+    enableEdgeToEdge(
+      statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+      navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+    )
     installSplashScreen()
 
     window?.let { win ->
@@ -58,6 +64,20 @@ class MainActivity : ReactActivity() {
       }
       // FLAG_SECURE disabled to allow screenshots for user feedback and UI review
       win.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    }
+  }
+
+  override fun onWindowFocusChanged(hasFocus: Boolean) {
+    super.onWindowFocusChanged(hasFocus)
+    if (hasFocus) {
+      window?.let { win ->
+        win.statusBarColor = Color.TRANSPARENT
+        win.navigationBarColor = Color.TRANSPARENT
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+          win.isNavigationBarContrastEnforced = false
+          win.isStatusBarContrastEnforced = false
+        }
+      }
     }
   }
 
