@@ -25,21 +25,15 @@ class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     installSplashScreen()
-    // Enable FLAG_SECURE prior to super.onCreate to block screenshots, screen recording,
-    // and Android Recents thumbnail capture from frame 0.
-    window?.setFlags(
-      WindowManager.LayoutParams.FLAG_SECURE,
-      WindowManager.LayoutParams.FLAG_SECURE
-    )
+    // FLAG_SECURE disabled to allow screenshots for user feedback and UI review
+    window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
     super.onCreate(null)
   }
 
   override fun onResume() {
     super.onResume()
-    window?.setFlags(
-      WindowManager.LayoutParams.FLAG_SECURE,
-      WindowManager.LayoutParams.FLAG_SECURE
-    )
+    // FLAG_SECURE disabled to allow screenshots for user feedback and UI review
+    window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
   }
 
   override fun createReactActivityDelegate(): ReactActivityDelegate =

@@ -43,14 +43,8 @@ class ArcaSecurityModule(private val reactContext: ReactApplicationContext) :
   fun setFlagSecure(enabled: Boolean) {
     val activity = reactContext.currentActivity ?: return
     activity.runOnUiThread {
-      if (enabled) {
-        activity.window?.setFlags(
-          WindowManager.LayoutParams.FLAG_SECURE,
-          WindowManager.LayoutParams.FLAG_SECURE
-        )
-      } else {
-        activity.window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-      }
+      // Clear FLAG_SECURE to permit screenshots and screen recording for user testing & feedback
+      activity.window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
   }
 
