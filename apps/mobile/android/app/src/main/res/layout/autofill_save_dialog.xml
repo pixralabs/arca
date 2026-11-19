@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/autofill_dialog_background"
+    android:padding="24dp">
+
+    <!-- Header with Arca Logo & Title -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_launcher_monochrome"
+            android:contentDescription="Arca" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="Save to Arca Vault"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Arca detected new account credentials. Save them encrypted to your vault?"
+        android:textSize="13sp"
+        android:textColor="#A1A1AA"
+        android:lineSpacingExtra="2dp" />
+
+    <!-- Details Card -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="vertical"
+        android:background="@drawable/autofill_chip_background"
+        android:padding="16dp">
+
+        <TextView
+            android:text="SERVICE / APP"
+            android:textSize="10sp"
+            android:textColor="#71717A"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/save_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#27272A"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:text="USERNAME / EMAIL"
+            android:textSize="10sp"
+            android:textColor="#71717A"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/save_username"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="14sp"
+            android:textColor="#E4E4E7" />
+    </LinearLayout>
+
+    <!-- Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/btn_save_confirm"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Save to Arca"
+            android:textAllCaps="false"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:backgroundTint="#FFFFFF" />
+
+        <Button
+            android:id="@+id/btn_save_cancel"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:text="Not Now"
+            android:textAllCaps="false"
+            android:textSize="14sp"
+            android:textColor="#A1A1AA"
+            style="@android:style/Widget.Material.Button.Borderless" />
+    </LinearLayout>
+
+</LinearLayout>
+

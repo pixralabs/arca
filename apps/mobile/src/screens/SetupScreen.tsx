@@ -516,7 +516,7 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
           }}
         >
           <Text style={[styles.linkText, { color: colors.textMuted }]}>
-            {existingVaults.length > 0 ? '← Back to Existing Vaults' : 'Already have a vault? Unlock'}
+            {existingVaults.length > 0 ? '← Back to Existing Vaults' : 'Already have a vault? Unlock or Restore from Cloud'}
           </Text>
         </TouchableOpacity>
       </ScrollView>

@@ -117,6 +117,10 @@ export function getActiveSession(): MobileSession | null {
 export function clearActiveSession(): void {
   abortBackgroundDecryption();
   decryptedItemCache.clear();
+  try {
+    const { NativeModules } = require('react-native');
+    NativeModules.ArcaAutofillModule?.clearAutofillDek();
+  } catch {}
   for (const cb of onClearSessionCallbacks) {
     try {
       cb();
@@ -201,6 +205,10 @@ export async function enrollBiometricDekForActiveSession(): Promise<boolean> {
   const sodium = getSodium();
   await sodium.ready;
   const dekHex = sodium.to_hex(activeSession.dek);
+  try {
+    const { NativeModules } = require('react-native');
+    NativeModules.ArcaAutofillModule?.setAutofillDek(dekHex);
+  } catch {}
   return storeBiometricSlotKey(dekHex, activeSession.vaultId);
 }
 
@@ -376,6 +384,10 @@ export async function mobileUnlockWithBiometrics(
       throw new VaultGuardError(ERR_VAULT_CORRUPTED);
     }
     await AsyncStorage.setItem('@arca_active_vault_id', vaultId).catch(() => {});
+    try {
+      const { NativeModules } = require('react-native');
+      NativeModules.ArcaAutofillModule?.setAutofillDek(unwrappedHexOrKey.trim());
+    } catch {}
     activeSession = {
       dek,
       header,
@@ -455,6 +467,12 @@ export async function mobileSaveItem(
   };
 
   await saveVaultItem(stored);
+
+  // Background Auto-Sync to Cloud Backup
+  try {
+    const { cloudBackupService } = require('../services/CloudBackupService');
+    void cloudBackupService.autoSyncItem(stored, activeSession.dek).catch(() => {});
+  } catch {}
 
   // Cache in volatile memory immediately
   decryptedItemCache.set(itemId, {

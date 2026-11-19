@@ -4,7 +4,7 @@
  * Opt-In Cloud Sync Toggle, SAS Verification, Active Device Revocation, and Danger Zone Delete.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   TextInput,
   Modal,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
@@ -35,6 +36,12 @@ import {
   ScanLine,
   CheckCircle2,
   ShieldCheck,
+  KeyRound,
+  Sparkles,
+  Cloud,
+  CloudUpload,
+  RefreshCw,
+  Server,
 } from 'lucide-react-native';
 import {
   useTheme,
@@ -52,12 +59,14 @@ import {
 import { purgeAllVaultData } from '../storage/db';
 import {
   clearActiveSession,
+  getActiveSession,
   createDevicePairingQrPayload,
   signAndApproveScannedPairingQr,
   QrSyncChallengePayload,
 } from '../crypto/mobileCrypto';
 import { clearBiometricSlotKey } from '../crypto/keychain';
 import { QrScannerModal } from '../components/QrScannerModal';
+import { cloudBackupService, CloudStatusInfo } from '../services/CloudBackupService';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -137,6 +146,40 @@ export function SettingsScreen({
   const [pairedSuccessDevice, setPairedSuccessDevice] =
     useState<QrSyncChallengePayload | null>(null);
 
+  // Native Android Autofill Service State
+  const [autofillEnabled, setAutofillEnabled] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkAutofill = async () => {
+      try {
+        const { NativeModules, Platform } = require('react-native');
+        if (Platform.OS === 'android' && NativeModules.ArcaAutofillModule) {
+          const enabled = await NativeModules.ArcaAutofillModule.isAutofillEnabled();
+          if (isMounted) setAutofillEnabled(Boolean(enabled));
+        }
+      } catch {}
+    };
+    checkAutofill();
+    const interval = setInterval(checkAutofill, 2000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const handleOpenAutofillSettings = async () => {
+    triggerLightHaptic();
+    try {
+      const { NativeModules, Platform } = require('react-native');
+      if (Platform.OS === 'android' && NativeModules.ArcaAutofillModule) {
+        await NativeModules.ArcaAutofillModule.openAutofillSettings();
+      }
+    } catch (e) {
+      console.warn('Failed to open autofill settings:', e);
+    }
+  };
+
   const successBadgeScale = useSharedValue(0.5);
   const animatedSuccessStyle = useAnimatedStyle(() => ({
     transform: [{ scale: successBadgeScale.value }],
@@ -189,14 +232,85 @@ export function SettingsScreen({
     }
   };
 
+  // Automated Cloud Backup State (Render + Supabase)
+  const [cloudInfo, setCloudInfo] = useState<CloudStatusInfo>({
+    enabled: false,
+    status: 'disabled',
+    lastSyncTime: null,
+    accountId: null,
+  });
+  const [isCloudLoading, setIsCloudLoading] = useState(false);
+
+  useEffect(() => {
+    const unsub = cloudBackupService.subscribe((info) => {
+      setCloudInfo(info);
+      setSyncEnabled(info.enabled);
+      setSyncStatus(
+        info.enabled
+          ? `Automated Zero-Knowledge Cloud Backup Active · PostgreSQL Relay (Render)`
+          : `100% Local Mode (SQLite Only · Zero Network)`
+      );
+    });
+    return unsub;
+  }, []);
+
+  const handleActivateCloudBackup = async () => {
+    triggerLightHaptic();
+    const session = getActiveSession();
+    if (!session) {
+      Alert.alert('Session Locked', 'Please unlock your vault before activating backup.');
+      return;
+    }
+    setIsCloudLoading(true);
+    try {
+      const headerStr = JSON.stringify(session.header);
+      const res = await cloudBackupService.enableCloudBackup(session.dek, headerStr);
+      if (res.success) {
+        triggerSuccessHaptic();
+        Alert.alert(
+          'Cloud Backup Active',
+          `Your vault is now backed up securely to the cloud (${res.itemsSynced} items synced).\n\nIf you ever delete the app or switch devices, your passwords will restore automatically.`
+        );
+      } else {
+        triggerErrorHaptic();
+        Alert.alert('Backup Error', res.error || 'Failed to activate cloud backup');
+      }
+    } catch (e: any) {
+      triggerErrorHaptic();
+      Alert.alert('Backup Error', e?.message || 'Failed to activate cloud backup');
+    } finally {
+      setIsCloudLoading(false);
+    }
+  };
+
+  const handleBackupNow = async () => {
+    triggerLightHaptic();
+    const session = getActiveSession();
+    if (!session) {
+      Alert.alert('Session Locked', 'Please unlock your vault before running sync.');
+      return;
+    }
+    setIsCloudLoading(true);
+    try {
+      const count = await cloudBackupService.pushAllLocalItems(session.dek);
+      triggerSuccessHaptic();
+      Alert.alert('Vault Synced', `Successfully backed up ${count} items to the secure cloud.`);
+    } catch (e: any) {
+      triggerErrorHaptic();
+      Alert.alert('Sync Error', e?.message || 'Could not sync vault to cloud');
+    } finally {
+      setIsCloudLoading(false);
+    }
+  };
+
   const handleToggleSync = (enabled: boolean) => {
     triggerLightHaptic();
-    setSyncEnabled(enabled);
-    setSyncStatus(
-      enabled
-        ? 'Opt-In Cloud Sync Active · Encrypted Blobs Synced via PostgreSQL Relay'
-        : '100% Local Mode (SQLite Only · Zero Network)'
-    );
+    if (enabled) {
+      handleActivateCloudBackup();
+    } else {
+      setSyncEnabled(false);
+      setSyncStatus('100% Local Mode (SQLite Only · Zero Network)');
+    }
   };
 
   const handleRevokeDevice = (targetDeviceId: string) => {
@@ -280,6 +394,81 @@ export function SettingsScreen({
               Settings
             </Text>
             <View style={{ width: layout.minTouchTarget }} />
+          </View>
+
+          {/* ── 1-Tap Native Autofill Section ── */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+              System Autofill Service
+            </Text>
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: autofillEnabled ? colors.border : colors.primaryBorderGlow,
+                  borderWidth: 1,
+                },
+              ]}
+            >
+              <View style={styles.rowBetween}>
+                <View style={{ flex: 1, paddingRight: spacing.sm }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                    <KeyRound size={17} color={colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={[styles.cardValue, { color: colors.textHeading, marginBottom: 0 }]}>
+                      1-Tap Login & Autofill
+                    </Text>
+                  </View>
+                  <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
+                    Autofill passwords, logins, and generate strong passwords seamlessly across Chrome, Google, and all Android apps.
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.sasPill,
+                    {
+                      backgroundColor: autofillEnabled ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                      borderColor: autofillEnabled ? 'rgba(16, 185, 129, 0.4)' : 'rgba(99, 102, 241, 0.4)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.sasPillText,
+                      { color: autofillEnabled ? '#10B981' : colors.primary },
+                    ]}
+                  >
+                    {autofillEnabled ? 'Active' : 'Setup'}
+                  </Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.primaryPillButton,
+                  {
+                    backgroundColor: autofillEnabled ? colors.surfaceSubtle : colors.primary,
+                    borderColor: autofillEnabled ? colors.border : colors.primary,
+                    borderWidth: 1,
+                    marginTop: spacing.md,
+                  },
+                ]}
+                hitSlop={HIT_SLOP}
+                activeOpacity={0.85}
+                onPress={handleOpenAutofillSettings}
+              >
+                <Sparkles size={17} color={autofillEnabled ? colors.text : colors.onPrimary} />
+                <Text
+                  style={[
+                    styles.primaryPillButtonText,
+                    { color: autofillEnabled ? colors.text : colors.onPrimary },
+                  ]}
+                >
+                  {autofillEnabled ? 'Manage Autofill Provider' : 'Enable 1-Tap Autofill'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* ── Frictionless QR Device Pairing Section ── */}
@@ -438,35 +627,192 @@ export function SettingsScreen({
             </View>
           </View>
 
-          {/* ── Cloud Sync Section ── */}
+          {/* ── Zero-Knowledge Cloud Backup Section (Render + Supabase) ── */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-              Cloud Sync (Opt-In Only)
+              Automated Zero-Knowledge Cloud Backup
             </Text>
-            <View style={[styles.card, { backgroundColor: colors.surface }]}>
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: cloudInfo.enabled ? colors.border : colors.primaryBorderGlow,
+                  borderWidth: 1,
+                },
+              ]}
+            >
               <View style={styles.rowBetween}>
-                <View style={{ flex: 1, paddingRight: spacing.md }}>
-                  <Text style={[styles.cardValue, { color: colors.textHeading }]}>
-                    Enable Cloud Sync
-                  </Text>
+                <View style={{ flex: 1, paddingRight: spacing.sm }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                    <Cloud size={18} color={colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={[styles.cardValue, { color: colors.textHeading, marginBottom: 0 }]}>
+                      Automated Cloud Backup
+                    </Text>
+                  </View>
                   <Text style={[styles.cardLabel, { color: colors.textMuted }]}>
-                    Default is 100% Local SQLite. When enabled, encrypted blobs sync via the Rust Relay.
+                    Zero-Knowledge backup to Render & Supabase. Even if you uninstall Arca or switch phones, your vault restores instantly with your Master Password or 24-Word Recovery Phrase.
                   </Text>
                 </View>
-                <Switch
-                  value={syncEnabled}
-                  onValueChange={handleToggleSync}
-                  trackColor={{
-                    false: colors.surfaceSubtle,
-                    true: colors.primary,
-                  }}
-                  thumbColor={colors.onPrimary}
-                />
+
+                {/* Cloud Status Indicator Pill */}
+                <View
+                  style={[
+                    styles.sasPill,
+                    {
+                      backgroundColor:
+                        cloudInfo.enabled && cloudInfo.status === 'synced'
+                          ? 'rgba(16, 185, 129, 0.15)'
+                          : cloudInfo.status === 'syncing'
+                          ? 'rgba(245, 158, 11, 0.15)'
+                          : cloudInfo.status === 'offline'
+                          ? 'rgba(239, 68, 68, 0.15)'
+                          : colors.surfaceSubtle,
+                      borderColor:
+                        cloudInfo.enabled && cloudInfo.status === 'synced'
+                          ? 'rgba(16, 185, 129, 0.4)'
+                          : cloudInfo.status === 'syncing'
+                          ? 'rgba(245, 158, 11, 0.4)'
+                          : cloudInfo.status === 'offline'
+                          ? 'rgba(239, 68, 68, 0.4)'
+                          : colors.border,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                    },
+                  ]}
+                >
+                  <View
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: 4,
+                      backgroundColor:
+                        cloudInfo.enabled && cloudInfo.status === 'synced'
+                          ? '#10B981'
+                          : cloudInfo.status === 'syncing'
+                          ? '#F59E0B'
+                          : cloudInfo.status === 'offline'
+                          ? '#EF4444'
+                          : colors.textMuted,
+                    }}
+                  />
+                  <Text
+                    style={[
+                      styles.sasPillText,
+                      {
+                        color:
+                          cloudInfo.enabled && cloudInfo.status === 'synced'
+                            ? '#10B981'
+                            : cloudInfo.status === 'syncing'
+                            ? '#F59E0B'
+                            : cloudInfo.status === 'offline'
+                            ? '#EF4444'
+                            : colors.textMuted,
+                        fontSize: 11,
+                      },
+                    ]}
+                  >
+                    {cloudInfo.enabled && cloudInfo.status === 'synced'
+                      ? 'Synced'
+                      : cloudInfo.status === 'syncing'
+                      ? 'Syncing...'
+                      : cloudInfo.status === 'offline'
+                      ? 'Offline'
+                      : 'Disabled'}
+                  </Text>
+                </View>
               </View>
-              <View style={[styles.divider, { backgroundColor: colors.border }]} />
-              <Text style={[styles.cardStatus, { color: colors.primary }]}>
-                {syncStatus}
-              </Text>
+
+              {/* Status details & metrics */}
+              {cloudInfo.enabled && (
+                <View
+                  style={{
+                    backgroundColor: colors.surfaceSubtle,
+                    borderRadius: radii.md,
+                    padding: spacing.sm,
+                    marginTop: spacing.md,
+                    gap: 4,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 11, color: colors.textDim }}>Cloud Relay</Text>
+                    <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+                      arca-rc8v.onrender.com (Supabase)
+                    </Text>
+                  </View>
+                  {cloudInfo.accountId && (
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 11, color: colors.textDim }}>Account ID</Text>
+                      <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'monospace' }}>
+                        {cloudInfo.accountId.slice(0, 12)}...
+                      </Text>
+                    </View>
+                  )}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 11, color: colors.textDim }}>Last Cloud Sync</Text>
+                    <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                      {cloudInfo.lastSyncTime
+                        ? new Date(cloudInfo.lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : 'Just now'}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Action Buttons */}
+              {!cloudInfo.enabled ? (
+                <TouchableOpacity
+                  style={[
+                    styles.primaryPillButton,
+                    {
+                      backgroundColor: colors.primary,
+                      borderColor: colors.primary,
+                      marginTop: spacing.md,
+                    },
+                  ]}
+                  hitSlop={HIT_SLOP}
+                  activeOpacity={0.85}
+                  disabled={isCloudLoading}
+                  onPress={handleActivateCloudBackup}
+                >
+                  {isCloudLoading ? (
+                    <ActivityIndicator size="small" color={colors.onPrimary} />
+                  ) : (
+                    <CloudUpload size={17} color={colors.onPrimary} />
+                  )}
+                  <Text style={[styles.primaryPillButtonText, { color: colors.onPrimary }]}>
+                    {isCloudLoading ? 'Activating Cloud Backup...' : 'Secure Cloud Backup'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.primaryPillButton,
+                      {
+                        backgroundColor: colors.surfaceSubtle,
+                        borderColor: colors.border,
+                        borderWidth: 1,
+                        flex: 1,
+                      },
+                    ]}
+                    hitSlop={HIT_SLOP}
+                    activeOpacity={0.85}
+                    disabled={isCloudLoading}
+                    onPress={handleBackupNow}
+                  >
+                    {isCloudLoading ? (
+                      <ActivityIndicator size="small" color={colors.text} />
+                    ) : (
+                      <RefreshCw size={15} color={colors.text} />
+                    )}
+                    <Text style={[styles.primaryPillButtonText, { color: colors.text }]}>
+                      {isCloudLoading ? 'Syncing...' : 'Backup Now'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
 

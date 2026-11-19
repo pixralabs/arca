@@ -237,11 +237,29 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
     await yieldToMainThread(16);
 
     try {
+      let session: any;
       if (isRecoveryMode) {
-        await mobileUnlockWithRecovery(recoveryPhrase.trim(), activeVault?.id);
+        session = await mobileUnlockWithRecovery(recoveryPhrase.trim(), activeVault?.id);
       } else {
-        await mobileUnlockVault(password, activeVault?.id);
+        session = await mobileUnlockVault(password, activeVault?.id);
       }
+
+      // Seamless Cloud Disaster Recovery: If local items are empty (e.g. freshly reinstalled),
+      // automatically pull all items from the Zero-Knowledge Cloud Relay!
+      try {
+        const { getAllVaultItems } = require('../storage/db');
+        const localItems = await getAllVaultItems(true);
+        if (localItems.length === 0 && session?.dek) {
+          const { cloudBackupService } = require('../services/CloudBackupService');
+          await cloudBackupService.restoreFromCloud(
+            session.dek,
+            isRecoveryMode ? recoveryPhrase.trim() : undefined
+          );
+        }
+      } catch (cloudErr) {
+        console.warn('[UnlockScreen] Cloud auto-restore notice:', cloudErr);
+      }
+
       triggerSuccessHaptic();
       onUnlocked();
     } catch (err: any) {
