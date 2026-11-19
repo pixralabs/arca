@@ -27,6 +27,7 @@ import Animated, {
 import { Eye, EyeOff, Sparkles, ArrowLeft } from 'lucide-react-native';
 import {
   useTheme,
+  useKeyboardHeight,
   spacing,
   radii,
   layout,
@@ -106,6 +107,8 @@ function AnimatedPrimaryButton({
 export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const { keyboardHeight } = useKeyboardHeight();
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [existingVaults, setExistingVaults] = useState<VaultRecord[]>([]);
   const [vaultName, setVaultName] = useState('Personal Vault');
@@ -245,15 +248,16 @@ export function SetupScreen({ onVaultCreated, onGoToUnlock }: SetupScreenProps) 
       />
 
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={[
           styles.scrollContent,
           {
             paddingTop: insets.top + spacing.lg,
-            paddingBottom: insets.bottom + spacing.xl,
+            paddingBottom: keyboardHeight > 0 ? keyboardHeight + 60 : insets.bottom + spacing.xl,
           },
         ]}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="none"
+        keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
         {/* Top Back Button if existing vaults are present */}

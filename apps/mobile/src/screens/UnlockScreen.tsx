@@ -39,6 +39,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { VaultSwitcherModal } from '../components/VaultSwitcherModal';
 import {
   useTheme,
+  useKeyboardHeight,
   spacing,
   radii,
   layout,
@@ -134,6 +135,8 @@ function AnimatedPrimaryButton({
 export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const { keyboardHeight } = useKeyboardHeight();
+  const scrollViewRef = useRef<ScrollView>(null);
   const [vaults, setVaults] = useState<VaultRecord[]>([]);
   const [activeVault, setActiveVault] = useState<VaultRecord | null>(null);
   const [showSwitchSheet, setShowSwitchSheet] = useState(false);
@@ -349,15 +352,16 @@ export function UnlockScreen({ onUnlocked, onGoToSetup }: UnlockScreenProps) {
       />
 
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={[
           styles.scrollContent,
           {
             paddingTop: insets.top + spacing.lg,
-            paddingBottom: insets.bottom + spacing.xl,
+            paddingBottom: keyboardHeight > 0 ? keyboardHeight + 60 : insets.bottom + spacing.xl,
           },
         ]}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="none"
+        keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
         {/* ── Brand & Screen Title ── */}

@@ -21,6 +21,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   useTheme,
+  useKeyboardHeight,
   spacing,
   radii,
   layout,
@@ -39,6 +40,7 @@ interface ShareScreenProps {
 export function ShareScreen({ onBack }: ShareScreenProps) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const { keyboardHeight } = useKeyboardHeight();
   const [secretText, setSecretText] = useState('');
   const [expiryHours] = useState('24');
   const [loading, setLoading] = useState(false);
@@ -113,8 +115,12 @@ export function ShareScreen({ onBack }: ShareScreenProps) {
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 40 : spacing.xl },
+          ]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           {loading ? (

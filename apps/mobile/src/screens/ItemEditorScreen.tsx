@@ -17,6 +17,7 @@ import {
 import { QrCode, ShieldCheck, CheckCircle2 } from 'lucide-react-native';
 import {
   useTheme,
+  useKeyboardHeight,
   spacing,
   radii,
   layout,
@@ -55,6 +56,7 @@ export function ItemEditorScreen({
   onSaved,
 }: ItemEditorScreenProps) {
   const { colors } = useTheme();
+  const { keyboardHeight } = useKeyboardHeight();
 
   const [title, setTitle] = useState(__DEV__ ? 'GitHub' : '');
   const [username, setUsername] = useState(__DEV__ ? 'octocat@github.com' : '');
@@ -225,7 +227,11 @@ export function ItemEditorScreen({
 
         <ScrollView
           style={styles.sheetScrollForm}
+          contentContainerStyle={{
+            paddingBottom: keyboardHeight > 0 ? keyboardHeight + 80 : 120,
+          }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           {/* Prominent Camera TOTP QR Scanner CTA */}

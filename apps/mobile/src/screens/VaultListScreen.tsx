@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
 import {
   useTheme,
+  useKeyboardHeight,
   spacing,
   radii,
   layout,
@@ -95,6 +96,7 @@ export function VaultListScreen({
 }: VaultListScreenProps) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const { keyboardHeight } = useKeyboardHeight();
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [searchFocused, setSearchFocused] = useState(false);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
@@ -391,8 +393,12 @@ export function VaultListScreen({
         <FlatList
           data={filteredItems}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 40 : insets.bottom + spacing.xxl },
+          ]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           renderItem={({ item }) => {
             const securityReasons = securityFindingsMap.get(item.id);
             const hasTotp = isTotpItem(item);

@@ -5,7 +5,7 @@
  * proper touch targets (hitSlop), 60fps react-native-reanimated transitions, and haptics.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   useColorScheme,
   View,
@@ -18,6 +18,7 @@ import {
   StatusBar,
   ViewStyle,
   StyleProp,
+  Keyboard,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -349,6 +350,44 @@ export function useTheme(): ThemeContextValue {
     layout,
     hitSlop: HIT_SLOP,
   };
+}
+
+/**
+ * Universal Hook to track keyboard height and visibility.
+ * Listens to native keyboard events and provides accurate keyboard displacement
+ * for scroll views and input forms on Android edge-to-edge screens.
+ */
+export function useKeyboardHeight(): {
+  keyboardHeight: number;
+  keyboardVisible: boolean;
+} {
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow';
+    const hideEvent = Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardVisible(true);
+      const h = e?.endCoordinates?.height ?? 0;
+      if (h > 0) {
+        setKeyboardHeight(h);
+      }
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false);
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  return { keyboardHeight, keyboardVisible };
 }
 
 export type HapticFeedbackType =

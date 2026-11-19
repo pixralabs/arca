@@ -35,6 +35,7 @@ import {
 } from 'lucide-react-native';
 import {
   useTheme,
+  useKeyboardHeight,
   spacing,
   radii,
   layout,
@@ -70,7 +71,9 @@ export function RecoveryKitScreen({
 }: RecoveryKitScreenProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { keyboardHeight } = useKeyboardHeight();
   const viewShotRef = useRef<ViewShot>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [shares, setShares] = useState<ShamirShareCardData[]>([]);
   const [exportedUri, setExportedUri] = useState<string | null>(null);
@@ -180,11 +183,16 @@ export function RecoveryKitScreen({
     >
       <AnimatedScreen style={{ flex: 1 }}>
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingTop: getSafeTopPadding(12) },
+            {
+              paddingTop: getSafeTopPadding(12),
+              paddingBottom: keyboardHeight > 0 ? keyboardHeight + 80 : insets.bottom + spacing.xxl,
+            },
           ]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           {/* Header Badge */}
@@ -378,6 +386,9 @@ export function RecoveryKitScreen({
               onPress={() => {
                 triggerLightHaptic();
                 setShowQuizModal(true);
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 150);
               }}
             >
               <ShieldCheck size={19} color={colors.onPrimary} />
@@ -430,8 +441,20 @@ export function RecoveryKitScreen({
                       next[idx] = val;
                       setQuizAnswers(next);
                     }}
+                    onFocus={() => {
+                      setTimeout(() => {
+                        scrollViewRef.current?.scrollToEnd({ animated: true });
+                      }, 100);
+                    }}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    spellCheck={false}
+                    returnKeyType={idx === 2 ? 'done' : 'next'}
+                    onSubmitEditing={() => {
+                      if (idx === 2) {
+                        handleVerifyQuiz();
+                      }
+                    }}
                   />
                 </View>
               ))}
