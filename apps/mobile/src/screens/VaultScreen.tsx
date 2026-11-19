@@ -24,8 +24,10 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
   interpolate,
   Extrapolation,
+  useAnimatedKeyboard,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -128,24 +130,47 @@ export function VaultScreen({
   const cancelDecryptionRef = useRef<(() => void) | null>(null);
   const batchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingBatchRef = useRef<MobileVaultItem[]>([]);
+  const searchInputRef = useRef<TextInput>(null);
+
+  // Real-time hardware-synced animated keyboard
+  const keyboard = useAnimatedKeyboard({
+    isStatusBarTranslucentAndroid: true,
+    isNavigationBarTranslucentAndroid: true,
+  });
+
+  // Fallback keyboard height from React Native Keyboard events
+  const fallbackKeyboardHeight = useSharedValue(0);
 
   // Smooth Reanimated Spring Physics for Floating Search & Collapsing Plus Button
   const searchFocusAnim = useSharedValue(0);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow',
-      () => setKeyboardVisible(true)
-    );
-    const hideSub = Keyboard.addListener(
-      Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide',
-      () => setKeyboardVisible(false)
-    );
+    const showEvent = Platform.OS === 'android' ? 'keyboardDidShow' : 'keyboardWillShow';
+    const hideEvent = Platform.OS === 'android' ? 'keyboardDidHide' : 'keyboardWillHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardVisible(true);
+      const h = e?.endCoordinates?.height ?? 0;
+      if (h > 0) {
+        fallbackKeyboardHeight.value = withTiming(h, { duration: 180 });
+      }
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false);
+      fallbackKeyboardHeight.value = withTiming(0, { duration: 180 });
+      if (search.trim().length === 0) {
+        setSearchFocused(false);
+        searchFocusAnim.value = withSpring(0, { damping: 20, stiffness: 220 });
+        searchInputRef.current?.blur();
+      }
+    });
+
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, []);
+  }, [search]);
 
   const handleSearchFocus = () => {
     setSearchFocused(true);
@@ -153,9 +178,23 @@ export function VaultScreen({
   };
 
   const handleSearchBlur = () => {
-    setSearchFocused(false);
-    searchFocusAnim.value = withSpring(0, { damping: 20, stiffness: 220 });
+    if (search.trim().length === 0) {
+      setSearchFocused(false);
+      searchFocusAnim.value = withSpring(0, { damping: 20, stiffness: 220 });
+    }
   };
+
+  const animatedBottomBarContainerStyle = useAnimatedStyle(() => {
+    const fallbackWithNav = fallbackKeyboardHeight.value > 0
+      ? fallbackKeyboardHeight.value + insets.bottom
+      : 0;
+    const kbHeight = Math.max(keyboard.height.value, fallbackWithNav);
+    const defaultBottom = Math.max(insets.bottom, 12) + 6;
+
+    return {
+      bottom: kbHeight > 0 ? kbHeight + 12 : defaultBottom,
+    };
+  });
 
   const animatedPlusStyle = useAnimatedStyle(() => {
     const p = searchFocusAnim.value;
@@ -604,7 +643,11 @@ export function VaultScreen({
               key="search-results-list"
               data={searchResults}
               keyExtractor={(item: MobileVaultItem) => item.id}
-              contentContainerStyle={styles.searchListContent}
+              contentContainerStyle={[
+                styles.searchListContent,
+                { paddingBottom: keyboardVisible ? 380 : 120 },
+              ]}
+              keyboardDismissMode="on-drag"
               keyboardShouldPersistTaps="handled"
               renderItem={({ item }: { item: MobileVaultItem }) => {
                 const hasTotp = isTotpItem(item);
@@ -720,6 +763,8 @@ export function VaultScreen({
               keyExtractor={(tile: CategoryTileItem) => tile.id}
               columnWrapperStyle={styles.gridColumnWrapper}
               contentContainerStyle={styles.gridContentContainer}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item: tile }: { item: CategoryTileItem }) => (
                 <TouchableOpacity
                   style={[
@@ -793,13 +838,11 @@ export function VaultScreen({
 
       {/* Persistent Floating Bottom Bar (Hidden when bottom sheets/modals are open) */}
       {!showMenuSheet && !showAddSheet && !showImportSheet && (
-        <View
+        <Animated.View
           pointerEvents="box-none"
           style={[
             styles.bottomBarContainer,
-            {
-              bottom: keyboardVisible ? 12 : Math.max(insets.bottom, 12) + 6,
-            },
+            animatedBottomBarContainerStyle,
           ]}
         >
           <View
@@ -816,6 +859,7 @@ export function VaultScreen({
           >
             <Search size={18} color={isDark ? '#a1a1aa' : '#71717a'} style={styles.bottomSearchIcon} />
             <TextInput
+              ref={searchInputRef}
               collapsable={false}
               style={[styles.bottomSearchInput, { color: isDark ? '#ffffff' : '#000000' }]}
               placeholder="Search passwords..."
@@ -824,7 +868,11 @@ export function VaultScreen({
               onChangeText={setSearch}
               onFocus={handleSearchFocus}
               onBlur={handleSearchBlur}
+              onSubmitEditing={() => Keyboard.dismiss()}
+              returnKeyType="search"
+              autoCorrect={false}
               autoCapitalize="none"
+              clearButtonMode="while-editing"
             />
             {search.length > 0 && (
               <TouchableOpacity
@@ -861,7 +909,7 @@ export function VaultScreen({
               <Plus size={24} color={isDark ? '#000000' : '#ffffff'} strokeWidth={2.5} />
             </TouchableOpacity>
           </Animated.View>
-        </View>
+        </Animated.View>
       )}
 
       {/* Premium Item Editor Modal with Camera TOTP Scanner */}
@@ -1308,6 +1356,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   bottomSearchIcon: {
     marginRight: 10,
@@ -1328,6 +1381,11 @@ const styles = StyleSheet.create({
     borderRadius: 26, // perfect circle
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   /* Menu Bottom Sheet Styles */
   menuSheetHeader: {
